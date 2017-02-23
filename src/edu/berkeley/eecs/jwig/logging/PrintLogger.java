@@ -29,22 +29,49 @@
 
 package edu.berkeley.eecs.jwig.logging;
 
-import java.io.PrintStream;
+import java.io.*;
 
 /** @author Rohan Padhye */
 public class PrintLogger {
-    protected final PrintStream out;
+    protected final String name;
+    protected final BufferedWriter writer;
 
-    public PrintLogger(PrintStream ps) {
-        out = ps;
+    public PrintLogger(String name, OutputStream out) {
+        this.name = name;
+        this.writer = new BufferedWriter(new OutputStreamWriter(out));
+
+        Runtime.getRuntime().addShutdownHook(finalizer);
+
+        try {
+            writer.newLine();
+            writer.write("--- Log for thread: " + name + " ---");
+            writer.newLine();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
-    public PrintLogger() {
-        out = System.out;
+    public PrintLogger(String name) {
+        this(name, System.out);
     }
 
     public void log(String info) {
-        // TODO: Buffer logging to memory and flush periodically + on exit
-        out.println(info);
+        try {
+            writer.write(info);
+            writer.newLine();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
+
+    private Thread finalizer = new Thread() {
+        @Override
+        public void run() {
+            try {
+                writer.flush();
+            } catch (IOException e) {
+                // ignore
+            }
+        }
+    };
 }
