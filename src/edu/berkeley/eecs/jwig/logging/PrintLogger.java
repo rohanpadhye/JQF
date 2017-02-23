@@ -1,19 +1,19 @@
-/**
+/*
  * Copyright (c) 2017, University of California, Berkeley
- * <p>
+ *
  * All rights reserved.
- * <p>
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * <p>
+ *
  * 1. Redistributions of source code must retain the above copyright
  * notice, this list of conditions and the following disclaimer.
- * <p>
+ *
  * 2. Redistributions in binary form must reproduce the above copyright
  * notice, this list of conditions and the following disclaimer in the
  * documentation and/or other materials provided with the distribution.
- * <p>
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -32,12 +32,10 @@ package edu.berkeley.eecs.jwig.logging;
 import java.io.*;
 
 /** @author Rohan Padhye */
-public class PrintLogger {
-    protected final String name;
-    protected final BufferedWriter writer;
+class PrintLogger {
+    private final BufferedWriter writer;
 
-    public PrintLogger(String name, OutputStream out) {
-        this.name = name;
+    PrintLogger(String name, OutputStream out) {
         this.writer = new BufferedWriter(new OutputStreamWriter(out));
 
         Runtime.getRuntime().addShutdownHook(finalizer);
@@ -51,11 +49,11 @@ public class PrintLogger {
         }
     }
 
-    public PrintLogger(String name) {
+    PrintLogger(String name) {
         this(name, System.out);
     }
 
-    public void log(String info) {
+    void log(String info) {
         try {
             writer.write(info);
             writer.newLine();
