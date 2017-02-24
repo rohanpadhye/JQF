@@ -34,11 +34,11 @@ import janala.logger.inst.Instruction;
 
 /** @author Rohan Padhye */
 public class DataTraceLogger extends AbstractLogger {
-    private final ThreadLocal<PrintLogger> logger
-            = ThreadLocal.withInitial(() -> new PrintLogger(Thread.currentThread().getName()));
+    private final ThreadLocal<SingleThreadTracer> tracer
+            = ThreadLocal.withInitial(() -> SingleThreadTracer.spawn(new PrintLogger(Thread.currentThread().getName())));
 
     @Override
     protected void log(Instruction instruction) {
-        logger.get().log(instruction.toString());
+        tracer.get().consume(instruction);
     }
 }
