@@ -54,7 +54,6 @@ class SingleThreadTracer extends Thread {
     /** Spawns a thread tracer for the current thread and returns its reference. */
     protected static SingleThreadTracer spawn(PrintLogger logger) {
         SingleThreadTracer t = new SingleThreadTracer(Thread.currentThread(), logger);
-        t.setDaemon(true);
         t.start();
         return t;
     }
