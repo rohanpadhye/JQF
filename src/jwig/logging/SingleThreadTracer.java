@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package edu.berkeley.eecs.jwig.logging;
+package jwig.logging;
 
 import janala.logger.inst.Instruction;
 import janala.logger.inst.*;

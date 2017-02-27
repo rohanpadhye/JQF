@@ -9,5 +9,5 @@ pushd `dirname $0` > /dev/null
 SCRIPT_DIR=`pwd`
 popd > /dev/null
 
-$SCRIPT_DIR/instrument.sh -Djanala.loggerClass=edu.berkeley.eecs.jwig.logging.DataTraceLogger $@
+$SCRIPT_DIR/instrument.sh -Djanala.loggerClass=jwig.logging.DataTraceLogger $@
 

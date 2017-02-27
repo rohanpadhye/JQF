@@ -27,49 +27,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package edu.berkeley.eecs.jwig.logging;
+package jwig.logging;
 
-import java.io.*;
+import janala.logger.AbstractLogger;
+import janala.logger.inst.Instruction;
 
 /** @author Rohan Padhye */
-class PrintLogger {
-    private final BufferedWriter writer;
+public class DataTraceLogger extends AbstractLogger {
+    private final ThreadLocal<SingleThreadTracer> tracer
+            = ThreadLocal.withInitial(() -> SingleThreadTracer.spawn(new PrintLogger(Thread.currentThread().getName())));
 
-    PrintLogger(String name, OutputStream out) {
-        this.writer = new BufferedWriter(new OutputStreamWriter(out));
-
-        Runtime.getRuntime().addShutdownHook(finalizer);
-
-        try {
-            writer.newLine();
-            writer.write("--- Log for thread: " + name + " ---");
-            writer.newLine();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    @Override
+    protected void log(Instruction instruction) {
+        tracer.get().consume(instruction);
     }
-
-    PrintLogger(String name) {
-        this(name, System.out);
-    }
-
-    void log(String info) {
-        try {
-            writer.write(info);
-            writer.newLine();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private Thread finalizer = new Thread() {
-        @Override
-        public void run() {
-            try {
-                writer.flush();
-            } catch (IOException e) {
-                // ignore
-            }
-        }
-    };
 }
