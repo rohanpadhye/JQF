@@ -2,11 +2,15 @@ package benchmarks;
 
 import jwig.logging.SingleSnoop;
 
-public class HelloWorld {
+/**
+ * @author Rohan Padhye
+ */
+public class StaticInitDriver {
     static {
         SingleSnoop.startSnooping();
     }
+
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        System.out.println(StaticInit.get());
     }
 }

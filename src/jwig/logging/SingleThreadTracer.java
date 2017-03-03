@@ -29,10 +29,14 @@
 
 package jwig.logging;
 
-import janala.logger.inst.Instruction;
 import janala.logger.inst.*;
 
-import java.util.concurrent.*;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.Callable;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class is responsible for data-trace logging for an insruction stream
@@ -44,11 +48,14 @@ class SingleThreadTracer extends Thread {
     private final BlockingDeque<Instruction> queue = new LinkedBlockingDeque<>();
     private final PrintLogger logger;
     private final Thread tracee;
+    private final Deque<Callable<?>> handlers = new ArrayDeque<>();
 
     /** Creates a new tracer that will print the data-traces of a tracee to a logger. */
     protected SingleThreadTracer(Thread tracee, PrintLogger logger) {
+        super("__JWIG_TRACER__"); // The name is important to block snooping
         this.tracee = tracee;
         this.logger = logger;
+        this.handlers.push(new BaseHandler());
     }
 
     /** Spawns a thread tracer for the current thread and returns its reference. */
@@ -104,17 +111,152 @@ class SingleThreadTracer extends Thread {
     public void run() {
         try {
             while (true) {
-                process();
+                handlers.peek().call();
             }
         } catch (InterruptedException e) {
             // Exit normally
+        } catch (Exception e) {
+            e.printStackTrace(logger.getWriter());
+            handlers.clear();
+            handlers.push(new NullHandler());
+            // Don't do anything else
+        }
+    }
+
+    private static boolean isReturnOrThrow(Instruction inst) {
+        return
+                inst instanceof ATHROW  || // TODO: This is wrong. Need to support METHOD_EXCEPTIONAL_EXIT
+                inst instanceof ARETURN ||
+                inst instanceof LRETURN ||
+                inst instanceof DRETURN ||
+                inst instanceof FRETURN ||
+                inst instanceof IRETURN ||
+                inst instanceof RETURN;
+    }
+
+
+    private static boolean isInvoke(Instruction inst) {
+        return  inst instanceof INVOKEINTERFACE ||
+                inst instanceof INVOKESPECIAL  ||
+                inst instanceof INVOKESTATIC   ||
+                inst instanceof INVOKEVIRTUAL;
+    }
+
+    private static String getInvocationTarget(Instruction invokeIns) {
+        if (invokeIns instanceof INVOKESPECIAL) {
+            return getNameDesc((INVOKESPECIAL) invokeIns);
+        } else if (invokeIns instanceof INVOKEINTERFACE) {
+            return getNameDesc((INVOKEINTERFACE) invokeIns);
+        } else if (invokeIns instanceof INVOKEVIRTUAL) {
+            return getNameDesc((INVOKEVIRTUAL) invokeIns);
+        } else if (invokeIns instanceof INVOKESTATIC) {
+            return getNameDesc((INVOKESTATIC) invokeIns);
+        } else {
+            throw new IllegalArgumentException("Not an invoke instruction: " + invokeIns);
+        }
+    }
+
+    private static String getNameDesc(MemberRef mr) {
+        return mr.getName() + mr.getDesc();
+    }
+
+
+    // TODO: Also support run() for monitoring thread entry points
+    class BaseHandler implements Callable<Void> {
+        @Override
+        public Void call() throws Exception {
+            Instruction ins = next();
+            if (ins instanceof METHOD_BEGIN) {
+                METHOD_BEGIN begin = (METHOD_BEGIN) ins;
+                if (getNameDesc(begin).equals("main([Ljava/lang/String;)V")) {
+                    handlers.push(new TravioliHandler(begin, 0));
+                } else {
+                    throw new TraceException("Expecting main() but found: " + ins);
+                }
+            } else {
+                // Silently consume all other instructions before/after main()
+            }
+            return null;
+        }
+    }
+
+    class TravioliHandler implements Callable<Void> {
+
+        private final int depth;
+        TravioliHandler(METHOD_BEGIN begin, int depth) {
+            this.depth = depth;
+            logger.log(tabs() + begin);
+        }
+
+        private String tabs() {
+            StringBuffer sb = new StringBuffer(depth);
+            for (int i = 0; i < depth; i++) {
+                sb.append('\t');
+            }
+            return sb.toString();
+        }
+
+
+        @Override
+        public Void call() throws InterruptedException {
+            Instruction ins = next();
+            if (ins instanceof METHOD_BEGIN) {
+                // Normal method calls are handled with invoke* instructions
+                handlers.push(new MatchingNullHandler());
+            } else {
+                logger.log(tabs() + ins.toString());
+                if (isInvoke(ins)) {
+                    String targetNameDesc = getInvocationTarget(ins);
+                    Instruction nextIns = next();
+                    if(nextIns instanceof METHOD_BEGIN) {
+                        METHOD_BEGIN begin = (METHOD_BEGIN) nextIns;
+                        String beginNameDesc = getNameDesc(begin);
+                        if (beginNameDesc.equals(targetNameDesc)) {
+                            // Trace continues with callee
+                            handlers.push(new TravioliHandler(begin, depth+1));
+                        } else {
+                            // Class loading or static initializer
+                            handlers.push(new MatchingNullHandler());
+                        }
+                    } else {
+                        // If next instruction is not a METHOD_BEGIN, process it as normal
+                        restore(nextIns);
+                    }
+                }
+
+                if (isReturnOrThrow(ins)) {
+                    handlers.pop();
+                }
+            }
+
+            return null;
+        }
+    }
+
+    class NullHandler implements Callable<Void> {
+        @Override
+        public Void call() throws InterruptedException {
+            return null;
+        }
+    }
+
+
+    class MatchingNullHandler implements Callable<Void> {
+        @Override
+        public Void call() throws InterruptedException {
+            Instruction ins = next();
+            if (ins instanceof METHOD_BEGIN) {
+                handlers.push(new MatchingNullHandler());
+            } else if (isReturnOrThrow(ins)) {
+                handlers.pop();
+            }
+            return null;
         }
     }
 
     /** Processes the stream of instructions. */
     private void process() throws InterruptedException {
         Instruction ins = next();
-        logger.log(ins.toString());
         if (ins instanceof AALOAD) {
             Instruction la = next();
             if (la instanceof SPECIAL) {

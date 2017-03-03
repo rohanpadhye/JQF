@@ -29,50 +29,12 @@
 
 package jwig.logging;
 
-import java.io.*;
+/**
+ * @author Rohan Padhye
+ */
+public class TraceException extends Exception {
 
-/** @author Rohan Padhye */
-class PrintLogger {
-    private final PrintWriter writer;
-
-    PrintLogger(String name, OutputStream out) {
-        this.writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out)));
-
-        Runtime.getRuntime().addShutdownHook(finalizer);
-        writer.println("--- Log for thread: " + name + " ---");
+    public TraceException(String message) {
+        super(message);
     }
-
-    PrintLogger(String name) {
-        this(name, createOutputStream(name));
-    }
-
-    private static OutputStream createOutputStream(String name) {
-        try {
-            return new FileOutputStream(name + ".log");
-        } catch (IOException e) {
-            e.printStackTrace();
-            return new OutputStream() {
-                @Override
-                public void write(int b) throws IOException {
-                     // Do nothing
-                }
-            };
-        }
-    }
-
-    void log(String info) {
-        writer.println(info);
-    }
-
-    public PrintWriter getWriter() {
-        return this.writer;
-    }
-
-    private Thread finalizer = new Thread() {
-        @Override
-        public void run() {
-            writer.flush();
-            writer.close();
-        }
-    };
 }

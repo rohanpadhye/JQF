@@ -42,4 +42,5 @@ public class DataTraceLogger extends AbstractLogger {
     protected void log(Instruction instruction) {
         tracer.get().consume(instruction);
     }
+
 }
