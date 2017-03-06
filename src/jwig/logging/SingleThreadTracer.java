@@ -170,8 +170,10 @@ class SingleThreadTracer extends Thread {
                 METHOD_BEGIN begin = (METHOD_BEGIN) ins;
                 if (getNameDesc(begin).equals("main([Ljava/lang/String;)V")) {
                     handlers.push(new TravioliHandler(begin, 0));
+                }  else if (getNameDesc(begin).equals("run()V")) {
+                    handlers.push(new TravioliHandler(begin, 0));
                 } else {
-                    throw new TraceException("Expecting main() but found: " + ins);
+                    throw new TraceException("Expecting main() or run() but found: " + ins);
                 }
             } else {
                 // Silently consume all other instructions before/after main()
@@ -191,7 +193,7 @@ class SingleThreadTracer extends Thread {
         private String tabs() {
             StringBuffer sb = new StringBuffer(depth);
             for (int i = 0; i < depth; i++) {
-                sb.append('\t');
+                sb.append("  ");
             }
             return sb.toString();
         }
@@ -221,6 +223,17 @@ class SingleThreadTracer extends Thread {
                     } else {
                         // If next instruction is not a METHOD_BEGIN, process it as normal
                         restore(nextIns);
+                    }
+                }
+
+                // Look for thread creation
+                if (ins instanceof INVOKESPECIAL) {
+                    INVOKESPECIAL invoke = (INVOKESPECIAL) ins;
+                    if (invoke.getOwner().equals("java/lang/Thread") &&
+                            getNameDesc(invoke).equals("start()V") ) {
+                        // TODO: Get reference to Thread object and add
+                        // to set in SingleSnoop for threads that will be
+                        // unblocked by default.
                     }
                 }
 
