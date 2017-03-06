@@ -123,15 +123,14 @@ class SingleThreadTracer extends Thread {
         }
     }
 
-    private static boolean isReturnOrThrow(Instruction inst) {
-        return
-                inst instanceof ATHROW  || // TODO: This is wrong. Need to support METHOD_EXCEPTIONAL_EXIT
-                inst instanceof ARETURN ||
+    private static boolean isReturnOrMethodThrow(Instruction inst) {
+        return  inst instanceof ARETURN ||
                 inst instanceof LRETURN ||
                 inst instanceof DRETURN ||
                 inst instanceof FRETURN ||
                 inst instanceof IRETURN ||
-                inst instanceof RETURN;
+                inst instanceof RETURN  ||
+                inst instanceof METHOD_THROW;
     }
 
 
@@ -237,7 +236,7 @@ class SingleThreadTracer extends Thread {
                     }
                 }
 
-                if (isReturnOrThrow(ins)) {
+                if (isReturnOrMethodThrow(ins)) {
                     handlers.pop();
                 }
             }
@@ -260,7 +259,7 @@ class SingleThreadTracer extends Thread {
             Instruction ins = next();
             if (ins instanceof METHOD_BEGIN) {
                 handlers.push(new MatchingNullHandler());
-            } else if (isReturnOrThrow(ins)) {
+            } else if (isReturnOrMethodThrow(ins)) {
                 handlers.pop();
             }
             return null;
