@@ -60,7 +60,6 @@ class SingleThreadTracer extends Thread {
 
     /** Spawns a thread tracer for the current thread and returns its reference. */
     protected static SingleThreadTracer spawn(PrintLogger logger) {
-        System.out.println("Spawning tracer for: " + Thread.currentThread().getName());
         SingleThreadTracer t = new SingleThreadTracer(Thread.currentThread(), logger);
         t.start();
         return t;
@@ -226,7 +225,7 @@ class SingleThreadTracer extends Thread {
                     String targetNameDesc = getInvocationTarget(ins);
                     this.invokeTarget = targetNameDesc;
                 } else if (this.invokeTarget != null) {
-                    // If we don't step into a method call, we must be stepping over it
+                    // If we don't step into a method call, we must b   e stepping over it
                     assert(ins instanceof  INVOKEMETHOD_END || ins instanceof  INVOKEMETHOD_EXCEPTION);
                     this.invokeTarget = null;
                 }
