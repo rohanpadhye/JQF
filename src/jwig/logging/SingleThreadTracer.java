@@ -60,6 +60,7 @@ class SingleThreadTracer extends Thread {
 
     /** Spawns a thread tracer for the current thread and returns its reference. */
     protected static SingleThreadTracer spawn(PrintLogger logger) {
+        System.out.println("Spawning tracer for: " + Thread.currentThread().getName());
         SingleThreadTracer t = new SingleThreadTracer(Thread.currentThread(), logger);
         t.start();
         return t;
@@ -115,7 +116,7 @@ class SingleThreadTracer extends Thread {
             }
         } catch (InterruptedException e) {
             // Exit normally
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace(logger.getWriter());
             handlers.clear();
             handlers.push(new NullHandler());
@@ -172,10 +173,12 @@ class SingleThreadTracer extends Thread {
                 }  else if (getNameDesc(begin).equals("run()V")) {
                     handlers.push(new TravioliHandler(begin, 0));
                 } else {
-                    throw new TraceException("Expecting main() or run() but found: " + ins);
+                    // Ignore all non-main or non-run top-level calls in this thread
+                    handlers.push(new MatchingNullHandler());
                 }
             } else {
                 // Silently consume all other instructions before/after main()
+                System.err.println(ins);
             }
             return null;
         }
@@ -197,32 +200,35 @@ class SingleThreadTracer extends Thread {
             return sb.toString();
         }
 
+        private String invokeTarget = null;
+
 
         @Override
         public Void call() throws InterruptedException {
             Instruction ins = next();
             if (ins instanceof METHOD_BEGIN) {
-                // Normal method calls are handled with invoke* instructions
-                handlers.push(new MatchingNullHandler());
+                METHOD_BEGIN begin = (METHOD_BEGIN) ins;
+                String beginNameDesc = getNameDesc(begin);
+
+                if (beginNameDesc.equals(this.invokeTarget)) {
+                    // Trace continues with callee
+                    handlers.push(new TravioliHandler(begin, depth+1));
+                } else {
+                    // Class loading or static initializer
+                    handlers.push(new MatchingNullHandler());
+                }
             } else {
                 logger.log(tabs() + ins.toString());
+
+                // Handle setting or un-setting of invokeTarget buffer
                 if (isInvoke(ins)) {
+                    // Remember invocation target until METHOD_BEGIN or INVOKEMETHOD_END/INVOKEMETHOD_EXCEPTION
                     String targetNameDesc = getInvocationTarget(ins);
-                    Instruction nextIns = next();
-                    if(nextIns instanceof METHOD_BEGIN) {
-                        METHOD_BEGIN begin = (METHOD_BEGIN) nextIns;
-                        String beginNameDesc = getNameDesc(begin);
-                        if (beginNameDesc.equals(targetNameDesc)) {
-                            // Trace continues with callee
-                            handlers.push(new TravioliHandler(begin, depth+1));
-                        } else {
-                            // Class loading or static initializer
-                            handlers.push(new MatchingNullHandler());
-                        }
-                    } else {
-                        // If next instruction is not a METHOD_BEGIN, process it as normal
-                        restore(nextIns);
-                    }
+                    this.invokeTarget = targetNameDesc;
+                } else if (this.invokeTarget != null) {
+                    // If we don't step into a method call, we must be stepping over it
+                    assert(ins instanceof  INVOKEMETHOD_END || ins instanceof  INVOKEMETHOD_EXCEPTION);
+                    this.invokeTarget = null;
                 }
 
                 // Look for thread creation
@@ -247,7 +253,7 @@ class SingleThreadTracer extends Thread {
 
     class NullHandler implements Callable<Void> {
         @Override
-        public Void call() throws InterruptedException {
+        public Void call() {
             return null;
         }
     }

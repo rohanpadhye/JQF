@@ -1,11 +1,6 @@
 package benchmarks;
 
-import jwig.logging.SingleSnoop;
-
 public class Wrapper {
-    static {
-        SingleSnoop.startSnooping();
-    }
     private String data;
     public static void main(String args[]) {
         try {

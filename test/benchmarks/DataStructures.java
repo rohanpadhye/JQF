@@ -1,25 +1,20 @@
 package benchmarks;
 
-import jwig.logging.SingleSnoop;
-
 import java.util.*;
 
 /**
  * @author Rohan Padhye
  */
 public class DataStructures {
-    static {
-        SingleSnoop.startSnooping();
-    }
     public static void main(String[] args) {
         long startTime = System.currentTimeMillis();
         Map<String, String> env = System.getenv();
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 100; i++) {
             NavigableMap<String, String> treeMap = new TreeMap<>(env);
             for (Map.Entry<String, String> e : treeMap.entrySet()) {
                 System.out.println(e.getKey() + " = " + e.getValue());
             }
-            List<String> values = new ArrayList<>(treeMap.values());
+            List<String> values = new LinkedList<>(treeMap.values());
             Collections.sort(values);
             for (String val : values) {
                 System.out.println("value --> " + val);

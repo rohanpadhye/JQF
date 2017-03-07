@@ -1,14 +1,9 @@
 package benchmarks;
 
-import jwig.logging.SingleSnoop;
-
 /**
  * @author Rohan Padhye
  */
 public class MultiThreaded {
-    static  {
-        SingleSnoop.startSnooping();
-    }
     public static void main(String[] args) throws InterruptedException {
         NamePrinter n1 = new NamePrinter("Numba won");
         NamePrinter n2 = new NamePrinter("Numba too");
