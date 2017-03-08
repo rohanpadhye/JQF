@@ -186,8 +186,10 @@ class SingleThreadTracer extends Thread {
     class TravioliHandler implements Callable<Void> {
 
         private final int depth;
+        private final String methodDesc;
         TravioliHandler(METHOD_BEGIN begin, int depth) {
             this.depth = depth;
+            this.methodDesc = getNameDesc(begin);
             logger.log(tabs() + begin);
         }
 
@@ -200,6 +202,7 @@ class SingleThreadTracer extends Thread {
         }
 
         private String invokeTarget = null;
+        private boolean invokingSuperOrThis = false;
 
 
         @Override
@@ -217,6 +220,29 @@ class SingleThreadTracer extends Thread {
                     handlers.push(new MatchingNullHandler());
                 }
             } else {
+
+
+                // This should never really happen:
+                if (ins instanceof INVOKEMETHOD_EXCEPTION &&
+                        (this.invokeTarget == null))  {
+                    throw new RuntimeException("Unexpected INVOKEMETHOD_EXCEPTION");
+                }
+                // This should never really happen:
+                if (ins instanceof INVOKEMETHOD_END && this.invokeTarget == null) {
+                    throw new RuntimeException("Unexpected INVOKEMETHOD_END");
+                }
+
+                // Do not log SPECIAL instructions
+                if (ins instanceof SPECIAL) {
+                    SPECIAL special = (SPECIAL) ins;
+                    // Handle marker that says calling super() or this()
+                    if (special.i == SPECIAL.CALLING_SUPER_OR_THIS) {
+                        this.invokingSuperOrThis = true;
+                    }
+                    return null; // Do not process SPECIAL instructions further
+                }
+
+
                 logger.log(tabs() + ins.toString());
 
                 // Handle setting or un-setting of invokeTarget buffer
@@ -225,9 +251,41 @@ class SingleThreadTracer extends Thread {
                     String targetNameDesc = getInvocationTarget(ins);
                     this.invokeTarget = targetNameDesc;
                 } else if (this.invokeTarget != null) {
-                    // If we don't step into a method call, we must b   e stepping over it
+                    // If we don't step into a method call, we must be stepping over it
                     assert(ins instanceof  INVOKEMETHOD_END || ins instanceof  INVOKEMETHOD_EXCEPTION);
+
+                    // Unset the invocation target for the rest of the instruction stream
                     this.invokeTarget = null;
+
+                    // Handle end of super() or this() call
+                    if (invokingSuperOrThis) {
+                        if (ins instanceof INVOKEMETHOD_END) {
+                            // For normal end, simply unset the flag
+                            this.invokingSuperOrThis = false;
+                        } else {
+                            assert(ins instanceof  INVOKEMETHOD_EXCEPTION);
+
+                            while (true) { // will break when outer caller of <init> found
+                                handlers.pop();
+                                Callable<?> handler = handlers.peek();
+                                // We should not reach the BaseHandler without finding
+                                // the TravioliHandler who called the outer <init>().
+                                assert (handler instanceof TravioliHandler);
+                                TravioliHandler travioliHandler = (TravioliHandler) handler;
+                                if (travioliHandler.invokingSuperOrThis) {
+                                    // Go down the stack further
+                                    continue;
+                                } else {
+                                    // Found caller of new()
+                                    assert(travioliHandler.invokeTarget.startsWith("<init>"));
+                                    restore(ins);
+                                    return null; // defer handling to new top of stack
+                                }
+                            }
+
+                        }
+                    }
+
                 }
 
                 // Look for thread creation

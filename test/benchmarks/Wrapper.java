@@ -20,7 +20,7 @@ public class Wrapper {
     }
 
     public Wrapper() {
-
+        this.data = getData();
     }
 
     public String getData() {
