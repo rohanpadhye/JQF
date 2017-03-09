@@ -107,7 +107,7 @@ public class SyncBlockingDeque<T> {
     }
 
     public boolean isEmpty() {
-        return dll.size() == 0;
+        return dll.isEmpty();
     }
 
 }

@@ -34,7 +34,7 @@ import java.util.Iterator;
 /**
  * @author Rohan Padhye
  */
-public class DoublyLinkedList<T> implements Iterable<T> {
+public class DoublyLinkedList<T> implements Iterable<T>, Stack<T> {
 
     static class Node<T> {
         T value;
@@ -116,6 +116,30 @@ public class DoublyLinkedList<T> implements Iterable<T> {
 
     public int size() {
         return length;
+    }
+
+    public void push(T item) {
+        addLast(item);
+    }
+
+    public T peek() {
+        if (length == 0)
+            throw new IllegalStateException("Cannot peek at empty stack");
+        return tail.value;
+    }
+
+    public T pop() {
+        return removeLast();
+    }
+
+    public boolean isEmpty() {
+        return length == 0;
+    }
+
+    public void clear() {
+        head = null;
+        tail = null;
+        length = 0;
     }
 
     @Override
