@@ -35,7 +35,7 @@ import java.io.*;
 class PrintLogger {
     private final PrintWriter writer;
 
-    PrintLogger(String name, OutputStream out) {
+    private PrintLogger(String name, OutputStream out) {
         this.writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out)));
 
         Runtime.getRuntime().addShutdownHook(finalizer);

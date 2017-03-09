@@ -30,12 +30,11 @@
 package jwig.logging;
 
 import janala.logger.inst.*;
+import jwig.util.SyncBlockingDeque;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.Callable;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,7 +44,7 @@ import java.util.concurrent.TimeUnit;
  * @author Rohan Padhye
  */
 class SingleThreadTracer extends Thread {
-    private final BlockingDeque<Instruction> queue = new LinkedBlockingDeque<>();
+    private final SyncBlockingDeque<Instruction> queue = new SyncBlockingDeque<>();
     private final PrintLogger logger;
     private final Thread tracee;
     private final Deque<Callable<?>> handlers = new ArrayDeque<>();
@@ -87,7 +86,7 @@ class SingleThreadTracer extends Thread {
         // Keep attempting to get instructions while queue is non-empty or tracee is alive
         while (!queue.isEmpty() || tracee.isAlive()) {
             // Attempt to poll queue with a timeout
-            Instruction ins = queue.poll(1, TimeUnit.SECONDS);
+            Instruction ins = queue.pollFirst(1, TimeUnit.SECONDS);
             // Return instruction if available, else re-try
             if (ins != null) {
                 return ins;
