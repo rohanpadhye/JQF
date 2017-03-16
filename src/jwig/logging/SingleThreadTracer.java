@@ -83,6 +83,12 @@ class SingleThreadTracer extends Thread {
      *
      * */
     protected Instruction next() throws InterruptedException {
+        // If a restored instruction exists, take that out instead of polling the queue
+        if (restored != null) {
+            Instruction ins = restored;
+            restored = null;
+            return ins;
+        }
         // Keep attempting to get instructions while queue is non-empty or tracee is alive
         while (!queue.isEmpty() || tracee.isAlive()) {
             // Attempt to poll queue with a timeout
@@ -96,29 +102,30 @@ class SingleThreadTracer extends Thread {
         throw new InterruptedException();
     }
 
-
+    // Hack on restore() to prevent deadlocks when main thread waits on put() and logger on restore()
+    private Instruction restored = null;
     /** Returns an instruction to the queue for processing (used by lookaheads). */
     protected void restore(Instruction ins) {
-        try {
-            queue.putFirst(ins);
-        } catch (InterruptedException e) {
-            this.interrupt(); // This is a bad sign
+        if (restored != null) {
+            throw new IllegalStateException("Cannot restore multiple instructions");
+        } else {
+            restored = ins;
         }
     }
 
     @Override
     public void run() {
         try {
-            while (true) {
+            while (!handlers.isEmpty()) {
                 handlers.peek().call();
             }
         } catch (InterruptedException e) {
             // Exit normally
         } catch (Throwable e) {
             e.printStackTrace(logger.getWriter());
-            handlers.clear();
-            handlers.push(new NullHandler());
-            // Don't do anything else
+            handlers.clear(); // Don't do anything else
+        } finally {
+            logger.close();
         }
     }
 
@@ -138,6 +145,26 @@ class SingleThreadTracer extends Thread {
                 inst instanceof INVOKESPECIAL  ||
                 inst instanceof INVOKESTATIC   ||
                 inst instanceof INVOKEVIRTUAL;
+    }
+
+    private static boolean isIfJmp(Instruction inst) {
+        return  inst instanceof IF_ACMPEQ ||
+                inst instanceof IF_ACMPNE ||
+                inst instanceof IF_ICMPEQ ||
+                inst instanceof IF_ICMPNE ||
+                inst instanceof IF_ICMPGT ||
+                inst instanceof IF_ICMPGE ||
+                inst instanceof IF_ICMPLT ||
+                inst instanceof IF_ICMPLE ||
+                inst instanceof IFEQ ||
+                inst instanceof IFNE ||
+                inst instanceof IFGT ||
+                inst instanceof IFGE ||
+                inst instanceof IFLT ||
+                inst instanceof IFLE ||
+                inst instanceof IFNULL ||
+                inst instanceof IFNONNULL;
+
     }
 
     private static String getInvocationTarget(Instruction invokeIns) {
@@ -167,16 +194,18 @@ class SingleThreadTracer extends Thread {
             if (ins instanceof METHOD_BEGIN) {
                 METHOD_BEGIN begin = (METHOD_BEGIN) ins;
                 if (getNameDesc(begin).equals("main([Ljava/lang/String;)V")) {
+                    handlers.pop();
                     handlers.push(new TravioliHandler(begin, 0));
                 }  else if (getNameDesc(begin).equals("run()V")) {
+                    handlers.pop();
                     handlers.push(new TravioliHandler(begin, 0));
                 } else {
                     // Ignore all non-main or non-run top-level calls in this thread
                     handlers.push(new MatchingNullHandler());
                 }
             } else {
-                // Silently consume all other instructions before/after main()
-                System.err.println(ins);
+                // Instructions not nested in a METHOD_BEGIN are quite unexpected
+                System.err.println("Unexpected: " + ins);
             }
             return null;
         }
@@ -231,7 +260,7 @@ class SingleThreadTracer extends Thread {
                     throw new RuntimeException("Unexpected INVOKEMETHOD_END");
                 }
 
-                // Do not log SPECIAL instructions
+                // Do not log SPECIAL instructions if they haven't been consumed by their predecessors
                 if (ins instanceof SPECIAL) {
                     SPECIAL special = (SPECIAL) ins;
                     // Handle marker that says calling super() or this()
@@ -287,6 +316,7 @@ class SingleThreadTracer extends Thread {
 
                 }
 
+
                 // Look for thread creation
                 if (ins instanceof INVOKESPECIAL) {
                     INVOKESPECIAL invoke = (INVOKESPECIAL) ins;
@@ -309,7 +339,8 @@ class SingleThreadTracer extends Thread {
 
     class NullHandler implements Callable<Void> {
         @Override
-        public Void call() {
+        public Void call() throws InterruptedException {
+            next();
             return null;
         }
     }
@@ -325,19 +356,6 @@ class SingleThreadTracer extends Thread {
                 handlers.pop();
             }
             return null;
-        }
-    }
-
-    /** Processes the stream of instructions. */
-    private void process() throws InterruptedException {
-        Instruction ins = next();
-        if (ins instanceof AALOAD) {
-            Instruction la = next();
-            if (la instanceof SPECIAL) {
-                // ignore
-            } else {
-                restore(la);
-            }
         }
     }
 }

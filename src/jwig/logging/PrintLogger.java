@@ -37,8 +37,6 @@ class PrintLogger {
 
     private PrintLogger(String name, OutputStream out) {
         this.writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out)));
-
-        Runtime.getRuntime().addShutdownHook(finalizer);
         writer.println("--- Log for thread: " + name + " ---");
     }
 
@@ -68,11 +66,8 @@ class PrintLogger {
         return this.writer;
     }
 
-    private Thread finalizer = new Thread() {
-        @Override
-        public void run() {
-            writer.flush();
-            writer.close();
-        }
+    public void close() {
+        writer.flush();
+        writer.close();
     };
 }
