@@ -114,6 +114,37 @@ public class DoublyLinkedList<T> implements Iterable<T>, Stack<T> {
         return value;
     }
 
+    private T removeNode(Node<T> node) {
+        if (node == this.head) {
+            return this.removeFirst();
+        } else if (node == this.tail) {
+            return this.removeLast();
+        } else {
+            // Removal of internal node
+            T value = node.value;
+            assert(node.prev != null); // It's not the head
+            assert(node.next != null); // It's not the tail
+            node.prev.next = node.next;
+            node.next.prev = node.prev;
+            node.prev = null;
+            node.next = null;
+            node.value = null;
+            length--;
+            return value;
+        }
+    }
+
+    public boolean remove(T item) {
+        Iterator<T> it = this.iterator();
+        while (it.hasNext()) {
+            if (item.equals(it.next())) {
+                it.remove();
+                return true;
+            }
+        }
+        return false;
+    }
+
     public int size() {
         return length;
     }
@@ -149,9 +180,12 @@ public class DoublyLinkedList<T> implements Iterable<T>, Stack<T> {
 
     static class LinkedListIterator<T> implements Iterator<T> {
 
+        DoublyLinkedList<T> list;
         Node<T> node;
+        Node<T> lastReturnedNode;
 
         LinkedListIterator(DoublyLinkedList<T> list) {
+            this.list = list;
             node = list.head;
         }
 
@@ -163,8 +197,34 @@ public class DoublyLinkedList<T> implements Iterable<T>, Stack<T> {
         @Override
         public T next() {
             T val = node.value;
+            this.lastReturnedNode = node;
             node = node.next;
             return val;
         }
+
+        @Override
+        public void remove() {
+            list.removeNode(lastReturnedNode);
+        }
+    }
+
+    public synchronized void synchronizedAddFirst(T item) {
+        this.addFirst(item);
+    }
+
+    public synchronized void synchronizedAddLast(T item) {
+        this.addLast(item);
+    }
+
+    public synchronized boolean synchronizedRemove(T item) {
+        return this.remove(item);
+    }
+
+    public synchronized T synchronizedRemoveFirst() {
+        return this.removeFirst();
+    }
+
+    public synchronized T synchronizedRemoveLast() {
+        return this.removeLast();
     }
 }

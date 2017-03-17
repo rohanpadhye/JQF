@@ -31,16 +31,14 @@ package jwig.logging;
 
 import janala.config.Config;
 import janala.logger.Logger;
+import jwig.util.DoublyLinkedList;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
 
 @SuppressWarnings("unused") // Dynamically loaded
 public final class SingleSnoop {
 
 
-    private static List<Thread> threadsToUnblock = Collections.synchronizedList(new LinkedList<>());
+    static DoublyLinkedList<Integer> threadsToUnblock = new DoublyLinkedList<>();
 
     private static ThreadLocal<Boolean> block = new ThreadLocal<Boolean>() {
         @Override
@@ -48,7 +46,7 @@ public final class SingleSnoop {
             String threadName = Thread.currentThread().getName();
                 if (threadName.startsWith("__JWIG_TRACER__")) {
                 return true; // Always block snooping on the tracing thread to prevent cycles
-            } else if (threadsToUnblock.remove(Thread.currentThread())){
+            } else if (threadsToUnblock.synchronizedRemove(System.identityHashCode(Thread.currentThread()))){
                 return false; // Snoop on threads that were added to the queue explicitly
             } else {
                 return true; // Block all other threads (e.g. JVM cleanup threads)

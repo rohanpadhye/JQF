@@ -276,6 +276,17 @@ class SingleThreadTracer extends Thread {
                     if (special.i == SPECIAL.CALLING_SUPER_OR_THIS) {
                         this.invokingSuperOrThis = true;
                     }
+
+                    // Handle marker that says calling Thread.start()
+                    else if(special.i == SPECIAL.THREAD_INIT) {
+                        GETVALUE_Object objRead = (GETVALUE_Object) next();
+                        SingleSnoop.threadsToUnblock.synchronizedAddLast(objRead.v);
+                        System.out.println("Printing thread IDs..");
+                        for (Integer s : SingleSnoop.threadsToUnblock) {
+                            System.out.println("> " + s);
+                        }
+                    }
+
                     return null; // Do not process SPECIAL instructions further
                 }
 
@@ -342,16 +353,6 @@ class SingleThreadTracer extends Thread {
                     logger.log(tabs() + "BRANCH("+branchId+","+lineNum+")");
                 }
 
-                // Look for thread creation
-                if (ins instanceof INVOKESPECIAL) {
-                    INVOKESPECIAL invoke = (INVOKESPECIAL) ins;
-                    if (invoke.getOwner().equals("java/lang/Thread") &&
-                            getNameDesc(invoke).equals("start()V") ) {
-                        // TODO: Get reference to Thread object and add
-                        // to set in SingleSnoop for threads that will be
-                        // unblocked by default.
-                    }
-                }
 
                 if (isReturnOrMethodThrow(ins)) {
                     logger.log(tabs() + "RET");
