@@ -181,6 +181,10 @@ class SingleThreadTracer extends Thread {
         }
     }
 
+    private static String getOwnerNameDesc(MemberRef mr) {
+        return mr.getOwner() + "#" + mr.getName() + mr.getDesc();
+    }
+
     private static String getNameDesc(MemberRef mr) {
         return mr.getName() + mr.getDesc();
     }
@@ -218,7 +222,8 @@ class SingleThreadTracer extends Thread {
         TravioliHandler(METHOD_BEGIN begin, int depth) {
             this.depth = depth;
             this.methodDesc = getNameDesc(begin);
-            logger.log(tabs() + begin);
+            logger.log(tabs() + "BEGIN "+getOwnerNameDesc(begin));
+            //logger.log(tabs() + begin);
         }
 
         private String tabs() {
@@ -231,17 +236,21 @@ class SingleThreadTracer extends Thread {
 
         private String invokeTarget = null;
         private boolean invokingSuperOrThis = false;
+        private int lastIid = 0;
+        private int lastMid = 0;
 
 
         @Override
         public Void call() throws InterruptedException {
             Instruction ins = next();
+
             if (ins instanceof METHOD_BEGIN) {
                 METHOD_BEGIN begin = (METHOD_BEGIN) ins;
                 String beginNameDesc = getNameDesc(begin);
 
                 if (beginNameDesc.equals(this.invokeTarget)) {
                     // Trace continues with callee
+                    logger.log(tabs() + "CALL("+lastIid+","+lastMid+")");
                     handlers.push(new TravioliHandler(begin, depth+1));
                 } else {
                     // Class loading or static initializer
@@ -271,7 +280,6 @@ class SingleThreadTracer extends Thread {
                 }
 
 
-                logger.log(tabs() + ins.toString());
 
                 // Handle setting or un-setting of invokeTarget buffer
                 if (isInvoke(ins)) {
@@ -294,6 +302,7 @@ class SingleThreadTracer extends Thread {
                             assert(ins instanceof  INVOKEMETHOD_EXCEPTION);
 
                             while (true) { // will break when outer caller of <init> found
+                                logger.log(tabs() + "RET");
                                 handlers.pop();
                                 Callable<?> handler = handlers.peek();
                                 // We should not reach the BaseHandler without finding
@@ -317,6 +326,22 @@ class SingleThreadTracer extends Thread {
                 }
 
 
+                // Log conditional branches
+                if (isIfJmp(ins)) {
+                    Instruction next = next();
+                    int branchId;
+                    int lineNum = ins.mid;
+                    if ((next instanceof SPECIAL) && ((SPECIAL) next).i == SPECIAL.DID_NOT_BRANCH) {
+                        // Special marker ==> False Branch
+                        branchId = -ins.iid;
+                    } else {
+                        // Not a special marker ==> True Branch
+                        restore(next); // Remember to put this instruction back on the queue
+                        branchId = ins.iid;
+                    }
+                    logger.log(tabs() + "BRANCH("+branchId+","+lineNum+")");
+                }
+
                 // Look for thread creation
                 if (ins instanceof INVOKESPECIAL) {
                     INVOKESPECIAL invoke = (INVOKESPECIAL) ins;
@@ -329,9 +354,16 @@ class SingleThreadTracer extends Thread {
                 }
 
                 if (isReturnOrMethodThrow(ins)) {
+                    logger.log(tabs() + "RET");
                     handlers.pop();
                 }
+
+                // For non-METHOD_BEGIN instructions, set last IID and lineNum
+                this.lastIid = ins.iid;
+                this.lastMid = ins.mid;
+
             }
+
 
             return null;
         }
