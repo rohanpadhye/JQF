@@ -277,16 +277,6 @@ class SingleThreadTracer extends Thread {
                         this.invokingSuperOrThis = true;
                     }
 
-                    // Handle marker that says calling Thread.start()
-                    else if(special.i == SPECIAL.THREAD_INIT) {
-                        GETVALUE_Object objRead = (GETVALUE_Object) next();
-                        SingleSnoop.threadsToUnblock.synchronizedAddLast(objRead.v);
-                        System.out.println("Printing thread IDs..");
-                        for (Integer s : SingleSnoop.threadsToUnblock) {
-                            System.out.println("> " + s);
-                        }
-                    }
-
                     return null; // Do not process SPECIAL instructions further
                 }
 

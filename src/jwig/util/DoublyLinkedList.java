@@ -227,4 +227,19 @@ public class DoublyLinkedList<T> implements Iterable<T>, Stack<T> {
     public synchronized T synchronizedRemoveLast() {
         return this.removeLast();
     }
+
+    @Override
+    public String toString() {
+        if (this.isEmpty()) {
+            return "[]";
+        }
+        StringBuffer sb = new StringBuffer();
+        sb.append('[');
+        for (T item: this) {
+            sb.append(item.toString());
+            sb.append(", ");
+        }
+        sb.replace(sb.length()-2, sb.length(), "]");
+        return sb.toString();
+    }
 }

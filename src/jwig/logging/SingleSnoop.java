@@ -38,7 +38,7 @@ import jwig.util.DoublyLinkedList;
 public final class SingleSnoop {
 
 
-    static DoublyLinkedList<Integer> threadsToUnblock = new DoublyLinkedList<>();
+    static DoublyLinkedList<Thread> threadsToUnblock = new DoublyLinkedList<>();
 
     private static ThreadLocal<Boolean> block = new ThreadLocal<Boolean>() {
         @Override
@@ -46,8 +46,8 @@ public final class SingleSnoop {
             String threadName = Thread.currentThread().getName();
                 if (threadName.startsWith("__JWIG_TRACER__")) {
                 return true; // Always block snooping on the tracing thread to prevent cycles
-            } else if (threadsToUnblock.synchronizedRemove(System.identityHashCode(Thread.currentThread()))){
-                return false; // Snoop on threads that were added to the queue explicitly
+            } else if (threadsToUnblock.synchronizedRemove(Thread.currentThread())){
+                    return false; // Snoop on threads that were added to the queue explicitly
             } else {
                 return true; // Block all other threads (e.g. JVM cleanup threads)
             }
@@ -65,6 +65,10 @@ public final class SingleSnoop {
 
     public static void unblock() {
         block.set(false);
+    }
+
+    public static void REGISTER_THREAD(Thread thread) {
+        threadsToUnblock.synchronizedAddFirst(thread);
     }
 
     public static void LDC(int iid, int mid, int c) {
