@@ -37,7 +37,6 @@ class PrintLogger {
 
     private PrintLogger(String name, OutputStream out) {
         this.writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out)));
-        writer.println("--- Log for thread: " + name + " ---");
     }
 
     PrintLogger(String name) {

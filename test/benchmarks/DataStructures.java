@@ -9,7 +9,7 @@ public class DataStructures {
     public static void main(String[] args) {
         long startTime = System.currentTimeMillis();
         Map<String, String> env = System.getenv();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1; i++) {
             NavigableMap<String, String> treeMap = new TreeMap<>(env);
             for (Map.Entry<String, String> e : treeMap.entrySet()) {
                 System.out.println(e.getKey() + " = " + e.getValue());
