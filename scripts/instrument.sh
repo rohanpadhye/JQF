@@ -15,5 +15,5 @@ popd > /dev/null
 
 ROOT=`dirname $SCRIPT_DIR`
 
-java -Xbootclasspath/a:"${ROOT}/build/classes/main:${ROOT}/lib/asm-all-5.2.jar:${ROOT}/lib/janala.jar" -cp "${ROOT}/build/classes/test" -javaagent:${ROOT}/lib/janala.jar -Djanala.conf="${SCRIPT_DIR}/janala.conf" $@
+java -Xbootclasspath/a:"${ROOT}/build/classes/main:${ROOT}/lib/asm-all-5.2.jar:${ROOT}/lib/janala.jar" -cp "${ROOT}/build/classes/test:." -javaagent:${ROOT}/lib/janala.jar -Djanala.conf="${SCRIPT_DIR}/janala.conf" $@
 
