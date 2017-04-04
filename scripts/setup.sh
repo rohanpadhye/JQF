@@ -16,6 +16,12 @@ popd > /dev/null
 
 ROOT=`dirname $SCRIPT_DIR`
 
+if [[ ! -e "$JANALA_DIR/lib/asm-all-5.2.jar" ]]; then
+  echo "Downloading ASM from Maven Central..."
+  curl -o "$JANALA_DIR/lib/asm-all-5.2.jar" "http://central.maven.org/maven2/org/ow2/asm/asm-all/5.2/asm-all-5.2.jar"
+  echo "Done!"
+fi
+
 if [[ ! -d "$JANALA_DIR" ]]; then
   git clone https://github.com/zhihan/janala2-gradle/ "$JANALA_DIR"
 fi

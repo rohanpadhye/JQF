@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="jwig" default="all">
+  
+  
+  <property file="build.properties"/>
+  <!-- Uncomment the following property if no tests compilation is needed -->
+  <!-- 
+  <property name="skip.tests" value="true"/>
+   -->
+  
+  <!-- Compiler options -->
+  
+  <property name="compiler.debug" value="on"/>
+  <property name="compiler.generate.no.warnings" value="off"/>
+  <property name="compiler.args" value=""/>
+  <property name="compiler.max.memory" value="700m"/>
+  <patternset id="ignored.files">
+    <exclude name="**/*.hprof/**"/>
+    <exclude name="**/*.pyc/**"/>
+    <exclude name="**/*.pyo/**"/>
+    <exclude name="**/*.rbc/**"/>
+    <exclude name="**/*.yarb/**"/>
+    <exclude name="**/*~/**"/>
+    <exclude name="**/.DS_Store/**"/>
+    <exclude name="**/.git/**"/>
+    <exclude name="**/.hg/**"/>
+    <exclude name="**/.svn/**"/>
+    <exclude name="**/CVS/**"/>
+    <exclude name="**/__pycache__/**"/>
+    <exclude name="**/_svn/**"/>
+    <exclude name="**/vssver.scc/**"/>
+    <exclude name="**/vssver2.scc/**"/>
+  </patternset>
+  <patternset id="library.patterns">
+    <include name="*.war"/>
+    <include name="*.swc"/>
+    <include name="*.apk"/>
+    <include name="*.zip"/>
+    <include name="*.ear"/>
+    <include name="*.egg"/>
+    <include name="*.ane"/>
+    <include name="*.jar"/>
+  </patternset>
+  <patternset id="compiler.resources">
+    <exclude name="**/?*.java"/>
+    <exclude name="**/?*.form"/>
+    <exclude name="**/?*.class"/>
+    <exclude name="**/?*.groovy"/>
+    <exclude name="**/?*.scala"/>
+    <exclude name="**/?*.flex"/>
+    <exclude name="**/?*.kt"/>
+    <exclude name="**/?*.clj"/>
+    <exclude name="**/?*.aj"/>
+  </patternset>
+  
+  
+  <!-- Project Libraries -->
+  
+  <path id="library.org.ow2.asm:asm-all:5.2.classpath">
+    <pathelement location="${basedir}/lib/asm-all-5.2.jar"/>
+  </path>
+  
+  <!-- Modules -->
+  
+  
+  <!-- Module jwig -->
+  
+  <dirname property="module.jwig.basedir" file="${ant.file}"/>
+  
+  
+  
+  <property name="compiler.args.jwig" value="-encoding UTF-8 -source 8 -target 8 ${compiler.args}"/>
+  
+  <property name="jwig.output.dir" value="${module.jwig.basedir}/build/classes/main"/>
+  <property name="jwig.testoutput.dir" value="${module.jwig.basedir}/build/classes/test"/>
+  
+  <path id="jwig.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="jwig.module.production.classpath">
+    <pathelement location="${basedir}/lib/janala.jar"/>
+    <path refid="library.org.ow2.asm:asm-all:5.2.classpath"/>
+  </path>
+  
+  <path id="jwig.runtime.production.module.classpath">
+    <pathelement location="${jwig.output.dir}"/>
+    <pathelement location="${basedir}/lib/janala.jar"/>
+    <path refid="library.org.ow2.asm:asm-all:5.2.classpath"/>
+  </path>
+  
+  <path id="jwig.module.classpath">
+    <pathelement location="${jwig.output.dir}"/>
+    <pathelement location="${basedir}/lib/janala.jar"/>
+    <path refid="library.org.ow2.asm:asm-all:5.2.classpath"/>
+  </path>
+  
+  <path id="jwig.runtime.module.classpath">
+    <pathelement location="${jwig.testoutput.dir}"/>
+    <pathelement location="${jwig.output.dir}"/>
+    <pathelement location="${basedir}/lib/janala.jar"/>
+    <path refid="library.org.ow2.asm:asm-all:5.2.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.jwig">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.jwig">
+    <patternset refid="excluded.from.module.jwig"/>
+  </patternset>
+  
+  <path id="jwig.module.sourcepath">
+    <dirset dir="${module.jwig.basedir}">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  <path id="jwig.module.test.sourcepath">
+    <dirset dir="${module.jwig.basedir}">
+      <include name="test"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.jwig" depends="compile.module.jwig.production,compile.module.jwig.tests" description="Compile module jwig"/>
+  
+  <target name="compile.module.jwig.production" description="Compile module jwig; production classes">
+    <mkdir dir="${jwig.output.dir}"/>
+    <javac destdir="${jwig.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+      <compilerarg line="${compiler.args.jwig}"/>
+      <bootclasspath refid="jwig.module.bootclasspath"/>
+      <classpath refid="jwig.module.production.classpath"/>
+      <src refid="jwig.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.jwig"/>
+    </javac>
+    
+    <copy todir="${jwig.output.dir}">
+      <fileset dir="${module.jwig.basedir}/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.jwig.tests" depends="compile.module.jwig.production" description="compile module jwig; test classes" unless="skip.tests">
+    <mkdir dir="${jwig.testoutput.dir}"/>
+    <javac destdir="${jwig.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+      <compilerarg line="${compiler.args.jwig}"/>
+      <bootclasspath refid="jwig.module.bootclasspath"/>
+      <classpath refid="jwig.module.classpath"/>
+      <src refid="jwig.module.test.sourcepath"/>
+      <patternset refid="excluded.from.compilation.jwig"/>
+    </javac>
+    
+    <copy todir="${jwig.testoutput.dir}">
+      <fileset dir="${module.jwig.basedir}/test">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="clean.module.jwig" description="cleanup module">
+    <delete dir="${jwig.output.dir}"/>
+    <delete dir="${jwig.testoutput.dir}"/>
+  </target>
+  
+  <target name="init" description="Build initialization">
+    <!-- Perform any build initialization in this target -->
+  </target>
+  
+  <target name="clean" depends="clean.module.jwig" description="cleanup all"/>
+  
+  <target name="build.modules" depends="init, clean, compile.module.jwig" description="build all modules"/>
+  
+  <target name="all" depends="build.modules" description="build all"/>
+</project>
