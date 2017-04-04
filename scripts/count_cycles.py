@@ -1,3 +1,4 @@
+#!/usr/bin/env pypy
 """
  Copyright (c) 2016, University of California, Berkeley
 
