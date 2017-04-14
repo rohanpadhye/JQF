@@ -233,27 +233,27 @@ def serialize_data(pickle_file_name, data):
 	with open(pickle_file_name, 'wb') as pickle_file:
 		pickle.dump((data, line_numbers), pickle_file)
 
-# The Dennis-Mehne score
 def compute_redundancy(counts):
 	sum_counts = float(sum(counts))	
 	if sum_counts < 2:
 		return 0.0
 	uniq_counts = float(len(counts))
 	avg_counts = sum_counts/uniq_counts
-	score = (avg_counts - 1)*(uniq_counts - 1)*sum_counts/((sum_counts-1)**2)
+	score = (avg_counts - 1)*(uniq_counts - 1)/sum_counts
 	return score
 
 def compute_redundancies(aec_mems):
 	aec_redundancies = defaultdict(float)
 	for aec, mem_counts in aec_mems.iteritems():
-		aec_redundancies[aec] = compute_redundancy(mem_counts.values())
+		sorted_counts = sorted(mem_counts.values())
+		aec_redundancies[aec] = compute_redundancy(sorted_counts), sorted_counts
 	return aec_redundancies
 
 def print_aec_redundancies(aec_redundancies, line_map):
-	for aec, red in sorted(aec_redundancies.items(), key=operator.itemgetter(1)):
+	for aec, (red, counts) in sorted(aec_redundancies.items(), key=lambda x: x[1][0]):
 		if red < 0.0001:
 			continue # Ignore non-redundant
-		print "Redundancy = " + str(red)
+		print "Redundancy = " + str(red) + " " + str(counts)
 		print_aec(aec, line_map)
 
 if __name__ == "__main__":
