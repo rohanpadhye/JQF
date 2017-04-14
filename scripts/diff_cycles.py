@@ -65,7 +65,7 @@ def diff_map(map_1, map_2):
 	for k in keys:
 		count_1 = map_1[k] 
 		count_2 = map_2[k]
-		result[k] = count_2 - count_1
+		result[k] = count_1, count_2, count_2 - count_1
 
 	return result
 
@@ -82,10 +82,14 @@ def union_map(map_1, map_2):
 
 	return result
 
+def fstr(num):
+	return "{"
 
 def print_diff(diff_map, line_map):
-	for aec, count in sorted(diff_map.items(), key=operator.itemgetter(1)):
-		print "Diff = " + str(count)
+	for aec, (a, b, difference) in sorted(diff_map.items(), key=lambda x: x[1][2]):
+		if abs(difference) < 0.01:
+			continue
+		print ("Diff = %.2f  [%.2f vs. %.2f] " % (difference, a, b))
 		count_cycles.print_aec(aec, line_map)
 
 if __name__ == "__main__":

@@ -233,8 +233,9 @@ def serialize_data(pickle_file_name, data):
 	with open(pickle_file_name, 'wb') as pickle_file:
 		pickle.dump((data, line_numbers), pickle_file)
 
+# The Dennis-Mehne score
 def compute_redundancy(counts):
-	sum_counts = float(sum(counts))
+	sum_counts = float(sum(counts))	
 	if sum_counts < 2:
 		return 0.0
 	uniq_counts = float(len(counts))
