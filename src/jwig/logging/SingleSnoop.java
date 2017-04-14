@@ -251,6 +251,16 @@ public final class SingleSnoop {
         intp.PUTFIELD(iid, mid, cIdx, fIdx, desc); block.set(false);
     }
 
+    public static void HEAPLOAD1(Object object, String field, int iid, int mid) {
+        if (block.get()) return; else block.set(true);
+        intp.HEAPLOAD(iid, mid, System.identityHashCode(object), field); block.set(false);
+    }
+
+    public static void HEAPLOAD2(Object object, int idx, int iid, int mid) {
+        if (block.get()) return; else block.set(true);
+        intp.HEAPLOAD(iid, mid, System.identityHashCode(object), String.valueOf(idx)); block.set(false);
+    }
+
     public static void NEW(int iid, int mid, String type, int cIdx) {
         if (block.get()) return; else block.set(true);
         intp.NEW(iid, mid, type, cIdx); block.set(false);

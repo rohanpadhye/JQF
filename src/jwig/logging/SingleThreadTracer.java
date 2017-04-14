@@ -343,6 +343,19 @@ class SingleThreadTracer extends Thread {
                     logger.log(tabs() + "BRANCH("+branchId+","+lineNum+")");
                 }
 
+                // Log memory access instructions
+                if (ins instanceof HEAPLOAD) {
+                    HEAPLOAD heapload = (HEAPLOAD) ins;
+                    int iid = heapload.iid;
+                    int lineNum = heapload.mid;
+                    int objectId = heapload.objectId;
+                    String field = heapload.field;
+                    // Log the object access (unless it was a NPE)
+                    if (objectId != 0) {
+                        logger.log(tabs() + String.format("HEAPLOAD(%d,%d,%d,%s)", iid, lineNum, objectId, field));
+                    }
+                }
+
 
                 if (isReturnOrMethodThrow(ins)) {
                     logger.log(tabs() + "RET");
