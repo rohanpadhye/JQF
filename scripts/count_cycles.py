@@ -33,6 +33,9 @@ import operator
 import re
 import pickle
 
+import travioli
+
+# Global constants
 REGEXP_BRANCH = re.compile("^\s*BRANCH\((-?\d+),(\d+)\)$")
 REGEXP_CALL   = re.compile("^\s*CALL\((\d+),(\d+)\)$")
 REGEXP_RET    = re.compile("^\s*RET$")
@@ -51,8 +54,11 @@ def main():
 	# Parse arguments
 	args = parser.parse_args()
 
+	# Create new analysis object
+	analysis = DynamicAnalysis(args.trace_file)
+
 	# Process trace file
-	process_trace(args.trace_file)
+	analysis.process_trace()
 
 	# Print AEC counts
 	# print_aec_counts(aec_counts, line_numbers)
@@ -60,180 +66,122 @@ def main():
 	print "\n\n"
 
 	# Compute AEC redundancies
-	aec_redundancies = compute_redundancies(aec_mems)
+	aec_redundancies = analysis.compute_redundancies()
 
 	# Print AEC redundancies
-	print_aec_redundancies(aec_redundancies, line_numbers)
+	print_aec_redundancies(aec_redundancies, analysis.line_numbers)
 
 	# Serialize AEC counts
 	if args.serialize:
-		serialize_data(args.serialize, aec_redundancies)
+		serialize_data(args.serialize, aec_redundancies, analysis.line_numbers)
 
 
-def process_trace(trace_file_name):
-	with open(trace_file_name) as trace_file:
-		while True:
-			# Read line from file
-			line = trace_file.readline()
-			# End-of-file is empty line
-			if not line:
-				break
-			# Try to match BRANCH(iid, line)
-			match_branch = REGEXP_BRANCH.match(line)
-			if match_branch:
-				handle_branch(int(match_branch.group(1)), int(match_branch.group(2)))
-				continue
+class DynamicAnalysis(object):
 
-			# Try to match HEAPLOAD(iid, line, objectId, field)
-			match_heapload = REGEXP_HEAPLOAD.match(line)
-			if match_heapload:
-				handle_heapload(int(match_heapload.group(1)), int(match_heapload.group(2)),
-					int(match_heapload.group(3)), match_heapload.group(4))
-				continue
+	def __init__(self, trace_file_name):
+		self.trace_file_name = trace_file_name
+		self.call_stack = []         # [(STR, INT)]   // Call stack of (Method, IID)
+		self.line_numbers = {}       # INT -> INT     // Maps IIDs to line numbers
+		#self.aec_id_map = {}         # SEQ -> INT   // Maps an AEC tuple to an AEC identifier, where SEQ = ((METHOD, IID)+)
+		#self.aec_seq_tab = []        # INT -> [SEQ] // Maps an AEC identifier to an AEC tuple, where SEQ = ((METHOD, IID)+)
+		self.aec_counts = defaultdict(int)   # SEQ -> INT // Maps an AEC to counts, 
+		                                             # where SEQ is an AEC
+		self.aec_mems = defaultdict(lambda: defaultdict(int)) # SEQ -> MEM -> INT // Maps an AEC to a 
+		                                                                     # map of memory location counts, where SEQ is an 
+		                                                                     # AEC and MEM is INT x STRING
 
-			# Try to match CALL(iid, line)
-			match_call = REGEXP_CALL.match(line)
-			if match_call:
-				handle_call(int(match_call.group(1)), int(match_call.group(2)))
-				continue
+	def process_trace(self):
+		with open(self.trace_file_name) as trace_file:
+			while True:
+				# Read line from file
+				line = trace_file.readline()
+				# End-of-file is empty line
+				if not line:
+					break
+				# Try to match BRANCH(iid, line)
+				match_branch = REGEXP_BRANCH.match(line)
+				if match_branch:
+					self.handle_branch(int(match_branch.group(1)), int(match_branch.group(2)))
+					continue
 
-			# Try to match BEGIN method
-			match_begin = REGEXP_BEGIN.match(line)
-			if match_begin:
-				handle_begin(match_begin.group(1))
-				continue
-			
-			# Try to match RET
-			match_ret = REGEXP_RET.match(line)
-			if match_ret:
-				handle_ret()
-				continue
-			
-			# Otherwise, error
-			raise Exception("Cannot parse trace line: " + line)
+				# Try to match HEAPLOAD(iid, line, objectId, field)
+				match_heapload = REGEXP_HEAPLOAD.match(line)
+				if match_heapload:
+					self.handle_heapload(int(match_heapload.group(1)), int(match_heapload.group(2)),
+						int(match_heapload.group(3)), match_heapload.group(4))
+					continue
 
-# GLOBALS
-call_stack = []         # [(STR, INT)]   // Call stack of (Method, IID)
-line_numbers = {}       # INT -> INT     // Maps IIDs to line numbers
-aec_id_map = {}         # SEQ -> INT   // Maps an AEC tuple to an AEC identifier, where SEQ = ((METHOD, IID)+)
-aec_seq_tab = []        # INT -> [SEQ] // Maps an AEC identifier to an AEC tuple, where SEQ = ((METHOD, IID)+)
-aec_counts = defaultdict(int)   # SEQ -> INT // Maps an AEC to counts, 
-                                             # where SEQ is an AEC
-aec_mems = defaultdict(lambda: defaultdict(int)) # SEQ -> MEM -> INT // Maps an AEC to a 
-                                                                     # map of memory location counts, where SEQ is an 
-                                                                     # AEC and MEM is INT x STRING
+				# Try to match CALL(iid, line)
+				match_call = REGEXP_CALL.match(line)
+				if match_call:
+					self.handle_call(int(match_call.group(1)), int(match_call.group(2)))
+					continue
 
-def handle_branch(iid, line):
-	global call_stack
-	# Set PC of top-of-stack
-	call_stack[-1] = (call_stack[-1][0], iid)
-	# Remember line number
-	line_numbers[iid] = line
-	# Compute AEC and add to cycle count
-	compute_aec_and_count(tuple(call_stack))	
-
-def handle_call(iid, line):
-	global call_stack
-	# Set PC of top-of-stack
-	call_stack[-1] = (call_stack[-1][0], iid)
-	# Remember line number
-	line_numbers[iid] = line
-
-def handle_begin(method):
-	global call_stack
-	# Push frame on stack
-	call_stack.append((method, 0))
+				# Try to match BEGIN method
+				match_begin = REGEXP_BEGIN.match(line)
+				if match_begin:
+					self.handle_begin(match_begin.group(1))
+					continue
+				
+				# Try to match RET
+				match_ret = REGEXP_RET.match(line)
+				if match_ret:
+					self.handle_ret()
+					continue
+				
+				# Otherwise, error
+				raise Exception("Cannot parse trace line: " + line)
 
 
-def handle_ret():
-	# Pop stack
-	call_stack.pop()
+	def handle_branch(self, iid, line):
+		# Set PC of top-of-stack
+		self.call_stack[-1] = (self.call_stack[-1][0], iid)
+		# Remember line number
+		self.line_numbers[iid] = line
+		# Compute AEC and add to cycle count
+		self.compute_aec_and_count(tuple(self.call_stack))	
 
-def handle_heapload(iid, line, objectId, field):
-	global call_stack
-	# Set PC of top-of-stack
-	call_stack[-1] = (call_stack[-1][0], iid)
-	# Remember line number
-	line_numbers[iid] = line
-	# Compute AEC and collect info for redundancy metrics
-	compute_aec_and_collect(tuple(call_stack), (objectId, field))	
+	def handle_call(self, iid, line):
+		# Set PC of top-of-stack
+		self.call_stack[-1] = (self.call_stack[-1][0], iid)
+		# Remember line number
+		self.line_numbers[iid] = line
 
-def compute_aec_and_count(ec_seq):
-	aec_seq = compute_aec(ec_seq)
-	aec_counts[aec_seq] += 1
-
-def compute_aec_and_collect(ec_seq, mem):
-	aec_seq = compute_aec(ec_seq)
-	aec_mems[aec_seq][mem] += 1
-
-def compute_aec(ec):
-	# Store edges in reverse, from a func to its predecessor
-	# with the call-site on the edge label and remember the path
-	# length from the root.
-	redges = {} # FUNC -> FUNC X LOC X INT
+	def handle_begin(self, method):
+		# Push frame on stack
+		self.call_stack.append((method, 0))
 
 
-	# Start node is the first function in the execution context
-	(first_func, pc) = ec[0]
+	def handle_ret(self):
+		# Pop stack
+		self.call_stack.pop()
+
+	def handle_heapload(self, iid, line, objectId, field):
+		# Set PC of top-of-stack
+		self.call_stack[-1] = (self.call_stack[-1][0], iid)
+		# Remember line number
+		self.line_numbers[iid] = line
+		# Compute AEC and collect info for redundancy metrics
+		self.compute_aec_and_collect(tuple(self.call_stack), (objectId, field))	
+
+	def compute_aec_and_count(self, ec_seq):
+		aec_seq = travioli.compute_aec(ec_seq)
+		self.aec_counts[aec_seq] += 1
+
+	def compute_aec_and_collect(self, ec_seq, mem):
+		aec_seq = travioli.compute_aec(ec_seq)
+		self.aec_mems[aec_seq][mem] += 1
 
 
-	# Process remaining execution context and add back-edges with shortest-path
-	# Note: Start-node should have None func in redges
-	last_func = None
-	last_pc = None
-	for (func, pc) in ec:
-		if func not in redges:
-			redges[func] = (last_func, last_pc)
-		last_func, last_pc = func, pc
+	def compute_redundancies(self):
+		aec_redundancies = defaultdict(lambda: (0.0, []))
+		for aec, mem_counts in self.aec_mems.iteritems():
+			sorted_counts = sorted(mem_counts.values())
+			aec_redundancies[aec] = compute_redundancy_score(sorted_counts), sorted_counts
+		return aec_redundancies
 
 
-	# Trace path backwards to start node in order to get shortest path
-	aec_seq = [(last_func, last_pc)]
-	while True:
-		func, pc = redges[last_func]
-		if func is None:
-			break
-		else:
-			aec_seq.append((func, pc))
-			last_func, last_pc = func, pc
-
-	# Reverse the sequence to get the correct value
-	aec_seq.reverse()
-
-	# Return an immutable sequence
-	return tuple(aec_seq)
-
-def str_method_iid(method, iid, line_map):
-	line_number = line_map[iid]
-	first_dollar = method.find("$")
-	first_hash = method.find("#")
-	first_paren = method.find("(")
-	assert(first_hash > 0)
-	assert(first_paren > 0)
-	delimiter = first_hash if first_dollar == -1 or first_dollar > first_hash else first_dollar
-	class_part = method[:delimiter]
-	class_file_name = class_part + '.java'
-	clean_method_name = method[:first_paren].replace('/','.')
-	return '  ' + clean_method_name + '(' + class_file_name + ':' + str(line_number) + ')'
-
-def print_aec(aec, line_map):
-	for (method, iid) in reversed(aec):
-		print str_method_iid(method, iid, line_map)
-
-def print_aec_counts(aec_counts, line_map):
-	for aec, count in sorted(aec_counts.items(), key=operator.itemgetter(1)):
-		if count == 1:
-			continue
-		print "Count = " + str(count)
-		print_aec(aec, line_map)
-
-	print str(len(aec_counts)) + " distinct AECs found."
-
-def serialize_data(pickle_file_name, data):
-	with open(pickle_file_name, 'wb') as pickle_file:
-		pickle.dump((data, line_numbers), pickle_file)
-
-def compute_redundancy(counts):
+def compute_redundancy_score(counts):
 	sum_counts = float(sum(counts))	
 	if sum_counts < 2:
 		return 0.0
@@ -242,19 +190,27 @@ def compute_redundancy(counts):
 	score = (avg_counts - 1)*(uniq_counts - 1)/sum_counts
 	return score
 
-def compute_redundancies(aec_mems):
-	aec_redundancies = defaultdict(float)
-	for aec, mem_counts in aec_mems.iteritems():
-		sorted_counts = sorted(mem_counts.values())
-		aec_redundancies[aec] = compute_redundancy(sorted_counts), sorted_counts
-	return aec_redundancies
+
+def print_aec_counts(aec_counts, line_map):
+	for aec, count in sorted(aec_counts.items(), key=operator.itemgetter(1)):
+		if count == 1:
+			continue
+		print "Count = " + str(count)
+		travioli.print_aec(aec, line_map)
+
+	print str(len(aec_counts)) + " distinct AECs found."
 
 def print_aec_redundancies(aec_redundancies, line_map):
 	for aec, (red, counts) in sorted(aec_redundancies.items(), key=lambda x: x[1][0]):
 		if red < 0.0001:
 			continue # Ignore non-redundant
 		print "Redundancy = " + str(red) + " " + str(counts)
-		print_aec(aec, line_map)
+		travioli.print_aec(aec, line_map)
+
+
+def serialize_data(pickle_file_name, data, line_numbers):
+	with open(pickle_file_name, 'wb') as pickle_file:
+		pickle.dump((data, line_numbers), pickle_file)
 
 if __name__ == "__main__":
 	main()
