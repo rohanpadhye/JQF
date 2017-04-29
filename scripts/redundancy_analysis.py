@@ -55,10 +55,10 @@ def main():
 	args = parser.parse_args()
 
 	# Create new analysis object
-	analysis = DynamicAnalysis(args.trace_file)
+	analysis = DynamicAnalysis()
 
 	# Process trace file
-	analysis.process_trace()
+	analysis.process_trace(args.trace_file)
 
 	# Print AEC counts
 	# print_aec_counts(aec_counts, line_numbers)
@@ -78,20 +78,17 @@ def main():
 
 class DynamicAnalysis(object):
 
-	def __init__(self, trace_file_name):
-		self.trace_file_name = trace_file_name
-		self.call_stack = []         # [(STR, INT)]   // Call stack of (Method, IID)
+	def __init__(self):
 		self.line_numbers = {}       # INT -> INT     // Maps IIDs to line numbers
-		#self.aec_id_map = {}         # SEQ -> INT   // Maps an AEC tuple to an AEC identifier, where SEQ = ((METHOD, IID)+)
-		#self.aec_seq_tab = []        # INT -> [SEQ] // Maps an AEC identifier to an AEC tuple, where SEQ = ((METHOD, IID)+)
 		self.aec_counts = defaultdict(int)   # SEQ -> INT // Maps an AEC to counts, 
 		                                             # where SEQ is an AEC
 		self.aec_mems = defaultdict(lambda: defaultdict(int)) # SEQ -> MEM -> INT // Maps an AEC to a 
 		                                                                     # map of memory location counts, where SEQ is an 
 		                                                                     # AEC and MEM is INT x STRING
 
-	def process_trace(self):
-		with open(self.trace_file_name) as trace_file:
+	def process_trace(self, trace_file_name):
+		self.call_stack = []         # [(STR, INT)]   // Call stack of (Method, IID)
+		with open(trace_file_name) as trace_file:
 			while True:
 				# Read line from file
 				line = trace_file.readline()
