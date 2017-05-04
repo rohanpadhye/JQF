@@ -63,7 +63,7 @@ def main():
 	# Print AEC counts
 	# print_aec_counts(aec_counts, line_numbers)
 
-	print "\n\n"
+	# print "\n\n"
 
 	# Compute AEC redundancies
 	aec_redundancies = analysis.compute_redundancies()

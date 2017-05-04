@@ -69,7 +69,7 @@ class FuzzSession(object):
 		for seed in initial_seeds:
 			assert(len(seed) <= max_len)
 			_, max_redundancy = self.run_input(seed)
-			print "Seed = " + str(seed) + " MaxRedundancy = " + str(max_redundancy)
+			#print "Seed = " + str(seed) + " MaxRedundancy = " + str(max_redundancy)
 			if max_redundancy > self.max_redundancy:
 				self.max_redundancy = max_redundancy
 
@@ -78,7 +78,7 @@ class FuzzSession(object):
 			mutants = self.mutate(seed, 4)
 			for mutant in mutants:
 				improvement, max_redundancy = self.run_input(mutant)				
-				print "Input = " + str(mutant) + " Improvement = " + str(improvement)
+				print ("Input = %s Improvement = %.5f" % (mutant, improvement))
 				if improvement > IMRPOVEMENT_THRESHOLD:
 					print "  ...adding to seeds!"
 					self.add_seed(mutant)
@@ -101,6 +101,7 @@ class FuzzSession(object):
 		r = random.uniform(0, total_energy)
 		for seed, energy in self.seeds.iteritems():
 			if r <= energy:
+				print ("Picked seed: %s (chance=%.2f%%)" % (seed, energy/total_energy))
 				return seed
 			else:
 				r = r - energy
