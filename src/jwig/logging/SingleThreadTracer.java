@@ -190,7 +190,6 @@ class SingleThreadTracer extends Thread {
     }
 
 
-    // TODO: Also support run() for monitoring thread entry points
     class BaseHandler implements Callable<Void> {
         @Override
         public Void call() throws Exception {
