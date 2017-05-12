@@ -5,3 +5,4 @@ build/
 .idea/tasks.xml
 *.iml
 src/jwig/tmp
+*.pyc
