@@ -58,15 +58,15 @@ Here's an example of testing [insertion sort](https://en.wikipedia.org/wiki/Inse
 ```
 $ seq 1 5 > best.txt           # Already sorted
 $ seq 1 5 | sort -R > avg.txt  # Randomly shuffled
-$ seq 5 1 > worst.txt          # Reverse sorted
+$ seq 5 -1 1 > worst.txt          # Reverse sorted
 
-$ ./scripts/datatraces.sh benchmarks.InsertionSort < best.txt
+$ ./scripts/datatraces.sh benchmarks.wise.InsertionSort < best.txt
 $ ./scripts/redundancy_analysis.py --serialize best.pkl
 
-$ ./scripts/datatraces.sh benchmarks.InsertionSort < avg.txt
+$ ./scripts/datatraces.sh benchmarks.wise.InsertionSort < avg.txt
 $ ./scripts/redundancy_analysis.py --serialize avg.pkl
 
-$ ./scripts/datatraces.sh benchmarks.InsertionSort < worst.txt
+$ ./scripts/datatraces.sh benchmarks.wise.InsertionSort < worst.txt
 $ ./scripts/redundancy_analysis.py --serialize worst.pkl
 
 $ ./scripts/diff_cycles.py best.pkl avg.pkl       # Compare best vs avg
