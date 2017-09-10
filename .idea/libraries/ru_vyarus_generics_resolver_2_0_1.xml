@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="ru.vyarus:generics-resolver:2.0.1" type="repository">
+    <properties maven-id="ru.vyarus:generics-resolver:2.0.1" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/generics-resolver-2.0.1.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

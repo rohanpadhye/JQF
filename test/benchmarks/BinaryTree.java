@@ -27,33 +27,61 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package jwig.logging;
-
-import java.lang.reflect.Method;
+package benchmarks;
 
 /**
  * @author Rohan Padhye
  */
-public class MainDriver {
-    public static void main(String[] args) throws Exception {
-        if (args.length == 0) {
-            throw new IllegalArgumentException("No main class provided");
+public class BinaryTree {
+    int size = 0;
+    private static class Node {
+        Node left;
+        Node right;
+        int value;
+
+        Node(int val) {
+            this.value = val;
         }
-        // Find main class and main() method
-        Class<?> mainClazz = Class.forName(args[0]);
-        Method mainMethod = mainClazz.getMethod("main", args.getClass());
+    }
 
-        // Set-up args[]
-        String[] argzz = new String[args.length-1];
-        System.arraycopy(args, 1, argzz, 0, argzz.length);
+    private Node root;
 
-        // Start tracing
-        SingleSnoop.startSnooping();
+    public void insert(int x) {
+        root = insertIntoNode(x, root);
+    }
 
-        // Call main()
-        Object[] params = { argzz };
-        mainMethod.invoke(null, params);
+    public int size() {
+        return this.size;
+    }
 
+    private Node insertIntoNode(int x, Node n) {
+        if (n == null) {
+            size++;
+            return new Node(x);
+        } else if (x < n.value) {
+            n.left = insertIntoNode(x, n.left);
+            return n;
+        } else if (x > n.value) {
+            n.right = insertIntoNode(x, n.right);
+            return n;
+        } else {
+            return n;
+        }
+    }
 
+    public boolean contains(int x) {
+        return nodeContains(root, x);
+    }
+
+    private boolean nodeContains(Node n, int x) {
+        if (n == null) {
+            return false;
+        } else if (x < n.value) {
+            return nodeContains(n.left, x);
+        } else if (x > n.value) {
+            return nodeContains(n.right, x);
+        } else {
+            return true;
+        }
     }
 }

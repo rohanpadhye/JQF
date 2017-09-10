@@ -29,13 +29,13 @@
 
 package jwig.logging;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
 import janala.logger.inst.*;
 import jwig.util.DoublyLinkedList;
 import jwig.util.Stack;
 import jwig.util.SyncBlockingDeque;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class is responsible for data-trace logging for an instruction stream

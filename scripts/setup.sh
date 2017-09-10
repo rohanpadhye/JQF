@@ -3,12 +3,13 @@
 # Build Janala2 and copy into lib directory
 set -e
 
-if [ $# -lt 1 ]; then
-  echo "Usage: $0 JANALA2_DIR " >&2
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 JANALA2_DIR JUNIT_QUICKCHECK_DIR " >&2
   exit -1
 fi
 
 JANALA_DIR="$1"
+JUNIT_QUICKCHECK_DIR="$2"
 
 pushd `dirname $0` > /dev/null
 SCRIPT_DIR=`pwd`
@@ -25,15 +26,27 @@ if [[ ! -e "$ROOT/lib/asm-all-5.2.jar" ]]; then
 fi
 
 if [[ ! -d "$JANALA_DIR" ]]; then
-  git clone https://github.com/zhihan/janala2-gradle/ "$JANALA_DIR"
+  git clone https://github.com/rohanpadhye/janala2-gradle/ "$JANALA_DIR"
 fi
 
-echo "Attempting to build Janala2 in directory:  $JANALA_DIR..."
+if [[ ! -d "$JUNIT_QUICKCHECK_DIR" ]]; then
+  git clone https://github.com/rohanpadhye/junit-quickcheck -b guided "$JUNIT_QUICKCHECK_DIR"
+fi
+
+echo "Building Janala2 in directory:  $JANALA_DIR..."
 pushd "$JANALA_DIR"
-gradle jar
+#gradle jar
 popd > /dev/null
 echo "Success! Copying JAR into lib directory..."
-
 cp -f "$JANALA_DIR"/build/libs/*.jar "$ROOT/lib/janala.jar"
+
+echo "Building junit-quickcheck in directory:  $JUNIT_QUICKCHECK_DIR..."
+pushd "$JUNIT_QUICKCHECK_DIR"
+mvn -DskipTests package 
+echo "Success! Copying JARs into lib directory..."
+cp "$JUNIT_QUICKCHECK_DIR"/core/target/junit-quickcheck-core-*-SNAPSHOT.jar             "$ROOT/lib/junit-quickcheck-guided.jar"
+cp "$JUNIT_QUICKCHECK_DIR"/generators/target/junit-quickcheck-generators-*-SNAPSHOT.jar "$ROOT/lib/junit-quickcheck-generators.jar"
+popd > /dev/null
+
 echo "Setup completed."
 
