@@ -14,7 +14,7 @@ mkdir -p "$ROOT/submodules"
 JANALA_DIR="$ROOT/submodules/janala2"
 JUNIT_QUICKCHECK_DIR="$ROOT/submodules/junit-quickcheck-guided"
 
-mkdir -p "$ROOT/lib"
+mkdir -p "$ROOT/lib/dependencies"
 
 
 if [[ ! -e "$ROOT/lib/asm-all-5.2.jar" ]]; then
@@ -46,7 +46,16 @@ mvn -DskipTests package
 echo "Success! Copying JARs into lib directory..."
 cp "$JUNIT_QUICKCHECK_DIR"/core/target/junit-quickcheck-core-*-SNAPSHOT.jar             "$ROOT/lib/junit-quickcheck-guided.jar"
 cp "$JUNIT_QUICKCHECK_DIR"/generators/target/junit-quickcheck-generators-*-SNAPSHOT.jar "$ROOT/lib/junit-quickcheck-generators.jar"
+
+echo "Pulling transitive dependencies..."
+mvn dependency:copy-dependencies
+cp "$JUNIT_QUICKCHECK_DIR"/core/target/dependency/*.jar "$ROOT/lib/dependencies"
+cp "$JUNIT_QUICKCHECK_DIR"/generators/target/dependency/*.jar "$ROOT/lib/dependencies"
+echo "Success! Transitive dependencies copied."
 popd > /dev/null
 
-echo "Setup completed."
+
+
+
+echo " --- Setup completed ---"
 
