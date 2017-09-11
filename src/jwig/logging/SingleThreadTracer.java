@@ -30,12 +30,11 @@
 package jwig.logging;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import janala.logger.inst.*;
+import jwig.util.BlockingQueue;
 import jwig.util.DoublyLinkedList;
 import jwig.util.Stack;
-import jwig.util.SyncBlockingDeque;
 
 /**
  * This class is responsible for data-trace logging for an instruction stream
@@ -44,7 +43,7 @@ import jwig.util.SyncBlockingDeque;
  * @author Rohan Padhye
  */
 class SingleThreadTracer extends Thread {
-    private final SyncBlockingDeque<Instruction> queue = new SyncBlockingDeque<>();
+    private final BlockingQueue<Instruction> queue = new BlockingQueue<>(1024*16);
     private final Thread tracee;
     private final String entryPoint;
     private final PrintLogger logger;
@@ -52,7 +51,7 @@ class SingleThreadTracer extends Thread {
 
     /** Creates a new tracer that will print the data-traces of a tracee to a logger. */
     protected SingleThreadTracer(Thread tracee, String entryPoint, PrintLogger logger) {
-        super("__JWIG_TRACER__"); // The name is important to block snooping
+        super("__JWIG_TRACER__: " + tracee.getName()); // The name is important to block snooping
         this.tracee = tracee;
         this.entryPoint = entryPoint;
         this.logger = logger;
@@ -71,11 +70,7 @@ class SingleThreadTracer extends Thread {
 
     /** Sends an instruction to the tracer for processing. */
     protected void consume(Instruction ins) {
-        try {
-            queue.putLast(ins);
-        } catch (InterruptedException e) {
-            this.interrupt(); // This is a bad sign
-        }
+        queue.put(ins);
     }
 
     /**
@@ -97,7 +92,7 @@ class SingleThreadTracer extends Thread {
         // Keep attempting to get instructions while queue is non-empty or tracee is alive
         while (!queue.isEmpty() || tracee.isAlive()) {
             // Attempt to poll queue with a timeout
-            Instruction ins = queue.pollFirst(1, TimeUnit.SECONDS);
+            Instruction ins = queue.remove(1_000_000_000L);
             // Return instruction if available, else re-try
             if (ins != null) {
                 return ins;

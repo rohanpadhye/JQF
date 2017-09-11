@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Rohan Padhye
  */
 public class SyncBlockingDeque<T> {
-    private DoublyLinkedList<T> dll = new DoublyLinkedList<T>();
+    private DoublyLinkedList<T> dll = new DoublyLinkedList<>();
     private int MAX_SIZE = 1024*1024;
 
     final Lock lock = new ReentrantLock();
@@ -70,9 +70,8 @@ public class SyncBlockingDeque<T> {
     }
 
 
-    public T pollFirst(long timeout, TimeUnit unit)
+    public T pollFirst(long nanos)
             throws InterruptedException {
-        long nanos = unit.toNanos(timeout);
         lock.lockInterruptibly();
         try {
             while ( dll.size() == 0 ) {
