@@ -6,3 +6,4 @@ build/
 *.iml
 src/jwig/tmp
 *.pyc
+submodules/

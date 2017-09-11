@@ -4,14 +4,13 @@ Worst-case Input Generation (WIG) for Java  -- for lack of a clever name.
 
 ## Building 
 
-To build, you need `ant` and `gradle` installed and on your path, along with the standard JDK (`javac` etc). 
+To build, you need `ant`, `gradle`, `mvn` installed and on your path, along with the standard JDK (`javac` etc). 
 
-You would also need to checkout https://github.com/rohanpadhye/janala2-gradle into a directory `PATH_TO_JANALA2`.
 
 ```
 $ git clone https://github.com/rohanpadhye/jwig
 $ cd jwig
-$ ./scripts/setup.sh PATH_TO_JANALA2  # should download the asm-all JAR from Maven into lib/, build Janala2 and JAR it up inside lib/
+$ ./scripts/setup.sh 
 $ ant  # should build the jwig classes
 ```
 
@@ -74,7 +73,10 @@ $ ./scripts/diff_cycles.py avg.pkl  worst.pkl     # Compare avg  vs worst
 $ ./scripts/diff_cycles.py best.pkl worst.pkl     # Compare best vs worst
 ```
 
-## Future Work
+## Fuzz a junit-quickcheck property
 
-1. Improve speed of MainDriver so that it can be used for fuzzing.
-2. Generate worst-case inputs automatically be fuzzing with redundancy values as feedback.
+Here's an example of using junit-quickcheck with a guided random file for property testing:
+
+```
+./scripts/fuzz.py benchmarks.BinaryTreeTest contains
+```
