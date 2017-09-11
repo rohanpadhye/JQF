@@ -201,7 +201,7 @@ def print_aec_redundancies(aec_redundancies, line_map):
 	for aec, (red, counts) in sorted(aec_redundancies.items(), key=lambda x: x[1][0]):
 		if red < 0.0001:
 			continue # Ignore non-redundant
-		print "Redundancy = " + str(red) + " " + str(counts)
+		print "Redundancy = " + str(red) #+ " " + str(counts)
 		travioli.print_aec(aec, line_map)
 
 
