@@ -29,7 +29,7 @@ public class BinaryTreeTest extends GuidedJunitQuickcheckTest {
 
     }
 
-    @Property(mode= Mode.GUIDED, shrink=false, trials=10)
+    @Property(mode= Mode.GUIDED, shrink=false, trials=3000)
     public void contains(@Size(max=100) Set<@InRange(minInt=0, maxInt=10) Integer> elements, @InRange(minInt=0, maxInt=10) int @Size(max=10) [] queries) {
         BinaryTree b = new BinaryTree();
         for (Integer e : elements) {

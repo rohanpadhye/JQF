@@ -50,7 +50,8 @@ public class QuickMainLoop {
         for (int i = 0; i < N; i++) {
 
             // Find main class and main() method
-            Method mainMethod = getMainMethod(args[0], classPath);
+            String className = args[0];
+            Method mainMethod = getMainMethod(className, classPath);
 
             new Thread("main"+i) {
                 public void run() {
@@ -60,7 +61,7 @@ public class QuickMainLoop {
                         System.arraycopy(args, 1, argzz, 0, argzz.length);
 
                         // Start tracing
-                        SingleSnoop.startSnooping();
+                        SingleSnoop.startSnooping(className + "#main");
 
                         // Call main()
                         Object[] params = {argzz};

@@ -45,21 +45,26 @@ import jwig.util.SyncBlockingDeque;
  */
 class SingleThreadTracer extends Thread {
     private final SyncBlockingDeque<Instruction> queue = new SyncBlockingDeque<>();
-    private final PrintLogger logger;
     private final Thread tracee;
+    private final String entryPoint;
+    private final PrintLogger logger;
     private final Stack<Callable<?>> handlers = new DoublyLinkedList<>();
 
     /** Creates a new tracer that will print the data-traces of a tracee to a logger. */
-    protected SingleThreadTracer(Thread tracee, PrintLogger logger) {
+    protected SingleThreadTracer(Thread tracee, String entryPoint, PrintLogger logger) {
         super("__JWIG_TRACER__"); // The name is important to block snooping
         this.tracee = tracee;
+        this.entryPoint = entryPoint;
         this.logger = logger;
         this.handlers.push(new BaseHandler());
     }
 
-    /** Spawns a thread tracer for the current thread and returns its reference. */
-    protected static SingleThreadTracer spawn(PrintLogger logger) {
-        SingleThreadTracer t = new SingleThreadTracer(Thread.currentThread(), logger);
+    /** Spawns a thread tracer for the given thread */
+    protected static SingleThreadTracer spawn(Thread thread) {
+        String entryPoint = SingleSnoop.entryPoints.get(thread);
+        PrintLogger logger = new PrintLogger(thread.getName());
+        SingleThreadTracer t =
+                new SingleThreadTracer(thread, entryPoint, logger);
         t.start();
         return t;
     }
@@ -184,7 +189,9 @@ class SingleThreadTracer extends Thread {
     private static String getOwnerNameDesc(MemberRef mr) {
         return mr.getOwner() + "#" + mr.getName() + mr.getDesc();
     }
-
+    private static String getOwnerName(MemberRef mr) {
+        return mr.getOwner() + "#" + mr.getName();
+    }
     private static String getNameDesc(MemberRef mr) {
         return mr.getName() + mr.getDesc();
     }
@@ -196,14 +203,11 @@ class SingleThreadTracer extends Thread {
             Instruction ins = next();
             if (ins instanceof METHOD_BEGIN) {
                 METHOD_BEGIN begin = (METHOD_BEGIN) ins;
-                if (getNameDesc(begin).equals("main([Ljava/lang/String;)V")) {
-                    handlers.pop();
-                    handlers.push(new TravioliHandler(begin, 0));
-                }  else if (getNameDesc(begin).equals("run()V")) {
-                    handlers.pop();
+                // Try to match the top-level call with the entry point
+                if (getOwnerName(begin).replace("/",".").equals(entryPoint)) {
                     handlers.push(new TravioliHandler(begin, 0));
                 } else {
-                    // Ignore all non-main or non-run top-level calls in this thread
+                    // Ignore all top-level calls that are not the entry point
                     handlers.push(new MatchingNullHandler());
                 }
             } else {

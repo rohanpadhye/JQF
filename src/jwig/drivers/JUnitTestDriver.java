@@ -75,8 +75,8 @@ public class JUnitTestDriver {
                     Class.forName(testClassName, true, ClassLoader.getSystemClassLoader())
                     .asSubclass(GuidedJunitQuickcheckTest.class);
 
-            // Start tracing
-            SingleSnoop.startSnooping();
+            // Start tracing for the test method
+            SingleSnoop.startSnooping(testClassName + "#" + testMethodName);
 
             // Run the Junit test
             GuidanceManager.run(testClass, testMethodName, guidance);

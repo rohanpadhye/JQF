@@ -29,6 +29,9 @@
 
 package jwig.logging;
 
+import java.util.Map;
+import java.util.WeakHashMap;
+
 import janala.config.Config;
 import janala.logger.Logger;
 import jwig.util.DoublyLinkedList;
@@ -43,23 +46,35 @@ public final class SingleSnoop {
     private static ThreadLocal<Boolean> block = new ThreadLocal<Boolean>() {
         @Override
         public Boolean initialValue() {
-            String threadName = Thread.currentThread().getName();
-                if (threadName.startsWith("__JWIG_TRACER__")) {
-                return true; // Always block snooping on the tracing thread to prevent cycles
-            } else if (threadsToUnblock.synchronizedRemove(Thread.currentThread())){
-                    return false; // Snoop on threads that were added to the queue explicitly
-            } else {
-                return true; // Block all other threads (e.g. JVM cleanup threads)
-            }
+        String threadName = Thread.currentThread().getName();
+            if (threadName.startsWith("__JWIG_TRACER__")) {
+            return true; // Always block snooping on the tracing thread to prevent cycles
+        } else if (threadsToUnblock.synchronizedRemove(Thread.currentThread())){
+            return false; // Snoop on threads that were added to the queue explicitly
+        } else {
+            return true; // Block all other threads (e.g. JVM cleanup threads)
+        }
         }
     };
+
+    static final Map<Thread, String> entryPoints = new WeakHashMap<>();
 
 
     private static Logger intp = Config.instance.getLogger();
 
     private SingleSnoop() {}
 
-    public static void startSnooping() {
+    /** Start snooping for this thread, with the top-level call being
+     * the <tt>entryPoint</tt>.
+     *
+     * @param entryPoint the top-level method, formatted as
+     *                   <tt>CLASS#METHOD</tt> (e.g.
+     *                   <tt>FooBar#main</tt>).
+     */
+    public static void startSnooping(String entryPoint) {
+        // Mark entry point
+        entryPoints.put(Thread.currentThread(), entryPoint);
+        // Unblock snooping for current thread
         unblock();
     }
 
@@ -68,6 +83,9 @@ public final class SingleSnoop {
     }
 
     public static void REGISTER_THREAD(Thread thread) {
+        // Mark entry point as run()
+        entryPoints.put(thread, "run");
+        // Mark thread for unblocking when we snoop its first instruction
         threadsToUnblock.synchronizedAddFirst(thread);
     }
 

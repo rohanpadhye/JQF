@@ -36,7 +36,7 @@ import janala.logger.inst.Instruction;
 @SuppressWarnings("unused") // Dynamically loaded
 public class DataTraceLogger extends AbstractLogger {
     private final ThreadLocal<SingleThreadTracer> tracer
-            = ThreadLocal.withInitial(() -> SingleThreadTracer.spawn(new PrintLogger(Thread.currentThread().getName())));
+            = ThreadLocal.withInitial(() -> SingleThreadTracer.spawn(Thread.currentThread()));
 
     @Override
     protected void log(Instruction instruction) {

@@ -49,8 +49,8 @@ public class MainDriver {
         String[] argzz = new String[args.length-1];
         System.arraycopy(args, 1, argzz, 0, argzz.length);
 
-        // Start tracing
-        SingleSnoop.startSnooping();
+        // Start tracing for the main method
+        SingleSnoop.startSnooping(mainClazz.getName() + "#main");
 
         // Call main()
         Object[] params = { argzz };
