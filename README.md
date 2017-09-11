@@ -78,5 +78,5 @@ $ ./scripts/diff_cycles.py best.pkl worst.pkl     # Compare best vs worst
 Here's an example of using junit-quickcheck with a guided random file for property testing:
 
 ```
-./scripts/fuzz.py benchmarks.BinaryTreeTest contains
+./scripts/fuzz.sh benchmarks.BinaryTreeTest contains
 ```
