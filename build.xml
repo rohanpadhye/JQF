@@ -53,12 +53,48 @@
     <exclude name="**/?*.aj"/>
   </patternset>
   
+  <!-- JDK definitions -->
+  
+  <property name="jdk.bin.1.8" value="${jdk.home.1.8}/bin"/>
+  <path id="jdk.classpath.1.8">
+    <fileset dir="${jdk.home.1.8}">
+      <include name="jre/lib/charsets.jar"/>
+      <include name="jre/lib/deploy.jar"/>
+      <include name="jre/lib/ext/cldrdata.jar"/>
+      <include name="jre/lib/ext/dnsns.jar"/>
+      <include name="jre/lib/ext/jaccess.jar"/>
+      <include name="jre/lib/ext/jfxrt.jar"/>
+      <include name="jre/lib/ext/localedata.jar"/>
+      <include name="jre/lib/ext/nashorn.jar"/>
+      <include name="jre/lib/ext/sunec.jar"/>
+      <include name="jre/lib/ext/sunjce_provider.jar"/>
+      <include name="jre/lib/ext/sunpkcs11.jar"/>
+      <include name="jre/lib/ext/zipfs.jar"/>
+      <include name="jre/lib/javaws.jar"/>
+      <include name="jre/lib/jce.jar"/>
+      <include name="jre/lib/jfr.jar"/>
+      <include name="jre/lib/jfxswt.jar"/>
+      <include name="jre/lib/jsse.jar"/>
+      <include name="jre/lib/management-agent.jar"/>
+      <include name="jre/lib/plugin.jar"/>
+      <include name="jre/lib/resources.jar"/>
+      <include name="jre/lib/rt.jar"/>
+      <include name="lib/ant-javafx.jar"/>
+      <include name="lib/dt.jar"/>
+      <include name="lib/javafx-mx.jar"/>
+      <include name="lib/jconsole.jar"/>
+      <include name="lib/packager.jar"/>
+      <include name="lib/sa-jdi.jar"/>
+      <include name="lib/tools.jar"/>
+    </fileset>
+  </path>
+  
+  <property name="project.jdk.home" value="${jdk.home.1.8}"/>
+  <property name="project.jdk.bin" value="${jdk.bin.1.8}"/>
+  <property name="project.jdk.classpath" value="jdk.classpath.1.8"/>
+  
   
   <!-- Project Libraries -->
-  
-  <path id="library.org.ow2.asm:asm-all:5.2.classpath">
-    <pathelement location="${basedir}/lib/asm-all-5.2.jar"/>
-  </path>
   
   <!-- Modules -->
   
@@ -68,8 +104,11 @@
   <dirname property="module.jwig.basedir" file="${ant.file}"/>
   
   
+  <property name="module.jdk.home.jwig" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.jwig" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.jwig" value="${project.jdk.classpath}"/>
   
-  <property name="compiler.args.jwig" value="-encoding UTF-8 -source 8 -target 8 ${compiler.args}"/>
+  <property name="compiler.args.jwig" value="-encoding UTF-8 -source 1.8 -target 1.8 ${compiler.args}"/>
   
   <property name="jwig.output.dir" value="${module.jwig.basedir}/build/classes/main"/>
   <property name="jwig.testoutput.dir" value="${module.jwig.basedir}/build/classes/test"/>
@@ -79,27 +118,41 @@
   </path>
   
   <path id="jwig.module.production.classpath">
+    <path refid="${module.jdk.classpath.jwig}"/>
     <pathelement location="${basedir}/lib/janala.jar"/>
-    <path refid="library.org.ow2.asm:asm-all:5.2.classpath"/>
+    <pathelement location="${basedir}/lib/junit-quickcheck-generators.jar"/>
+    <pathelement location="${basedir}/lib/junit-quickcheck-guided.jar"/>
+    <pathelement location="${basedir}/lib/asm-all-5.2.jar"/>
+    <pathelement location="${basedir}/lib/junit-4.12.jar"/>
   </path>
   
   <path id="jwig.runtime.production.module.classpath">
     <pathelement location="${jwig.output.dir}"/>
     <pathelement location="${basedir}/lib/janala.jar"/>
-    <path refid="library.org.ow2.asm:asm-all:5.2.classpath"/>
+    <pathelement location="${basedir}/lib/junit-quickcheck-generators.jar"/>
+    <pathelement location="${basedir}/lib/junit-quickcheck-guided.jar"/>
+    <pathelement location="${basedir}/lib/asm-all-5.2.jar"/>
+    <pathelement location="${basedir}/lib/junit-4.12.jar"/>
   </path>
   
   <path id="jwig.module.classpath">
     <pathelement location="${jwig.output.dir}"/>
+    <path refid="${module.jdk.classpath.jwig}"/>
     <pathelement location="${basedir}/lib/janala.jar"/>
-    <path refid="library.org.ow2.asm:asm-all:5.2.classpath"/>
+    <pathelement location="${basedir}/lib/junit-quickcheck-generators.jar"/>
+    <pathelement location="${basedir}/lib/junit-quickcheck-guided.jar"/>
+    <pathelement location="${basedir}/lib/asm-all-5.2.jar"/>
+    <pathelement location="${basedir}/lib/junit-4.12.jar"/>
   </path>
   
   <path id="jwig.runtime.module.classpath">
     <pathelement location="${jwig.testoutput.dir}"/>
     <pathelement location="${jwig.output.dir}"/>
     <pathelement location="${basedir}/lib/janala.jar"/>
-    <path refid="library.org.ow2.asm:asm-all:5.2.classpath"/>
+    <pathelement location="${basedir}/lib/junit-quickcheck-generators.jar"/>
+    <pathelement location="${basedir}/lib/junit-quickcheck-guided.jar"/>
+    <pathelement location="${basedir}/lib/asm-all-5.2.jar"/>
+    <pathelement location="${basedir}/lib/junit-4.12.jar"/>
   </path>
   
   
@@ -128,7 +181,7 @@
   
   <target name="compile.module.jwig.production" description="Compile module jwig; production classes">
     <mkdir dir="${jwig.output.dir}"/>
-    <javac destdir="${jwig.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+    <javac destdir="${jwig.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.jwig}/javac">
       <compilerarg line="${compiler.args.jwig}"/>
       <bootclasspath refid="jwig.module.bootclasspath"/>
       <classpath refid="jwig.module.production.classpath"/>
@@ -146,7 +199,7 @@
   
   <target name="compile.module.jwig.tests" depends="compile.module.jwig.production" description="compile module jwig; test classes" unless="skip.tests">
     <mkdir dir="${jwig.testoutput.dir}"/>
-    <javac destdir="${jwig.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+    <javac destdir="${jwig.testoutput.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.jwig}/javac">
       <compilerarg line="${compiler.args.jwig}"/>
       <bootclasspath refid="jwig.module.bootclasspath"/>
       <classpath refid="jwig.module.classpath"/>
