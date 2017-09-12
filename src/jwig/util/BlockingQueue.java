@@ -57,7 +57,6 @@ public class BlockingQueue<T> {
     public void put(T item) {
         while (isFull()) {
             // Spin-block
-            producer = producer * 1;
         }
         buffer[producer] = item;
         producer = increment(producer);

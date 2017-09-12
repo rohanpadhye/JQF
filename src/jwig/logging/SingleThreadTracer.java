@@ -43,7 +43,7 @@ import jwig.util.Stack;
  * @author Rohan Padhye
  */
 class SingleThreadTracer extends Thread {
-    private final BlockingQueue<Instruction> queue = new BlockingQueue<>(1024*16);
+    private final BlockingQueue<Instruction> queue = new BlockingQueue<>(1024*128);
     private final Thread tracee;
     private final String entryPoint;
     private final PrintLogger logger;
