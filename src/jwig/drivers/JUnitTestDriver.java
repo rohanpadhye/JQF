@@ -35,6 +35,7 @@ import java.io.IOException;
 import com.pholser.junit.quickcheck.guided.Guidance;
 import com.pholser.junit.quickcheck.guided.GuidanceManager;
 import com.pholser.junit.quickcheck.guided.GuidedJunitQuickcheckTest;
+import jwig.logging.PrintLogger;
 import jwig.logging.SingleSnoop;
 
 /**
@@ -74,6 +75,12 @@ public class JUnitTestDriver {
             Class<? extends GuidedJunitQuickcheckTest> testClass =
                     Class.forName(testClassName, true, ClassLoader.getSystemClassLoader())
                     .asSubclass(GuidedJunitQuickcheckTest.class);
+
+            // Register callback
+            SingleSnoop.setCallbackGenerator((thread) -> {
+                PrintLogger logger = new PrintLogger(thread);
+                return (e) -> { logger.log(e.toString()); };
+            });
 
             // Start tracing for the test method
             SingleSnoop.startSnooping(testClassName + "#" + testMethodName);

@@ -37,9 +37,8 @@ import travioli
 
 # Global constants
 REGEXP_BRANCH = re.compile("^\s*BRANCH\((-?\d+),(\d+)\)$")
-REGEXP_CALL   = re.compile("^\s*CALL\((\d+),(\d+)\)$")
-REGEXP_RET    = re.compile("^\s*RET$")
-REGEXP_BEGIN    = re.compile("^\s*BEGIN (.*)$")
+REGEXP_CALL   = re.compile("^\s*CALL\((\d+),(\d+),(.*)\)$")
+REGEXP_RET    = re.compile("^\s*RET")
 REGEXP_HEAPLOAD = re.compile("^\s*HEAPLOAD\((-?\d+),(\d+),(\d+),(.*)\)$")
 
 def main():	
@@ -111,15 +110,9 @@ class DynamicAnalysis(object):
 				# Try to match CALL(iid, line)
 				match_call = REGEXP_CALL.match(line)
 				if match_call:
-					self.handle_call(int(match_call.group(1)), int(match_call.group(2)))
+					self.handle_call(int(match_call.group(1)), int(match_call.group(2)), match_call.group(3))
 					continue
 
-				# Try to match BEGIN method
-				match_begin = REGEXP_BEGIN.match(line)
-				if match_begin:
-					self.handle_begin(match_begin.group(1))
-					continue
-				
 				# Try to match RET
 				match_ret = REGEXP_RET.match(line)
 				if match_ret:
@@ -138,13 +131,12 @@ class DynamicAnalysis(object):
 		# Compute AEC and add to cycle count
 		self.compute_aec_and_count(tuple(self.call_stack))	
 
-	def handle_call(self, iid, line):
+	def handle_call(self, iid, line, method):
 		# Set PC of top-of-stack
-		self.call_stack[-1] = (self.call_stack[-1][0], iid)
+		if len(self.call_stack) > 0:
+			self.call_stack[-1] = (self.call_stack[-1][0], iid)
 		# Remember line number
 		self.line_numbers[iid] = line
-
-	def handle_begin(self, method):
 		# Push frame on stack
 		self.call_stack.append((method, 0))
 

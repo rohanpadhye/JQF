@@ -31,9 +31,12 @@ package jwig.logging;
 
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import janala.config.Config;
 import janala.logger.Logger;
+import jwig.logging.events.TraceEvent;
 import jwig.util.DoublyLinkedList;
 
 
@@ -60,9 +63,25 @@ public final class SingleSnoop {
     static final Map<Thread, String> entryPoints = new WeakHashMap<>();
 
 
+    /** A supplier of callbacks for each thread (does nothing by default). */
+    static Function<String, Consumer<TraceEvent>> callbackGenerator = (s) -> (e) -> {};
+
+
     private static Logger intp = Config.instance.getLogger();
 
     private SingleSnoop() {}
+
+
+    /**
+     * Register a supplier of callbacks for each named thread, which will consume
+     * {@link TraceEvent}s.
+     *
+     * @param callbackGenerator
+     */
+    public static void setCallbackGenerator(Function<String, Consumer<TraceEvent>> callbackGenerator) {
+        SingleSnoop.callbackGenerator = callbackGenerator;
+    }
+
 
     /** Start snooping for this thread, with the top-level call being
      * the <tt>entryPoint</tt>.

@@ -26,43 +26,31 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
-package jwig.drivers;
-
-import java.lang.reflect.Method;
-
-import jwig.logging.PrintLogger;
-import jwig.logging.SingleSnoop;
+package jwig.logging.events;
 
 /**
  * @author Rohan Padhye
  */
-public class MainDriver {
-    public static void main(String[] args) throws Exception {
-        if (args.length == 0) {
-            throw new IllegalArgumentException("No main class provided");
-        }
-        // Find main class and main() method
-        Class<?> mainClazz = Class.forName(args[0], true, ClassLoader.getSystemClassLoader());
-        Method mainMethod = mainClazz.getMethod("main", args.getClass());
+public class ReadEvent extends TraceEvent {
+    protected final int objectId;
+    protected final String field;
 
-        // Set-up args[]
-        String[] argzz = new String[args.length-1];
-        System.arraycopy(args, 1, argzz, 0, argzz.length);
+    public ReadEvent(int iid, String fileName, int lineNumber, int objectId, String field) {
+        super(iid, fileName, lineNumber);
+        this.objectId = objectId;
+        this.field = field;
+    }
 
-        // Register callback
-        SingleSnoop.setCallbackGenerator((thread) -> {
-            PrintLogger logger = new PrintLogger(thread);
-            return (e) -> { logger.log(e.toString()); };
-        });
+    public int getObjectId() {
+        return objectId;
+    }
 
-        // Start tracing for the main method
-        SingleSnoop.startSnooping(mainClazz.getName() + "#main");
+    public String getField() {
+        return field;
+    }
 
-        // Call main()
-        Object[] params = { argzz };
-        mainMethod.invoke(null, params);
-
-
+    @Override
+    public String toString() {
+        return String.format("HEAPLOAD(%d,%d,%d,%s)", iid, lineNumber, objectId, field);
     }
 }

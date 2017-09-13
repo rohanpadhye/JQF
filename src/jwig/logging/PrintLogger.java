@@ -32,14 +32,14 @@ package jwig.logging;
 import java.io.*;
 
 /** @author Rohan Padhye */
-class PrintLogger {
+public class PrintLogger {
     private final PrintWriter writer;
 
     private PrintLogger(String name, OutputStream out) {
         this.writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out)));
     }
 
-    PrintLogger(String name) {
+    public PrintLogger(String name) {
         this(name, createOutputStream(name));
     }
 
@@ -57,8 +57,9 @@ class PrintLogger {
         }
     }
 
-    void log(String info) {
+    public void log(String info) {
         writer.println(info);
+        writer.flush();
     }
 
     public PrintWriter getWriter() {

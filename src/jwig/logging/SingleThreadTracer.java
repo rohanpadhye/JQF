@@ -30,8 +30,14 @@
 package jwig.logging;
 
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 import janala.logger.inst.*;
+import jwig.logging.events.BranchEvent;
+import jwig.logging.events.CallEvent;
+import jwig.logging.events.ReadEvent;
+import jwig.logging.events.ReturnEvent;
+import jwig.logging.events.TraceEvent;
 import jwig.util.BlockingQueue;
 import jwig.util.DoublyLinkedList;
 import jwig.util.Stack;
@@ -46,26 +52,31 @@ class SingleThreadTracer extends Thread {
     private final BlockingQueue<Instruction> queue = new BlockingQueue<>(1024*128);
     private final Thread tracee;
     private final String entryPoint;
-    private final PrintLogger logger;
+    private final Consumer<TraceEvent> callback;
     private final Stack<Callable<?>> handlers = new DoublyLinkedList<>();
 
     /** Creates a new tracer that will print the data-traces of a tracee to a logger. */
-    protected SingleThreadTracer(Thread tracee, String entryPoint, PrintLogger logger) {
+    protected SingleThreadTracer(Thread tracee, String entryPoint, Consumer<TraceEvent> callback) {
         super("__JWIG_TRACER__: " + tracee.getName()); // The name is important to block snooping
         this.tracee = tracee;
         this.entryPoint = entryPoint;
-        this.logger = logger;
+        this.callback = callback;
         this.handlers.push(new BaseHandler());
     }
 
     /** Spawns a thread tracer for the given thread */
     protected static SingleThreadTracer spawn(Thread thread) {
         String entryPoint = SingleSnoop.entryPoints.get(thread);
-        PrintLogger logger = new PrintLogger(thread.getName());
+        Consumer<TraceEvent> callback = SingleSnoop.callbackGenerator.apply(thread.getName());
         SingleThreadTracer t =
-                new SingleThreadTracer(thread, entryPoint, logger);
+                new SingleThreadTracer(thread, entryPoint, callback);
         t.start();
         return t;
+    }
+
+    /** Emits a trace event to be consumed by the registered callback. */
+    private void emit(TraceEvent e) {
+        callback.accept(e);
     }
 
     /** Sends an instruction to the tracer for processing. */
@@ -122,10 +133,8 @@ class SingleThreadTracer extends Thread {
         } catch (InterruptedException e) {
             // Exit normally
         } catch (Throwable e) {
-            e.printStackTrace(logger.getWriter());
+            e.printStackTrace();
             handlers.clear(); // Don't do anything else
-        } finally {
-            logger.close();
         }
     }
 
@@ -190,6 +199,15 @@ class SingleThreadTracer extends Thread {
     private static String getNameDesc(MemberRef mr) {
         return mr.getName() + mr.getDesc();
     }
+    private static String getFileName(MemberRef mr) {
+        String owner = mr.getOwner();
+        int idxOfDollar = owner.indexOf('$');
+        if (idxOfDollar >= 0) {
+            return owner.substring(0, idxOfDollar) + ".java";
+        } else {
+            return owner + ".java";
+        }
+    }
 
 
     class BaseHandler implements Callable<Void> {
@@ -200,6 +218,7 @@ class SingleThreadTracer extends Thread {
                 METHOD_BEGIN begin = (METHOD_BEGIN) ins;
                 // Try to match the top-level call with the entry point
                 if (getOwnerName(begin).replace("/",".").equals(entryPoint)) {
+                    emit(new CallEvent(0, "<entry>", 0, getOwnerNameDesc(begin)));
                     handlers.push(new TravioliHandler(begin, 0));
                 } else {
                     // Ignore all top-level calls that are not the entry point
@@ -207,7 +226,7 @@ class SingleThreadTracer extends Thread {
                 }
             } else {
                 // Instructions not nested in a METHOD_BEGIN are quite unexpected
-                System.err.println("Unexpected: " + ins);
+                // System.err.println("Unexpected: " + ins); -- XXX: First instruction is a dummy
             }
             return null;
         }
@@ -217,10 +236,11 @@ class SingleThreadTracer extends Thread {
 
         private final int depth;
         private final String methodDesc;
+        private final String fileName;
         TravioliHandler(METHOD_BEGIN begin, int depth) {
             this.depth = depth;
             this.methodDesc = getNameDesc(begin);
-            logger.log(tabs() + "BEGIN "+getOwnerNameDesc(begin));
+            this.fileName = getFileName(begin);
             //logger.log(tabs() + begin);
         }
 
@@ -248,7 +268,7 @@ class SingleThreadTracer extends Thread {
 
                 if (beginNameDesc.equals(this.invokeTarget)) {
                     // Trace continues with callee
-                    logger.log(tabs() + "CALL("+lastIid+","+lastMid+")");
+                    emit(new CallEvent(lastIid, fileName, lastMid, getOwnerNameDesc(begin)));
                     handlers.push(new TravioliHandler(begin, depth+1));
                 } else {
                     // Class loading or static initializer
@@ -301,7 +321,7 @@ class SingleThreadTracer extends Thread {
                             assert(ins instanceof  INVOKEMETHOD_EXCEPTION);
 
                             while (true) { // will break when outer caller of <init> found
-                                logger.log(tabs() + "RET");
+                                emit(new ReturnEvent(-1, fileName, 0));
                                 handlers.pop();
                                 Callable<?> handler = handlers.peek();
                                 // We should not reach the BaseHandler without finding
@@ -328,17 +348,18 @@ class SingleThreadTracer extends Thread {
                 // Log conditional branches
                 if (isIfJmp(ins)) {
                     Instruction next = next();
-                    int branchId;
+                    int branchId = ins.iid;
                     int lineNum = ins.mid;
+                    boolean taken;
                     if ((next instanceof SPECIAL) && ((SPECIAL) next).i == SPECIAL.DID_NOT_BRANCH) {
                         // Special marker ==> False Branch
-                        branchId = -ins.iid;
+                        taken = false;
                     } else {
                         // Not a special marker ==> True Branch
                         restore(next); // Remember to put this instruction back on the queue
-                        branchId = ins.iid;
+                        taken = true;
                     }
-                    logger.log(tabs() + "BRANCH("+branchId+","+lineNum+")");
+                    emit(new BranchEvent(branchId, fileName, lineNum, taken));
                 }
 
                 // Log memory access instructions
@@ -350,13 +371,13 @@ class SingleThreadTracer extends Thread {
                     String field = heapload.field;
                     // Log the object access (unless it was a NPE)
                     if (objectId != 0) {
-                        logger.log(tabs() + String.format("HEAPLOAD(%d,%d,%d,%s)", iid, lineNum, objectId, field));
+                        emit(new ReadEvent(iid, fileName, lineNum, objectId, field));
                     }
                 }
 
 
                 if (isReturnOrMethodThrow(ins)) {
-                    logger.log(tabs() + "RET");
+                    emit(new ReturnEvent(ins.iid, fileName, ins.mid));
                     handlers.pop();
                 }
 
