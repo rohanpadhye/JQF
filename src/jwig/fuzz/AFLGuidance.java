@@ -38,21 +38,23 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.Map;
-import com.pholser.junit.quickcheck.guided.Guidance;
+import java.util.function.Consumer;
+
+import jwig.logging.events.BranchEvent;
+import jwig.logging.events.TraceEvent;
 
 
 /**
  * @author Rohan Padhye and Caroline Lemieux
  */
-public class AFLGuidance implements Guidance {
+public class AFLGuidance implements JwigGuidance {
 
     private File inputFile;
     private InputStream in;
     private OutputStream out;
     ByteBuffer feedback;
     private static final int COVERAGE_MAP_SIZE = 1 << 16;
+    private byte[] traceBits = new byte[COVERAGE_MAP_SIZE];
 
     public AFLGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
         this.inputFile = inputFile;
@@ -60,6 +62,10 @@ public class AFLGuidance implements Guidance {
         this.out = new BufferedOutputStream(new FileOutputStream(outPipe));
         this.feedback = ByteBuffer.allocate(1 << 20);
         this.feedback.order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    public AFLGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
+        this(new File(inputFileName), new File(inPipeName), new File(outPipeName));
     }
 
     @Override
@@ -93,7 +99,6 @@ public class AFLGuidance implements Guidance {
     public void waitForInput() throws IOException {
         // Get a 4-byte signal from AFL
         byte[] signal = new byte[4];
-        System.out.println("Waiting for input...");
         int received = in.read(signal, 0, 4);
         if (received != 4) {
             throw new RuntimeException(String.format("Received" +
@@ -110,15 +115,9 @@ public class AFLGuidance implements Guidance {
         int status = success ? 0 : 1;
         feedback.putInt(status);
 
-        // @TODO: Get this from the coverage logger
-        Map<Integer, Byte> traceBits = new HashMap<>();
-
         // Put AFL's trace_bits map into the feedback buffer
         for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
-            //byte count = traceBits.containsKey(i) ?
-            //        traceBits.get(i) : 0;
-            byte count = 1;
-            //feedback.put(count);
+            feedback.put(traceBits[i]);
         }
 
         // Send feedback to AFL
@@ -127,6 +126,21 @@ public class AFLGuidance implements Guidance {
 
 
 
+    }
+
+    public Consumer<TraceEvent> generateCallBack(String threadName) {
+        return this::handleEvent;
+    }
+
+    private void handleEvent(TraceEvent e) {
+        if (e instanceof BranchEvent) {
+            BranchEvent b = (BranchEvent) e;
+            int edgeId = b.getIid() % COVERAGE_MAP_SIZE;
+            if (b.isTaken()) {
+                edgeId = COVERAGE_MAP_SIZE - edgeId;
+            }
+            traceBits[edgeId]++;
+        }
     }
 
 }

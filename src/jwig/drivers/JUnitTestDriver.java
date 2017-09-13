@@ -29,36 +29,19 @@
 
 package jwig.drivers;
 
-import java.io.File;
 import java.io.IOException;
 
-import com.pholser.junit.quickcheck.guided.Guidance;
 import com.pholser.junit.quickcheck.guided.GuidanceManager;
 import com.pholser.junit.quickcheck.guided.GuidedJunitQuickcheckTest;
-import jwig.logging.PrintLogger;
+import jwig.fuzz.AFLGuidance;
+import jwig.fuzz.JwigGuidance;
+import jwig.fuzz.NoGuidance;
 import jwig.logging.SingleSnoop;
 
 /**
  * @author Rohan Padhye
  */
 public class JUnitTestDriver {
-
-    private static Guidance guidance = new Guidance() {
-        @Override
-        public File inputFile() {
-            return new File("/dev/urandom");
-        }
-
-        @Override
-        public void waitForInput() throws IOException {
-
-        }
-
-        @Override
-        public void notifyEndOfRun(boolean success) throws IOException {
-
-        }
-    };
 
     public static void main(String[] args) {
         if (args.length < 2) {
@@ -70,17 +53,19 @@ public class JUnitTestDriver {
         String testMethodName = args[1];
         String testInputFile  = args.length > 2 ? args[2] : null;
 
+
         try {
             // Load test class
             Class<? extends GuidedJunitQuickcheckTest> testClass =
                     Class.forName(testClassName, true, ClassLoader.getSystemClassLoader())
                     .asSubclass(GuidedJunitQuickcheckTest.class);
 
+            JwigGuidance guidance = testInputFile != null ?
+                    new AFLGuidance(testInputFile, "/dev/zero", "/dev/null") :
+                    new NoGuidance();
+
             // Register callback
-            SingleSnoop.setCallbackGenerator((thread) -> {
-                PrintLogger logger = new PrintLogger(thread);
-                return (e) -> { logger.log(e.toString()); };
-            });
+            SingleSnoop.setCallbackGenerator(guidance::generateCallBack);
 
             // Start tracing for the test method
             SingleSnoop.startSnooping(testClassName + "#" + testMethodName);
@@ -89,17 +74,17 @@ public class JUnitTestDriver {
             GuidanceManager.run(testClass, testMethodName, guidance);
 
 
-        } catch (ClassNotFoundException | NoClassDefFoundError e) {
+        } catch (ClassNotFoundException e) {
             System.err.println(String.format("Cannot load class %s", testClassName));
             e.printStackTrace();
             System.exit(2);
         } catch (ClassCastException e) {
             System.err.println(String.format("%s is not a junit-quickcheck-guided test class", testClassName));
             System.exit(3);
-        } /* catch (NoSuchMethodException e) {
-            System.err.println(String.format("%s is not a method of the test class", testMethodName));
+        } catch (IOException e) {
+            e.printStackTrace();
             System.exit(4);
-        } */
+        }
 
     }
 }
