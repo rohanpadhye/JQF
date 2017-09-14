@@ -53,7 +53,7 @@
 
 // whether to log non-fatal (exit(1) causing messages)
 // set to != 0 for debugging
-int log_non_fatal = 0;
+int log_non_fatal = 1;
 
 
 /* 
@@ -63,6 +63,8 @@ int log_non_fatal = 0;
 * fmt... : format string parameters
 */
 void log_to_file(int to_exit, char* log_file_name, char const *fmt, ...) { 
+   
+
     /* If no log file name was provided, do not log */
     if (log_file_name == NULL){
       return;
@@ -106,6 +108,7 @@ void log_to_file(int to_exit, char* log_file_name, char const *fmt, ...) {
 /* main proxy driver. communication channel between a running instance
    of AFL and Java */
 int main(int argc, char** argv) {
+
   /* usage */
   if (argc < 3 || argc > 4){
     printf("usage: %s afltojavafifo javatoaflfifo [logfile]", argv[0]);
@@ -120,7 +123,7 @@ int main(int argc, char** argv) {
 
   /* set up buffers */
   u8 helo[4] = {'H', 'E', 'L', 'O'}; // to set up connections
-  u8 status[4]; // to receive + send status from java
+  uint32_t status = 0; // to receive + send status from java
   u8 buf[4]; // to receive signals from AFL
 
   /* temp variable to store communicated bytes */
@@ -131,10 +134,15 @@ int main(int argc, char** argv) {
   if (to_java_fd == NULL){
     log_to_file(1, log_file_name, "Failed to open to java fifo %s\n", to_java_str);
   }
+
+  log_to_file(0, log_file_name, "opened to java fifo %s\n", to_java_str);
+
   FILE * from_java_fd = fopen(from_java_str, "r");
   if (from_java_fd == NULL){
-    log_to_file(1, log_file_name, "Failed to open from java fifo %s\n", to_java_str);
+    log_to_file(1, log_file_name, "Failed to open from java fifo %s\n", from_java_str);
   }
+
+  log_to_file(0, log_file_name, "opened from java fifo %s\n", from_java_str);
 
   /* set up the trace bits */
   char * shm_str = getenv(SHM_ENV_VAR);
@@ -172,7 +180,9 @@ int main(int argc, char** argv) {
       log_to_file(1, log_file_name, 
         "Something went wrong saying hello to Java: wrote %d bytes.\n", comm_bytes);
     } 
-    
+    /* need to flush the buffer */
+    fflush(to_java_fd);
+
     log_to_file(0, log_file_name, "Said hello to Java.\n");
 
     /* Get return code from Java */
@@ -209,7 +219,6 @@ int main(int argc, char** argv) {
     log_to_file(1, log_file_name, 
         "Something went wrong closing pipe from Java.\n");
   }
-
   exit(0);
 
 }
