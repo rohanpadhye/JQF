@@ -28,6 +28,7 @@
  */
 
 package jwig.fuzz;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -40,6 +41,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.Consumer;
 
+import jwig.logging.SingleSnoop;
 import jwig.logging.events.BranchEvent;
 import jwig.logging.events.TraceEvent;
 
@@ -54,7 +56,7 @@ public class AFLGuidance implements JwigGuidance {
     private OutputStream out;
     ByteBuffer feedback;
     private static final int COVERAGE_MAP_SIZE = 1 << 16;
-    private byte[] traceBits = new byte[COVERAGE_MAP_SIZE];
+    private byte[] traceBits;
 
     public AFLGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
         this.inputFile = inputFile;
@@ -104,10 +106,17 @@ public class AFLGuidance implements JwigGuidance {
             throw new RuntimeException(String.format("Received" +
                     " only %d bytes from AFL proxy; expecting 4", received));
         }
+
+        // Reset trace-bits
+        traceBits = new byte[COVERAGE_MAP_SIZE];
+
     }
 
     @Override
     public void notifyEndOfRun(boolean success) throws IOException {
+        // Wait for instrumentation to process this thread's instructions
+        SingleSnoop.waitForQuiescence();
+
         // Reset the feedback buffer for a new run
         feedback.clear();
 
@@ -123,8 +132,6 @@ public class AFLGuidance implements JwigGuidance {
         // Send feedback to AFL
         out.write(feedback.array(), 0, feedback.position());
         out.flush();
-
-
 
     }
 
