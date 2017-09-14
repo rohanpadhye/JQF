@@ -51,173 +51,164 @@
 * author: Caroline Lemieux
 */
 
+// whether to log non-fatal (exit(1) causing messages)
+// set to != 0 for debugging
+int log_non_fatal = 0;
+
 
 /* 
 * Log proxy's progress for debugging. 
-* exit: whether to exit(1) after logging
-* log_file_name: name of file to log 
+* to_exit: whether to exit(1) after logging
+* log_file_name: name of file in which to log
+* fmt... : format string parameters
 */
-void log(int exit, char* log_file_name, char const *fmt, ...) { 
+void log_to_file(int to_exit, char* log_file_name, char const *fmt, ...) { 
     /* If no log file name was provided, do not log */
     if (log_file_name == NULL){
-
+      return;
+    } 
+    /* if it's not an exit message and we don't log
+       non-fatal, do not log */
+    if (!to_exit & !log_non_fatal){
+      return;
     }
-    static FILE *log_file_fd = NULL;
-    if (f == NULL) {
-      log_file_fd = fopen(log_file_name, "w");
-       if (log_file_fd < 0) {
+
+    /* Open the log file for logging if it is not yet open */
+    static FILE * log_file = NULL;
+    if (log_file == NULL) {
+      log_file = fopen(log_file_name, "w");
+       if (log_file < 0) {
         printf("Couldn't open log file, %s\n", log_file_name);
         exit(1);
       }
     }
+
+    /* print to log file */
     va_list ap;
     va_start(ap, fmt);
     vprintf(fmt, ap);
     va_end(ap);
     va_start(ap, fmt);
-    vfprintf(log_file_fd, fmt, ap);
+    vfprintf(log_file, fmt, ap);
     va_end(ap);
-    fflush(log_file_fd);
-    if (exit) {
-      fclose(log_file_fd);
+
+    /* flush to log file since this program might terminate strangely */
+    fflush(log_file);
+
+    /* exit if the exit parameter is given */
+    if (to_exit) {
+      fclose(log_file);
       exit(1);
-    };
+    }
+
 }
 
 /* main proxy driver. communication channel between a running instance
    of AFL and Java */
 int main(int argc, char** argv) {
-
-  if (argc < 4 || argc > 5){
-    printf("usage: %s inputfile afltojavafifo javatoaflfifo [logfile]", argv[0]);
-  }
-  char * log_file_name = 
-
-  FILE * log_file_fd = fopen("afljavafuzzing.log", "w");
-  if (log_file_fd < 0) {
-    printf("Couldn't open log file\n");
+  /* usage */
+  if (argc < 3 || argc > 4){
+    printf("usage: %s afltojavafifo javatoaflfifo [logfile]", argv[0]);
     exit(1);
   }
-  fputs("adaa\n", log_file_fd);
-  fflush(log_file_fd);
 
-  /* set up FIFOs to talk to java */
-  char * to_java_str = "/tmp/AFLtoJavaFIFO";
-  char * from_java_str = "/tmp/JavatoAFLFIFO";
-  // TODO: which permissons?
-  if (mkfifo(to_java_str, 0777) < 0) {
-    fputs("Failed to create to java fifo\n", log_file_fd);
-    fflush(log_file_fd);
-    exit(1);
-  }
-  if (mkfifo(from_java_str, 0777) < 0) {
-    fputs("Failed to create from java fifo\n", log_file_fd);
-    fflush(log_file_fd);
-    exit(1);
-  }
+  /* collect file names from arguments */ 
+  char * to_java_str = argv[1];
+  char * from_java_str = argv[2];
+  char * log_file_name = NULL;
+  if (argc == 4) log_file_name = argv[3];
+
+  /* set up buffers */
+  u8 helo[4] = {'H', 'E', 'L', 'O'}; // to set up connections
+  u8 status[4]; // to receive + send status from java
+  u8 buf[4]; // to receive signals from AFL
+
+  /* temp variable to store communicated bytes */
+  int comm_bytes;
+
+  /* set up FIFOs to talk to Java */
   FILE * to_java_fd = fopen(to_java_str, "w");
   if (to_java_fd == NULL){
-    fputs("Failed to open to java fd\n", log_file_fd);
-    fflush(log_file_fd);
-    exit(1);
+    log_to_file(1, log_file_name, "Failed to open to java fifo %s\n", to_java_str);
   }
   FILE * from_java_fd = fopen(from_java_str, "r");
   if (from_java_fd == NULL){
-    fputs("Failed to open from java fd\n", log_file_fd);
-    fflush(log_file_fd);
-    exit(1);
+    log_to_file(1, log_file_name, "Failed to open from java fifo %s\n", to_java_str);
   }
 
   /* set up the trace bits */
   char * shm_str = getenv(SHM_ENV_VAR);
   if (shm_str == NULL){
-    fputs("Error getting the address of trace_bits\n", log_file_fd);
-    fflush(log_file_fd);
-    exit(1);
+    log_to_file(1, log_file_name, 
+      "Error getting the address of trace_bits from env var %s\n", shm_str);
   }
   int shm_id = atoi(shm_str);
   u8* trace_bits = shmat(shm_id, NULL, 0);
   if (trace_bits < 0){
-    fputs("Error connecting to trace_bits\n", log_file_fd);
-    fflush(log_file_fd);
-    exit(1);
+    log_to_file(1, log_file_name, "Error shmat()ing trace_bits from id %d\n", shm_id);
   }
   
-  /* say the first hello to AFL */
-  char helo[4] = {'H', 'E', 'L', 'O'};
+  /* say the first hello to AFL. use write() because we
+     have an int file descriptor */
   if (write(FORKSRV_FD + 1, (void*) &helo, 4) < 4) {
-    fputs("Something went wrong saying hello to AFL.", log_file_fd);
-    fflush(log_file_fd);
-    exit(1);
+    log_to_file(1, log_file_name, "Error saying initial hello to AFL\n");
   }
 
-  /* buffer to catch AFL's cues */
-  char buf[4];
-  /* status buffer */
-  uint32_t status = 0 ;
-  //char status[4] = {'\x00', '\x00', '\x00', '\x00'};
-  /* main fuzzing loop */
+  log_to_file(0, log_file_name, "Said hello to AFL (init).\n");
+
+  /* main fuzzing loop. AFL sends ready signals through  
+     pipe with file descriptor FORKSRV_FD */
   while (read(FORKSRV_FD,(void *)&buf, 4) == 4){
     /* this sends "child pid" to AFL -- effectively
        just another hello                         */
-    if (write(FORKSRV_FD+1, &helo, 4) < 4) {
-      fputs("Something went wrong saying hello to AFL (in loop).\n", log_file_fd);
-      fflush(log_file_fd);
-      exit(1);
+    if ((comm_bytes = write(FORKSRV_FD+1, &helo, 4)) < 4) {
+      log_to_file(1, log_file_name, 
+        "Something went wrong saying hello to AFL in loop: wrote %d bytes.\n", comm_bytes);
     }
+    log_to_file(0, log_file_name, "Said hello to AFL (in loop).\n");
 
     /* Say hello to Java */
-    if (fwrite(&helo, 1, 4, to_java_fd) < 4) {
-      fputs("Something went wrong saying hello to Java.\n", log_file_fd);
-      fflush(log_file_fd);
-      exit(1);
+    if ((comm_bytes = fwrite(&helo, 1, 4, to_java_fd)) < 4) {
+      log_to_file(1, log_file_name, 
+        "Something went wrong saying hello to Java: wrote %d bytes.\n", comm_bytes);
     } 
     
-    fflush(to_java_fd);
-    fputs("I just said hello to Java\n", log_file_fd);
+    log_to_file(0, log_file_name, "Said hello to Java.\n");
 
-    fflush(log_file_fd);
-    int tmp;
     /* Get return code from Java */
-    if ((tmp = fread((void *) &status, 1 , 4, from_java_fd)) < 4) {
-      fprintf(log_file_fd, "Something went wrong getting return status from Java (%d bytes).\n", tmp);
-      fflush(log_file_fd);
-      exit(1);
+    if ((comm_bytes = fread((void *) &status, 1 , 4, from_java_fd)) < 4) {
+      log_to_file(1, log_file_name, 
+        "Something went wrong getting return status from Java: read %d bytes.\n", comm_bytes);
     }
-    fprintf( log_file_fd, "Got return status from Java...\n");
-    fflush(log_file_fd);
+
+    log_to_file(0, log_file_name, "Got return status from Java.\n");
+
     /* Get trace bits from Java */
-   /*if (read(from_java_fd, &trace_bits, sizeof(u8)*MAP_SIZE) < MAP_SIZE) {
-      fputs("Something went wrong getting trace bits from Java.\n", log_file_fd);
-      exit(1);
-    }*/
-    int trace_bits_size;
-
-    if ((trace_bits_size = fread( trace_bits, 1, MAP_SIZE, from_java_fd)) < MAP_SIZE) {
-      fprintf(log_file_fd, "trace_bits_size: %d\n", trace_bits_size);
-      fputs("Something went wrong getting trace bits from Java.\n", log_file_fd);
-      fflush(log_file_fd);
-      exit(1);
+    if ((comm_bytes = fread( trace_bits, 1, MAP_SIZE, from_java_fd)) < MAP_SIZE) {
+      log_to_file(1, log_file_name, 
+        "Something went wrong getting trace_bits from Java: read %d bytes.\n", comm_bytes);
     }
-    fprintf(log_file_fd, "trace_bits_size: %d\n", trace_bits_size);
 
-    //trace_bits[0] = 1;
-    //fprintf( log_file_fd, "Got trace bits from Java...\n");
-    //fwrite(&trace_bits, sizeof(u8), MAP_SIZE, log_file_fd);
-    fflush(log_file_fd);
+    log_to_file(0, log_file_name, "Got trace bits from java.\n");
 
     /* Tell AFL we got the return */
-    if( write(FORKSRV_FD + 1, &status, 4) < 4) {
-      fputs("Something went wrong sending return status to AFL.", log_file_fd);
-      fflush(log_file_fd);
+    if((comm_bytes = write(FORKSRV_FD + 1, &status, 4)) < 4) {
+      log_to_file(1, log_file_name, 
+        "Something went wrong getting trace_bits from Java: read %d bytes.\n", comm_bytes);
     }
-    fprintf(log_file_fd, "Told AFL we returned\n");
-    fflush(log_file_fd);
+
+    log_to_file(0, log_file_name, "sent return status to AFL.\n");
   }
 
-  /* teardown */
-  if (fclose(to_java_fd) == 0) { fputs("Couldn't close pipe to Java\n", log_file_fd);}
-  if (fclose(from_java_fd) == 0) { fputs("Couldn't close pipe from Java\n", log_file_fd);}
+  /* teardown. Will probably never be called */
+  if (fclose(to_java_fd) != 0) { 
+    log_to_file(1, log_file_name, 
+        "Something went wrong closing pipe to Java.\n");
+  }
+  if (fclose(from_java_fd) != 0) { 
+    log_to_file(1, log_file_name, 
+        "Something went wrong closing pipe from Java.\n");
+  }
 
   exit(0);
 
