@@ -49,7 +49,7 @@ import jwig.util.Stack;
  * @author Rohan Padhye
  */
 class SingleThreadTracer extends Thread {
-    private final BlockingQueue<Instruction> queue = new BlockingQueue<>(1024*128);
+    private final BlockingQueue<Instruction> queue = new BlockingQueue<>(1024*1024);
     private final Thread tracee;
     private final String entryPoint;
     private final Consumer<TraceEvent> callback;
@@ -77,6 +77,11 @@ class SingleThreadTracer extends Thread {
     /** Emits a trace event to be consumed by the registered callback. */
     private void emit(TraceEvent e) {
         callback.accept(e);
+    }
+
+    /** Returns whether the instruction queue is empty. */
+    protected boolean isQueueEmpty() {
+        return queue.isEmpty();
     }
 
     /** Sends an instruction to the tracer for processing. */

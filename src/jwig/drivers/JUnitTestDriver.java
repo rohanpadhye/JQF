@@ -61,7 +61,7 @@ public class JUnitTestDriver {
                     .asSubclass(GuidedJunitQuickcheckTest.class);
 
             JwigGuidance guidance = testInputFile != null ?
-                    new AFLGuidance(testInputFile, "/dev/zero", "/dev/null") :
+                    new AFLGuidance(testInputFile, "/tmp/a2j", "/tmp/j2a") :
                     new NoGuidance();
 
             // Register callback
