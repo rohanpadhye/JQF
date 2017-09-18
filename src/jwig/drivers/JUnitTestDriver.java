@@ -45,14 +45,27 @@ public class JUnitTestDriver {
 
     public static void main(String[] args) {
         if (args.length < 2) {
-            System.err.println("Usage: java " + JUnitTestDriver.class + " TEST_CLASS TEST_METHOD [TEST_INPUT_FILE]");
+            System.err.println("Usage: java " + JUnitTestDriver.class + " TEST_CLASS TEST_METHOD [TEST_INPUT_FILE] [AFL_TO_JAVA_PIPE] [JAVA_TO_AFL_PIPE]");
             System.exit(1);
+        }
+
+        if (args.length > 2 & args.length != 5){
+            System.err.println("Usage: java " + JUnitTestDriver.class + " TEST_CLASS TEST_METHOD [TEST_INPUT_FILE] [AFL_TO_JAVA_PIPE] [JAVA_TO_AFL_PIPE]");
+            System.err.println("If providing TEST_INPUT_FILE, AFL_TO_JAVA_PIPE, or JAVA_TO_AFL_PIPE, please provide all 3.");
+            System.exit(1);
+        }
+
+        Boolean  useGuidance = false;
+
+        if (args.length == 5) {
+            useGuidance = true;
         }
 
         String testClassName  = args[0];
         String testMethodName = args[1];
-        String testInputFile  = args.length > 2 ? args[2] : null;
-
+        String testInputFile  = useGuidance ? args[2] : null;
+        String a2jPipe  = useGuidance ? args[3] : null;
+        String j2aPipe  = useGuidance ? args[4] : null;
 
         try {
             // Load test class
@@ -60,8 +73,8 @@ public class JUnitTestDriver {
                     Class.forName(testClassName, true, ClassLoader.getSystemClassLoader())
                     .asSubclass(GuidedJunitQuickcheckTest.class);
 
-            JwigGuidance guidance = testInputFile != null ?
-                    new AFLGuidance(testInputFile, "/tmp/a2j", "/tmp/j2a") :
+            JwigGuidance guidance = useGuidance ?
+                    new AFLGuidance(testInputFile, a2jPipe, j2aPipe) :
                     new NoGuidance();
 
             // Register callback
