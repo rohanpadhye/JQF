@@ -26,13 +26,18 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package jwig.fuzz;
+package jwig.fuzz.junit;
 
-import java.util.function.Consumer;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import com.pholser.junit.quickcheck.guided.Guidance;
-import jwig.logging.events.TraceEvent;
-
-public interface JwigGuidance extends Guidance {
-    Consumer<TraceEvent> generateCallBack(String threadName);
+/**
+ * The {@link Fuzz} annotation marks a method as an entry-point for
+ * coverage-guided fuzz testing.
+ */
+@Target({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Fuzz {
 }

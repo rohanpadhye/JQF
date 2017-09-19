@@ -27,7 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package jwig.fuzz;
+package jwig.fuzz.guidance;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -49,7 +49,7 @@ import jwig.logging.events.TraceEvent;
 /**
  * @author Rohan Padhye and Caroline Lemieux
  */
-public class AFLGuidance implements JwigGuidance {
+public class AFLGuidance implements Guidance {
 
     private File inputFile;
     private InputStream in;
@@ -98,22 +98,23 @@ public class AFLGuidance implements JwigGuidance {
     }
 
     @Override
-    public void waitForInput() throws IOException {
+    public boolean waitForInput() throws IOException {
         // Get a 4-byte signal from AFL
         byte[] signal = new byte[4];
         int received = in.read(signal, 0, 4);
         if (received != 4) {
-            throw new RuntimeException(String.format("Received" +
-                    " only %d bytes from AFL proxy; expecting 4", received));
+            throw new IOException("Did not receive `ready` from AFL");
         }
 
         // Reset trace-bits
         traceBits = new byte[COVERAGE_MAP_SIZE];
 
+        // Always produce new input (AFL can only be stopped abruptly)
+        return true;
     }
 
     @Override
-    public void notifyEndOfRun(boolean success) throws IOException {
+    public void notifyEndOfRun(boolean success, Throwable error) throws IOException {
         // Wait for instrumentation to process this thread's instructions
         SingleSnoop.waitForQuiescence();
 
@@ -121,7 +122,7 @@ public class AFLGuidance implements JwigGuidance {
         feedback.clear();
 
         // Put the return status into the feedback buffer
-        int status = success ? 0 : 1;
+        int status = error == null ? 0 : 1;
         feedback.putInt(status);
 
         // Put AFL's trace_bits map into the feedback buffer

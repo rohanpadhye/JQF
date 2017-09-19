@@ -29,7 +29,7 @@ if [[ ! -d "$JANALA_DIR" ]]; then
 fi
 
 if [[ ! -d "$JUNIT_QUICKCHECK_DIR" ]]; then
-  git clone https://github.com/rohanpadhye/junit-quickcheck -b guided "$JUNIT_QUICKCHECK_DIR"
+  git clone https://github.com/rohanpadhye/junit-quickcheck -b master "$JUNIT_QUICKCHECK_DIR"
 fi
 
 

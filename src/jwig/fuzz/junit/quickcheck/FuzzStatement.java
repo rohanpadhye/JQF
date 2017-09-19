@@ -1,0 +1,154 @@
+/*
+ * Copyright (c) 2017, University of California, Berkeley
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package jwig.fuzz.junit.quickcheck;
+
+import java.io.IOException;
+import java.lang.reflect.Executable;
+import java.lang.reflect.Parameter;
+import java.lang.reflect.Type;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import com.pholser.junit.quickcheck.generator.GenerationStatus;
+import com.pholser.junit.quickcheck.generator.Generator;
+import com.pholser.junit.quickcheck.internal.ParameterTypeContext;
+import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
+import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import jwig.fuzz.guidance.FileBackedRandom;
+import jwig.fuzz.guidance.Guidance;
+import jwig.fuzz.guidance.GuidanceIOException;
+import jwig.fuzz.junit.GuidedFuzzing;
+import jwig.fuzz.junit.TrialRunner;
+import org.junit.AssumptionViolatedException;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.Statement;
+import org.junit.runners.model.TestClass;
+import ru.vyarus.java.generics.resolver.GenericsResolver;
+
+/**
+ *
+ * A JUnit {@link Statement} that will be run using guided fuzz
+ * testing.
+ *
+ * @author Rohan Padhye
+ */
+public class FuzzStatement extends Statement {
+    protected final FrameworkMethod method;
+    protected final TestClass testClass;
+    protected final Map<String, Type> typeVariables;
+    protected final GeneratorRepository generatorRepository;
+
+    public FuzzStatement(FrameworkMethod method, TestClass testClass,
+                         GeneratorRepository generatorRepository) {
+        this.method = method;
+        this.testClass = testClass;
+        this.typeVariables =
+                GenericsResolver.resolve(testClass.getJavaClass())
+                        .method(method.getMethod())
+                        .genericsMap();
+        this.generatorRepository = generatorRepository;
+
+    }
+
+
+    /**
+     * Run the test.
+     *
+     * @throws Throwable if something goes wrong
+     */
+    @Override
+    public void evaluate() throws Throwable {
+        // Construct generators for each parameter
+        List<Generator<?>> generators = Arrays.stream(method.getMethod().getParameters())
+                .map(this::createParameterTypeContext)
+                .map(this::produceGenerator)
+                .collect(Collectors.toList());
+
+        // Keep fuzzing until no more input or I/O error with guidance
+        Guidance guidance = GuidedFuzzing.getGuidance();
+        try {
+
+            // Wait until guidance populates the input file
+            while (guidance.waitForInput()) {
+                boolean success = true;
+                Throwable error = null;
+
+                // Initialize guided fuzzing using a file-backed random number source
+                try (FileBackedRandom randomFile = new FileBackedRandom(guidance.inputFile())) {
+                    SourceOfRandomness random = new SourceOfRandomness(randomFile);
+
+                    // Generate input values
+                    GenerationStatus genStatus = new NonTrackingGenerationStatus(random);
+                    Object[] args = generators.stream()
+                            .map(g -> g.generate(random, genStatus))
+                            .toArray();
+
+                    // Attempt to run the trial
+                    new TrialRunner(testClass.getJavaClass(), method, args).run();
+                } catch (GuidanceIOException e) {
+                    // Throw the captured IOException outside to stop fuzzing
+                    throw e.getCause();
+                } catch (AssumptionViolatedException e) {
+
+                } catch (Throwable e) {
+                    success = false;
+                    error = e;
+                }
+
+                // Inform guidance about the outcome of this trial
+                guidance.notifyEndOfRun(success, error);
+
+
+            }
+        } catch (IOException e) {
+            System.err.println("Fuzzing stopped due to I/O exception: " + e.getMessage());
+        }
+
+    }
+
+    private ParameterTypeContext createParameterTypeContext(Parameter parameter) {
+        Executable exec = parameter.getDeclaringExecutable();
+        String declarerName = exec.getDeclaringClass().getName() + '.' + exec.getName();
+        return new ParameterTypeContext(
+                        parameter.getName(),
+                        parameter.getAnnotatedType(),
+                        declarerName,
+                        typeVariables)
+                        .allowMixedTypes(true).annotate(parameter);
+    }
+
+    private Generator<?> produceGenerator(ParameterTypeContext parameter) {
+        Generator<?> generator = generatorRepository.generatorFor(parameter);
+        generator.provide(generatorRepository);
+        generator.configure(parameter.annotatedType());
+        return generator;
+    }
+}

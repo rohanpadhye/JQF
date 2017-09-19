@@ -26,51 +26,50 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks;
+package jwig.fuzz.junit.quickcheck;
 
-import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
-import com.pholser.junit.quickcheck.generator.Size;
-import jwig.fuzz.junit.Fuzz;
-import jwig.fuzz.junit.quickcheck.FuzzRunner;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import com.pholser.junit.quickcheck.generator.GenerationStatus;
+import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 /**
+ * Provides a generation status that does not track the number of trials
+ * generated so far. This is useful for guided fuzzing where the burden
+ * of making choices is on the guidance system rather than on quickcheck.
+ *
  * @author Rohan Padhye
  */
+public class NonTrackingGenerationStatus implements GenerationStatus {
 
-@RunWith(FuzzRunner.class)
-public class SortTest {
+    private final SourceOfRandomness random;
+    private final Map<Key<?>, Object> contextValues = new HashMap<>();
 
-    @BeforeClass
-    public static void ensureTimSortEnabled() {
-        Assert.assertFalse(Boolean.getBoolean(System.getProperty("java.util.Arrays.useLegacyMergeSort")));
+    public NonTrackingGenerationStatus(SourceOfRandomness random) {
+        this.random = random;
     }
 
-    @Fuzz
-    public void timSort(Integer @Size(min=1000, max=1000)[] items) {
-        // Sort using TimSort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
-        }
+    @Override
+    public int size() {
+        return random.nextInt();
     }
 
-
-    @Fuzz
-    public void dualPivotQuicksort(int @Size(min=1000, max=1000)[] items) {
-        // Sort using DualPivotQuicksort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
-        }
+    @Override
+    public int attempts() {
+        throw new UnsupportedOperationException("attempts() and @ValueOf" +
+                " is not supported in guided mode.");
     }
 
+    @Override
+    public <T> GenerationStatus setValue(Key<T> key, T value) {
+        contextValues.put(key, value);
+        return this;
+    }
 
+    @Override
+    public <T> Optional<T> valueOf(Key<T> key) {
+        return Optional.ofNullable(key.cast(contextValues.get(key)));
+    }
 }

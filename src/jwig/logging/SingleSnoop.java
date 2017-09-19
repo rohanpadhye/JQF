@@ -91,13 +91,13 @@ public final class SingleSnoop {
     public static void startSnooping(String entryPoint) {
         // Mark entry point
         entryPoints.put(Thread.currentThread(), entryPoint);
-        // Unblock snooping for current thread
-        unblock();
         // XXX: Offer a dummy instruction to warm-up
         // class-loaders of the logger, in order to avoid
         // deadlocks when logging is triggered from
         // SnoopInstructionTransformer#transform()
         intp.SPECIAL(-1);
+        // Unblock snooping for current thread
+        unblock();
     }
 
     public static void unblock() {

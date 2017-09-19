@@ -30,13 +30,9 @@ package benchmarks;
  */
 
 import com.pholser.junit.quickcheck.From;
-import com.pholser.junit.quickcheck.Mode;
-import com.pholser.junit.quickcheck.Property;
-import com.pholser.junit.quickcheck.generator.Fields;
 import com.pholser.junit.quickcheck.generator.InRange;
-import com.pholser.junit.quickcheck.generator.Size;
-import com.pholser.junit.quickcheck.guided.GuidedJunitQuickcheckTest;
-import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import jwig.fuzz.junit.Fuzz;
+import jwig.fuzz.junit.quickcheck.FuzzRunner;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 
@@ -44,11 +40,11 @@ import org.junit.runner.RunWith;
 /**
  * Created by clemieux on 9/15/17.
  */
-//@RunWith(JUnitQuickcheck.class)
-public class RedBlackBSTTest extends GuidedJunitQuickcheckTest{
+@RunWith(FuzzRunner.class)
+public class RedBlackBSTTest {
 
 
-    @Property(mode= Mode.GUIDED, shrink=false, trials=1000000)
+    @Fuzz
     public void isRBT(@InRange(minInt=10, maxInt=30) @From(RedBlackBSTGenerator.class) RedBlackBST<Integer, Integer> tree) {
        // System.out.println("Checking...");
         Assert.assertFalse(tree.check());

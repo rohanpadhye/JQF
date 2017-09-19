@@ -26,7 +26,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package jwig.fuzz;
+package jwig.fuzz.guidance;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,20 +39,44 @@ import jwig.logging.events.TraceEvent;
  * <tt>/dev/urandom</tt>, making it effectively an unguided random test input
  * generator.
  */
-public class NoGuidance implements JwigGuidance {
+public class NoGuidance implements Guidance {
+
+    private boolean keepGoing = true;
+    private long numTrials = 0;
+    private final long maxTrials;
+
+    public NoGuidance() {
+        this(Long.MAX_VALUE);
+    }
+
+    public NoGuidance(long maxTrials) {
+        if (maxTrials <= 0) {
+            throw new IllegalArgumentException("maxTrials must be greater than 0");
+        }
+        this.maxTrials = maxTrials;
+    }
+
     @Override
     public File inputFile() {
         return new File("/dev/urandom");
     }
 
     @Override
-    public void waitForInput() throws IOException {
-
+    public boolean waitForInput() throws IOException {
+        return keepGoing;
     }
 
     @Override
-    public void notifyEndOfRun(boolean success) throws IOException {
+    public void notifyEndOfRun(boolean success, Throwable error) throws IOException {
+        numTrials++;
+        if (error != null) {
+            error.printStackTrace();
+            this.keepGoing = false;
+        }
 
+        if (numTrials >= maxTrials) {
+            this.keepGoing = false;
+        }
     }
 
     @Override

@@ -4,17 +4,16 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
-import com.pholser.junit.quickcheck.Mode;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.generator.Size;
-import com.pholser.junit.quickcheck.guided.GuidedJunitQuickcheckTest;
+import jwig.fuzz.junit.Fuzz;
+import jwig.fuzz.junit.quickcheck.FuzzRunner;
 import org.junit.Assert;
+import org.junit.runner.RunWith;
 
-/**
- * @author Rohan Padhye
- */
-public class BinaryTreeTest extends GuidedJunitQuickcheckTest {
+@RunWith(FuzzRunner.class)
+public class BinaryTreeTest {
 
 
     @Property
@@ -29,11 +28,12 @@ public class BinaryTreeTest extends GuidedJunitQuickcheckTest {
 
     }
 
-    @Property(mode= Mode.GUIDED, shrink=false, trials=300_000)
+    @Fuzz
     public void contains(@Size(max=100) Set<@InRange(minInt=0, maxInt=100) Integer> elements, @InRange(minInt=0, maxInt=100) int @Size(max=10) [] queries) {
         BinaryTree b = new BinaryTree();
         for (Integer e : elements) {
             b.insert(e);
+
         }
 
         for (int q : queries) {

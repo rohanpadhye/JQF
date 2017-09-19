@@ -31,12 +31,13 @@ package jwig.drivers;
 
 import java.io.IOException;
 
-import com.pholser.junit.quickcheck.guided.GuidanceManager;
-import com.pholser.junit.quickcheck.guided.GuidedJunitQuickcheckTest;
-import jwig.fuzz.AFLGuidance;
-import jwig.fuzz.JwigGuidance;
-import jwig.fuzz.NoGuidance;
+import jwig.fuzz.guidance.AFLGuidance;
+import jwig.fuzz.guidance.Guidance;
+import jwig.fuzz.junit.GuidedFuzzing;
+import jwig.fuzz.guidance.NoGuidance;
+import jwig.fuzz.junit.quickcheck.FuzzRunner;
 import jwig.logging.SingleSnoop;
+import org.junit.runner.RunWith;
 
 /**
  * @author Rohan Padhye
@@ -50,8 +51,7 @@ public class JUnitTestDriver {
         }
 
         if (args.length > 2 & args.length != 5){
-            System.err.println("Usage: java " + JUnitTestDriver.class + " TEST_CLASS TEST_METHOD [TEST_INPUT_FILE] [AFL_TO_JAVA_PIPE] [JAVA_TO_AFL_PIPE]");
-            System.err.println("If providing TEST_INPUT_FILE, AFL_TO_JAVA_PIPE, or JAVA_TO_AFL_PIPE, please provide all 3.");
+            System.err.println("Usage: java " + JUnitTestDriver.class + " TEST_CLASS TEST_METHOD [TEST_INPUT_FILE AFL_TO_JAVA_PIPE JAVA_TO_AFL_PIPE]");
             System.exit(1);
         }
 
@@ -69,13 +69,17 @@ public class JUnitTestDriver {
 
         try {
             // Load test class
-            Class<? extends GuidedJunitQuickcheckTest> testClass =
-                    Class.forName(testClassName, true, ClassLoader.getSystemClassLoader())
-                    .asSubclass(GuidedJunitQuickcheckTest.class);
+            Class<?> testClass =
+                    Class.forName(testClassName, true, ClassLoader.getSystemClassLoader());
 
-            JwigGuidance guidance = useGuidance ?
+            if (!testClass.getAnnotation(RunWith.class).value().equals(FuzzRunner.class)) {
+                System.err.println(String.format("%s is not a junit-quickcheck-guided test class", testClassName));
+                System.exit(3);
+            }
+
+            Guidance guidance = useGuidance ?
                     new AFLGuidance(testInputFile, a2jPipe, j2aPipe) :
-                    new NoGuidance();
+                    new NoGuidance(10_000);
 
             // Register callback
             SingleSnoop.setCallbackGenerator(guidance::generateCallBack);
@@ -84,16 +88,13 @@ public class JUnitTestDriver {
             SingleSnoop.startSnooping(testClassName + "#" + testMethodName);
 
             // Run the Junit test
-            GuidanceManager.run(testClass, testMethodName, guidance);
+            GuidedFuzzing.run(testClass, testMethodName, guidance);
 
 
         } catch (ClassNotFoundException e) {
             System.err.println(String.format("Cannot load class %s", testClassName));
             e.printStackTrace();
             System.exit(2);
-        } catch (ClassCastException e) {
-            System.err.println(String.format("%s is not a junit-quickcheck-guided test class", testClassName));
-            System.exit(3);
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(4);
