@@ -67,7 +67,8 @@ void log_to_file(int to_exit, char* log_file_name, char const *fmt, ...) {
 
     /* If no log file name was provided, do not log */
     if (log_file_name == NULL){
-      return;
+      if (to_exit) exit(1);
+      else return;
     } 
     /* if it's not an exit message and we don't log
        non-fatal, do not log */
