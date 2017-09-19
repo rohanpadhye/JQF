@@ -89,9 +89,6 @@ void log_to_file(int to_exit, char* log_file_name, char const *fmt, ...) {
     /* print to log file */
     va_list ap;
     va_start(ap, fmt);
-    vprintf(fmt, ap);
-    va_end(ap);
-    va_start(ap, fmt);
     vfprintf(log_file, fmt, ap);
     va_end(ap);
 
