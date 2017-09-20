@@ -2,7 +2,6 @@ package janala.instrument;
 
 import java.util.LinkedList;
 
-import janala.config.Config;
 import janala.logger.inst.SPECIAL;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
@@ -461,10 +460,12 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
       case BALOAD:
       case CALOAD:
       case SALOAD:
-        mv.visitInsn(DUP2); // Duplicate array reference and index
-        addBipushInsn(mv, instrumentationState.incAndGetId());
-        addBipushInsn(mv, lastLineNumber);
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "HEAPLOAD2", "(Ljava/lang/Object;III)V", false);
+        if (Config.instance.instrumentHeapLoad) {
+          mv.visitInsn(DUP2); // Duplicate array reference and index
+          addBipushInsn(mv, instrumentationState.incAndGetId());
+          addBipushInsn(mv, lastLineNumber);
+          mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "HEAPLOAD2", "(Ljava/lang/Object;III)V", false);
+        }
         mv.visitInsn(opcode); // Perform the actual operation
         break;
       default:
@@ -635,7 +636,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
         throw new RuntimeException("Unknown field access opcode " + opcode);
     }
     */
-    if (opcode == GETFIELD) {
+    if (opcode == GETFIELD && Config.instance.instrumentHeapLoad) {
       mv.visitInsn(DUP); // Duplicate object reference
       mv.visitLdcInsn(owner + "#" + name);
       addBipushInsn(mv, instrumentationState.incAndGetId());

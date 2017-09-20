@@ -1,6 +1,5 @@
 package janala.instrument;
 
-import janala.config.Config;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.Opcodes;

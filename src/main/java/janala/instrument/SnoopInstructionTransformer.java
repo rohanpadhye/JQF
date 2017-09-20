@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 
-import janala.config.Config;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
