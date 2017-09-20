@@ -22,7 +22,7 @@ done
 
 java \
   -Xbootclasspath/a:"$bcp" \
-  -javaagent:${ROOT}/src/main/resources/janala.jar \
+  -javaagent:${ROOT}/target/jwig-1.0-SNAPSHOT.jar \
   -Djanala.conf="${SCRIPT_DIR}/janala.conf" \
   -cp "${ROOT}/target/test-classes:." \
   $@

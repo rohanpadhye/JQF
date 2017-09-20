@@ -143,10 +143,18 @@ public class AFLGuidance implements Guidance {
     private void handleEvent(TraceEvent e) {
         if (e instanceof BranchEvent) {
             BranchEvent b = (BranchEvent) e;
+            // Take positive modulo of MAP_SIZE
             int edgeId = b.getIid() % COVERAGE_MAP_SIZE;
+            if (edgeId < 0) {
+                edgeId += COVERAGE_MAP_SIZE;
+            }
+
+            // Take complement for reverse branches
             if (b.isTaken()) {
                 edgeId = COVERAGE_MAP_SIZE - edgeId;
             }
+
+            // Increment the 8-bit branch counter
             traceBits[edgeId]++;
         }
     }
