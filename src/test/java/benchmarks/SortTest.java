@@ -62,7 +62,7 @@ public class SortTest {
 
 
     @Fuzz
-    public void dualPivotQuicksort(int @Size(min=1000, max=1000)[] items) {
+    public void dualPivotQuicksort(int @Size(min=1, max=500)[] items) {
         // Sort using DualPivotQuicksort
         Arrays.sort(items);
 

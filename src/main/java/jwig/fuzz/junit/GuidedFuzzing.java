@@ -35,7 +35,7 @@ public class GuidedFuzzing {
 
     private static Guidance guidance;
 
-    private static long DEFAULT_MAX_TRIALS = 10_000;
+    private static long DEFAULT_MAX_TRIALS = 100;
 
     public static void setGuidance(Guidance g) {
         if (guidance != null) {
