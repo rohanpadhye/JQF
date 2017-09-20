@@ -31,8 +31,8 @@ package benchmarks;
 
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.generator.InRange;
-import jwig.fuzz.junit.Fuzz;
-import jwig.fuzz.junit.quickcheck.FuzzRunner;
+import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 
@@ -40,7 +40,7 @@ import org.junit.runner.RunWith;
 /**
  * Created by clemieux on 9/15/17.
  */
-@RunWith(FuzzRunner.class)
+@RunWith(JQF.class)
 public class RedBlackBSTTest {
 
 

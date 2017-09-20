@@ -15,7 +15,7 @@ popd > /dev/null
 
 ROOT_DIR=`dirname $SCRIPT_DIR`
 
-project="junit-quickcheck-guided"
+project="jqf"
 version="1.0-SNAPSHOT"
 
 FUZZ_DIR="${ROOT_DIR}/fuzz/target/"

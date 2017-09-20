@@ -26,51 +26,43 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks;
 
-import java.util.Arrays;
+package edu.berkeley.cs.jqf.fuzz.drivers;
 
-import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import java.lang.reflect.Method;
+
+import edu.berkeley.cs.jqf.instrument.tracing.PrintLogger;
+import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 
 /**
  * @author Rohan Padhye
  */
-
-@RunWith(JQF.class)
-public class SortTest {
-
-    @BeforeClass
-    public static void ensureTimSortEnabled() {
-        Assert.assertFalse(Boolean.getBoolean(System.getProperty("java.util.Arrays.useLegacyMergeSort")));
-    }
-
-    @Fuzz
-    public void timSort(Integer @Size(min=1000, max=1000)[] items) {
-        // Sort using TimSort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
+public class MainDriver {
+    public static void main(String[] args) throws Exception {
+        if (args.length == 0) {
+            throw new IllegalArgumentException("No main class provided");
         }
+        // Find main class and main() method
+        Class<?> mainClazz = Class.forName(args[0], true, ClassLoader.getSystemClassLoader());
+        Method mainMethod = mainClazz.getMethod("main", args.getClass());
+
+        // Set-up args[]
+        String[] argzz = new String[args.length-1];
+        System.arraycopy(args, 1, argzz, 0, argzz.length);
+
+        // Register callback
+        SingleSnoop.setCallbackGenerator((thread) -> {
+            PrintLogger logger = new PrintLogger(thread);
+            return (e) -> { logger.log(e.toString()); };
+        });
+
+        // Start tracing for the main method
+        SingleSnoop.startSnooping(mainClazz.getName() + "#main");
+
+        // Call main()
+        Object[] params = { argzz };
+        mainMethod.invoke(null, params);
+
+
     }
-
-
-    @Fuzz
-    public void dualPivotQuicksort(int @Size(min=1, max=500)[] items) {
-        // Sort using DualPivotQuicksort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
-        }
-    }
-
-
 }

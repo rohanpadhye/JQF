@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>edu.berkeley.cs</groupId>
-    <artifactId>junit-quickcheck-guided</artifactId>
+    <artifactId>jqf</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 

@@ -1,13 +1,12 @@
 #!/bin/bash
 
-# Script to run junit-quickcheck-guided
 # Example
-#  ./fuzz.sh TestClass testMethod [testInputFile]
+#  ./fuzz.sh TestClass testMethod [inputFile AflToJavaPipe JavaToAflPipe]
 
 # Figure out script absolute path
 pushd `dirname $0` > /dev/null
 SCRIPT_DIR=`pwd`
 popd > /dev/null
 
-$SCRIPT_DIR/instrument.sh -ea -Djanala.loggerClass=jwig.logging.DataTraceLogger $JVM_OPTS jwig.drivers.JUnitTestDriver $@
+$SCRIPT_DIR/instrument.sh $JVM_OPTS edu.berkeley.cs.jqf.fuzz.drivers.JUnitTestDriver $@
 

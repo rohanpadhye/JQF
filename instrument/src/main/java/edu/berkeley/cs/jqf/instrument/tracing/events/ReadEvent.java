@@ -26,51 +26,31 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks;
-
-import java.util.Arrays;
-
-import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+package edu.berkeley.cs.jqf.instrument.tracing.events;
 
 /**
  * @author Rohan Padhye
  */
+public class ReadEvent extends TraceEvent {
+    protected final int objectId;
+    protected final String field;
 
-@RunWith(JQF.class)
-public class SortTest {
-
-    @BeforeClass
-    public static void ensureTimSortEnabled() {
-        Assert.assertFalse(Boolean.getBoolean(System.getProperty("java.util.Arrays.useLegacyMergeSort")));
+    public ReadEvent(int iid, String fileName, int lineNumber, int objectId, String field) {
+        super(iid, fileName, lineNumber);
+        this.objectId = objectId;
+        this.field = field;
     }
 
-    @Fuzz
-    public void timSort(Integer @Size(min=1000, max=1000)[] items) {
-        // Sort using TimSort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
-        }
+    public int getObjectId() {
+        return objectId;
     }
 
-
-    @Fuzz
-    public void dualPivotQuicksort(int @Size(min=1, max=500)[] items) {
-        // Sort using DualPivotQuicksort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
-        }
+    public String getField() {
+        return field;
     }
 
-
+    @Override
+    public String toString() {
+        return String.format("HEAPLOAD(%d,%d,%d,%s)", iid, lineNumber, objectId, field);
+    }
 }

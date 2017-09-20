@@ -26,51 +26,61 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks;
+package edu.berkeley.cs.jqf.fuzz.guidance;
 
-import java.util.Arrays;
+import java.io.File;
+import java.io.IOException;
+import java.util.function.Consumer;
 
-import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
- * @author Rohan Padhye
+ * This class provides no guidance to quickcheck. It seeds random values from
+ * <tt>/dev/urandom</tt>, making it effectively an unguided random test input
+ * generator.
  */
+public class NoGuidance implements Guidance {
 
-@RunWith(JQF.class)
-public class SortTest {
+    private boolean keepGoing = true;
+    private long numTrials = 0;
+    private final long maxTrials;
 
-    @BeforeClass
-    public static void ensureTimSortEnabled() {
-        Assert.assertFalse(Boolean.getBoolean(System.getProperty("java.util.Arrays.useLegacyMergeSort")));
+    public NoGuidance() {
+        this(Long.MAX_VALUE);
     }
 
-    @Fuzz
-    public void timSort(Integer @Size(min=1000, max=1000)[] items) {
-        // Sort using TimSort
-        Arrays.sort(items);
+    public NoGuidance(long maxTrials) {
+        if (maxTrials <= 0) {
+            throw new IllegalArgumentException("maxTrials must be greater than 0");
+        }
+        this.maxTrials = maxTrials;
+    }
 
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
+    @Override
+    public File inputFile() {
+        return new File("/dev/urandom");
+    }
+
+    @Override
+    public boolean waitForInput() throws IOException {
+        return keepGoing;
+    }
+
+    @Override
+    public void notifyEndOfRun(boolean success, Throwable error) throws IOException {
+        numTrials++;
+        if (error != null) {
+            error.printStackTrace();
+            this.keepGoing = false;
+        }
+
+        if (numTrials >= maxTrials) {
+            this.keepGoing = false;
         }
     }
 
-
-    @Fuzz
-    public void dualPivotQuicksort(int @Size(min=1, max=500)[] items) {
-        // Sort using DualPivotQuicksort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
-        }
+    @Override
+    public Consumer<TraceEvent> generateCallBack(String threadName) {
+        return (e) -> {};
     }
-
-
 }

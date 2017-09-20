@@ -26,51 +26,18 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks;
+package edu.berkeley.cs.jqf.fuzz.junit;
 
-import java.util.Arrays;
-
-import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * @author Rohan Padhye
+ * The {@link Fuzz} annotation marks a method as an entry-point for
+ * coverage-guided fuzz testing.
  */
-
-@RunWith(JQF.class)
-public class SortTest {
-
-    @BeforeClass
-    public static void ensureTimSortEnabled() {
-        Assert.assertFalse(Boolean.getBoolean(System.getProperty("java.util.Arrays.useLegacyMergeSort")));
-    }
-
-    @Fuzz
-    public void timSort(Integer @Size(min=1000, max=1000)[] items) {
-        // Sort using TimSort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
-        }
-    }
-
-
-    @Fuzz
-    public void dualPivotQuicksort(int @Size(min=1, max=500)[] items) {
-        // Sort using DualPivotQuicksort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
-        }
-    }
-
-
+@Target({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Fuzz {
 }

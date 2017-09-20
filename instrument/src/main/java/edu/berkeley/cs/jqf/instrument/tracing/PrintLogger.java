@@ -26,51 +26,48 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks;
 
-import java.util.Arrays;
+package edu.berkeley.cs.jqf.instrument.tracing;
 
-import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import java.io.*;
 
-/**
- * @author Rohan Padhye
- */
+/** @author Rohan Padhye */
+public class PrintLogger {
+    private final PrintWriter writer;
 
-@RunWith(JQF.class)
-public class SortTest {
-
-    @BeforeClass
-    public static void ensureTimSortEnabled() {
-        Assert.assertFalse(Boolean.getBoolean(System.getProperty("java.util.Arrays.useLegacyMergeSort")));
+    private PrintLogger(String name, OutputStream out) {
+        this.writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out)));
     }
 
-    @Fuzz
-    public void timSort(Integer @Size(min=1000, max=1000)[] items) {
-        // Sort using TimSort
-        Arrays.sort(items);
+    public PrintLogger(String name) {
+        this(name, createOutputStream(name));
+    }
 
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
+    private static OutputStream createOutputStream(String name) {
+        try {
+            return new FileOutputStream(name + ".log");
+        } catch (IOException e) {
+            e.printStackTrace();
+            return new OutputStream() {
+                @Override
+                public void write(int b) throws IOException {
+                     // Do nothing
+                }
+            };
         }
     }
 
-
-    @Fuzz
-    public void dualPivotQuicksort(int @Size(min=1, max=500)[] items) {
-        // Sort using DualPivotQuicksort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
-        }
+    public void log(String info) {
+        writer.println(info);
+        writer.flush();
     }
 
+    public PrintWriter getWriter() {
+        return this.writer;
+    }
 
+    public void close() {
+        writer.flush();
+        writer.close();
+    };
 }

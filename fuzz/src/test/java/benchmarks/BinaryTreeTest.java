@@ -7,12 +7,12 @@ import java.util.Set;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.generator.Size;
-import jwig.fuzz.junit.Fuzz;
-import jwig.fuzz.junit.quickcheck.FuzzRunner;
+import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 
-@RunWith(FuzzRunner.class)
+@RunWith(JQF.class)
 public class BinaryTreeTest {
 
 

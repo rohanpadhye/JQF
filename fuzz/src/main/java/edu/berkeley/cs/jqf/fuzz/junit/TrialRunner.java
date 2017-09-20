@@ -26,51 +26,44 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks;
+package edu.berkeley.cs.jqf.fuzz.junit;
 
-import java.util.Arrays;
+import java.util.List;
 
-import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import org.junit.runners.BlockJUnit4ClassRunner;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.InitializationError;
+import org.junit.runners.model.Statement;
 
-/**
- * @author Rohan Padhye
- */
+public class TrialRunner extends BlockJUnit4ClassRunner {
+    private final FrameworkMethod method;
+    protected final Object[] args;
 
-@RunWith(JQF.class)
-public class SortTest {
-
-    @BeforeClass
-    public static void ensureTimSortEnabled() {
-        Assert.assertFalse(Boolean.getBoolean(System.getProperty("java.util.Arrays.useLegacyMergeSort")));
+    public TrialRunner(Class<?> testClass, FrameworkMethod method, Object[] args) throws InitializationError {
+        super(testClass);
+        this.method = method;
+        this.args = args;
     }
 
-    @Fuzz
-    public void timSort(Integer @Size(min=1000, max=1000)[] items) {
-        // Sort using TimSort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
-        }
+    @Override protected List<FrameworkMethod> computeTestMethods() {
+        return getTestClass().getAnnotatedMethods(Fuzz.class);
     }
 
-
-    @Fuzz
-    public void dualPivotQuicksort(int @Size(min=1, max=500)[] items) {
-        // Sort using DualPivotQuicksort
-        Arrays.sort(items);
-
-        // Assert sorted
-        for (int i = 1; i < items.length; i++) {
-            Assert.assertTrue(items[i-1] <= items[i]);
-        }
+    @Override protected Statement methodInvoker(
+            FrameworkMethod frameworkMethod,
+            Object test) {
+        assert(this.method == frameworkMethod);
+        return new Statement() {
+            @Override public void evaluate() throws Throwable {
+                frameworkMethod.invokeExplosively(test, args);
+            }
+        };
     }
+
+    public void run() throws Throwable {
+        this.methodBlock(method).evaluate();
+    }
+
 
 
 }

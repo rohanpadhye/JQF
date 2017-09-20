@@ -1,6 +1,6 @@
-# JWIG
-Worst-case Input Generation (WIG) for Java  -- for lack of a clever name.
+# JQF
 
+JQF is a feedback-directed extension of [`junit-quickcheck`](https://github.com/pholser/junit-quickcheck), that enables coverage-guided fuzzing using tools like [AFL](lcamtuf.coredump.cx/afl).
 
 ## Building 
 
@@ -11,77 +11,60 @@ to run AFL-guided fuzzing.
 
 
 ```
-$ git clone https://github.com/rohanpadhye/jwig
-$ cd jwig
+$ git clone https://github.com/rohanpadhye/jqf
+$ cd jqf
 $ export AFL_DIR=/path/to/afl
 $ ./scripts/setup.sh 
 ```
 
-## Running
+## Usage
 
-### Instrumenting test input execution
+### Writing a Test
 
-```
-$ ./scripts/datatraces.sh MAIN_CLASS_NAME [PROGRAM_ARGS...]
-```
+*TODO*
 
-This will run the Java main class `MAIN_CLASS_NAME` with any provided command-line arguments, by instrumenting classes on-the-fly.
+### Fuzzing 
 
-The instrumented classes will produce a trace of calls, returns, branches and heap memory accesses. There is one trace file 
-created per executed thread called `<THREAD_NAME>.log`. For a single-threaded program, this usually means `main.log`.
+JQF provides a handy script that serves as a target for AFL to run. The script in turn launches a JVM and runs your test method with randomly-generated input, using branch coverage as a feedback to AFL.
 
-### Analysis of traces
-
-The analysis scripts use Python. Please do yourself a favor and install `pypy` if you haven't already done so. You're welcome.
-
+Since we want AFL to fuzz what is essentially a shell script, we need to use an environment variable to tell it to not validate that the target is a native binary.
 
 ```
-$ ./scripts/redundancy_analysis.py [--input TRACE_FILE] [--serialize PKL_FILE]
+$ export AFL_SKIP_BIN_CHECK=1
 ```
 
-This will run an analysis on the log file `TRACE_FILE` (by default it is `main.log` if not provided) inspired 
-by [Travioli](https://github.com/rohanpadhye/travioli) and print information about redundancy at various Acyclic Execution
-Contexts (AECs) on standard output in human-readable form. The same information can also be pickled onto a machine-readable file
-if `--serialize` is provided.
+Then, run AFL as usual with the target program as `jqf-afl` whose command-line arguments are the Java class and method you want to fuzz, along with the *input file*.
 
 ```
-$ ./scripts/diff_cycles.py [PKL_FILE_1] [PKL_FILE_2]
+$ /path/to/afl/afl-fuzz -i seeds -o results /path/to/jqf/jqf-afl [-cp CLASSPATH] TEST_CLASS TEST_METHOD @@
 ```
 
-This will compare the redundancy information in two pickle files serialized by `redundancy_analysis.py` and output 
-the difference between the redundancies on standard output. As of this writing, the differences are only human-readable 
-and for informational purposes only. Future work includes using this information to guide fuzz testing or symbolic execution 
-or reinforcement learning in order to generate inputs with high redundancy scores leading to worst-case behavior.
-
-## Full example
-
-Here's an example of testing [insertion sort](https://en.wikipedia.org/wiki/Insertion_sort) of 5 numbers in best-case, average-case and worst-case.
-
+For example:
 ```
-$ seq 1 5 > best.txt           # Already sorted
-$ seq 1 5 | sort -R > avg.txt  # Randomly shuffled
-$ seq 5 -1 1 > worst.txt          # Reverse sorted
-
-$ ./scripts/datatraces.sh benchmarks.wise.InsertionSort < best.txt
-$ ./scripts/redundancy_analysis.py --serialize best.pkl
-
-$ ./scripts/datatraces.sh benchmarks.wise.InsertionSort < avg.txt
-$ ./scripts/redundancy_analysis.py --serialize avg.pkl
-
-$ ./scripts/datatraces.sh benchmarks.wise.InsertionSort < worst.txt
-$ ./scripts/redundancy_analysis.py --serialize worst.pkl
-
-$ ./scripts/diff_cycles.py best.pkl avg.pkl       # Compare best vs avg
-$ ./scripts/diff_cycles.py avg.pkl  worst.pkl     # Compare avg  vs worst
-$ ./scripts/diff_cycles.py best.pkl worst.pkl     # Compare best vs worst
+$ /path/to/afl/afl-fuzz -i seeds -o results /path/to/jqf/jqf-afl -cp /path/to/jqf/benchmarks edu.cs.berkeley.jqf.benchmarks.SortTest timSort @@
 ```
 
-## Fuzz a junit-quickcheck property
+### Testing crashes (and other inputs)
 
-*TODO: Write a nice launcher script for AFL and add documentation here*
-
-Here's an example of using junit-quickcheck with a guided random file for property testing:
+If AFL finds a *crash* (due to a test failure such as an `AssertionError`), you can run the `jqf-repro` script with a specific input file. The script will in turn re-run the Java test, but without all the instrumentation overhead and it will dump the exception stack-trace on the standard error stream.
 
 ```
-./scripts/fuzz.sh benchmarks.BinaryTreeTest contains
+$ /path/to/jqf/jqf-repro [-cp CLASSPATH] TEST_CLASS TEST_METHOD INPUT_FILE
 ```
+
+For example,
+```
+ /path/to/jqf/jqf-repro -cp /path/to/jqf/benchmarks edu.cs.berkeley.jqf.benchmarks.SortTest timSort results/crashes/id_000001
+```
+
+## Extending
+
+You can also extend this framework for using fuzzing front-ends other than AFL, and feedback other than branch coverage. All you need to do is implement the `Guidance` interface and have your own script to launch the `JunitTestDriver`. It should be easy to extrapolate from existing implementations such as:
+
+- `jqf-afl` using `AFLGuidance`
+- `jqf-repro` using `ReproGuidance`
+- `jqf-random` using `NoGuidance`
+
+
+
+

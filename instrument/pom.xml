@@ -6,15 +6,15 @@
 
     <parent>
 	    <groupId>edu.berkeley.cs</groupId>
-	    <artifactId>junit-quickcheck-guided</artifactId>
+	    <artifactId>jqf</artifactId>
 	    <version>1.0-SNAPSHOT</version>
 	</parent>
 
     <groupId>edu.berkeley.cs</groupId>
-    <artifactId>junit-quickcheck-guided-instrument</artifactId>
+    <artifactId>jqf-instrument</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <name>junit-quickcheck-guided-instrument</name>
+    <name>jqf-instrument</name>
     <description>Feedback-directed junit-quickcheck: Instrumentation and Feedback</description>
     <packaging>jar</packaging>
 
