@@ -1,8 +1,7 @@
 .DS_Store
-lib/
 build/
+target/
 .idea/workspace.xml
 .idea/tasks.xml
-src/jwig/tmp
 *.pyc
-submodules/
+.cache/

@@ -4,14 +4,17 @@ Worst-case Input Generation (WIG) for Java  -- for lack of a clever name.
 
 ## Building 
 
-To build, you need `ant`, `gradle`, `mvn` installed and on your path, along with the standard JDK (`javac` etc). 
+To build, you need Maven (`mvn`) installed and on your path, along with the standard JDK (`javac` etc). 
+
+You also need to set the environment variable `AFL_DIR` to point to where AFL is installed if you want
+to run AFL-guided fuzzing.
 
 
 ```
 $ git clone https://github.com/rohanpadhye/jwig
 $ cd jwig
+$ export AFL_DIR=/path/to/afl
 $ ./scripts/setup.sh 
-$ ant  # should build the jwig classes
 ```
 
 ## Running
@@ -74,6 +77,8 @@ $ ./scripts/diff_cycles.py best.pkl worst.pkl     # Compare best vs worst
 ```
 
 ## Fuzz a junit-quickcheck property
+
+*TODO: Write a nice launcher script for AFL and add documentation here*
 
 Here's an example of using junit-quickcheck with a guided random file for property testing:
 

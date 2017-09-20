@@ -14,22 +14,16 @@ SCRIPT_DIR=`pwd`
 popd > /dev/null
 
 ROOT=`dirname $SCRIPT_DIR`
-LIB="${ROOT}/lib"
 
-bcp="${ROOT}/build/classes/main"
-for f in ${LIB}/*.jar; do
+bcp="${ROOT}/target/classes"
+for f in ${ROOT}/target/dependency/*.jar; do
   bcp=$bcp:$f
 done
-for f in ${LIB}/dependencies/*.jar; do
-  bcp=$bcp:$f
-done
-
-
 
 java \
   -Xbootclasspath/a:"$bcp" \
-  -javaagent:${ROOT}/lib/janala.jar \
+  -javaagent:${ROOT}/src/main/resources/janala.jar \
   -Djanala.conf="${SCRIPT_DIR}/janala.conf" \
-  -cp "${ROOT}/build/classes/test:." \
+  -cp "${ROOT}/target/test-classes:." \
   $@
 
