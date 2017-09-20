@@ -88,7 +88,8 @@ public class FileBackedRandom extends Random implements AutoCloseable {
         // Open the backing file source as a buffered input stream
         this.source = source;
         this.inputStream = new BufferedInputStream(new FileInputStream(source));
-        // Set encoding to little-endian (XXX: Maybe nativeOrder()?)
+        // Force encoding to little-endian so that we can read small ints
+        // by reading partially into the start of the buffer
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
     }
 
@@ -122,7 +123,11 @@ public class FileBackedRandom extends Random implements AutoCloseable {
 
         try {
             // Read up to 4 bytes from the backing source
-            int bytesRead = inputStream.read(byteBuffer.array(), 0, 4);
+            int maxBytesToRead = ((bits + 7) / 8);
+            assert(maxBytesToRead*8 >= bits && maxBytesToRead <= 4);
+            // If fewer bytes are read (because EOF is reached), the buffer
+            // just keeps containing zeros
+            inputStream.read(byteBuffer.array(), 0, maxBytesToRead);
         } catch (IOException e) {
             throw new GuidanceIOException(e);
         }

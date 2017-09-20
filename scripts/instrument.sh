@@ -20,7 +20,7 @@ for f in ${ROOT}/target/dependency/*.jar; do
   bcp=$bcp:$f
 done
 
-java \
+java -ea \
   -Xbootclasspath/a:"$bcp" \
   -javaagent:${ROOT}/target/jwig-1.0-SNAPSHOT.jar \
   -Djanala.conf="${SCRIPT_DIR}/janala.conf" \
