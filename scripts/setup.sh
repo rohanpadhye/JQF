@@ -18,8 +18,5 @@ make
 
 cd ${ROOT}
 
-mvn -DskipTests install
-mvn dependency:copy-dependencies
-
-echo " --- Setup completed ---"
+mvn -DskipTests package
 

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+	    <groupId>edu.berkeley.cs</groupId>
+	    <artifactId>junit-quickcheck-guided</artifactId>
+	    <version>1.0-SNAPSHOT</version>
+	</parent>
+
+    <groupId>edu.berkeley.cs</groupId>
+    <artifactId>junit-quickcheck-guided-instrument</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <name>junit-quickcheck-guided-instrument</name>
+    <description>Feedback-directed junit-quickcheck: Instrumentation and Feedback</description>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm-all</artifactId>
+            <version>5.2</version>
+        </dependency>
+    </dependencies>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Premain-Class>janala.instrument.SnoopInstructionTransformer</Premain-Class>
+                            <Can-Redefine-Classes>false</Can-Redefine-Classes>
+                            <Can-Retransform-Classes>true</Can-Retransform-Classes>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>            
+            <plugin> 
+                <groupId>org.apache.maven.plugins</groupId> 
+                <artifactId>maven-dependency-plugin</artifactId> 
+                <executions> 
+                        <execution> 
+                                <id>copy-dependencies</id> 
+                                <phase>package</phase> 
+                                <goals> 
+                                        <goal>copy-dependencies</goal> 
+                                </goals> 
+                                <configuration> 
+                                        <includeScope>runtime</includeScope> 
+                                </configuration> 
+                        </execution> 
+                </executions> 
+            </plugin> 
+        </plugins>
+    </build>
+
+</project>

@@ -28,8 +28,8 @@ class Config {
         return;
       }
 
-      verbose = Boolean.getBoolean(properties.getProperty("janala.isVerbose", "false"));
-      writeInstrumentedClasses = Boolean.getBoolean(properties.getProperty("janala.writeInstrumentedClasses", "true"));
+      verbose = Boolean.parseBoolean(properties.getProperty("janala.isVerbose", "false"));
+      writeInstrumentedClasses = Boolean.parseBoolean(properties.getProperty("janala.writeInstrumentedClasses", "true"));
       analysisClass =
               properties.getProperty("janala.snoopClass", "janala.instrument.SnoopLogger").replace('.', '/');
       String excludeInstStr = properties.getProperty("janala.excludes", "");
@@ -40,7 +40,7 @@ class Config {
       String includeInstStr = properties.getProperty("janala.includes", "");
       if (includeInstStr.length() > 0)
         includeInst = includeInstStr.split(",");
-      instrumentHeapLoad = Boolean.getBoolean(properties.getProperty("janala.instrumentHeapLoad", "false"));
+      instrumentHeapLoad = Boolean.parseBoolean(properties.getProperty("janala.instrumentHeapLoad", "false"));
 
   }
 }

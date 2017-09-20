@@ -13,17 +13,30 @@ pushd `dirname $0` > /dev/null
 SCRIPT_DIR=`pwd`
 popd > /dev/null
 
-ROOT=`dirname $SCRIPT_DIR`
+ROOT_DIR=`dirname $SCRIPT_DIR`
 
-bcp="${ROOT}/target/classes"
+project="junit-quickcheck-guided"
+version="1.0-SNAPSHOT"
+
+FUZZ_DIR="${ROOT_DIR}/fuzz/target/"
+INST_DIR="${ROOT_DIR}/instrument/target/"
+
+FUZZ_JAR="${FUZZ_DIR}/$project-fuzz-$version.jar"
+INST_JAR="${INST_DIR}/$project-instrument-$version.jar"
+
+
+bcp=$jar #"${ROOT}/target/classes"
 for f in ${ROOT}/target/dependency/*.jar; do
   bcp=$bcp:$f
 done
 
+
+echo $bcp
+
 java -ea \
-  -Xbootclasspath/a:"$bcp" \
-  -javaagent:${ROOT}/target/jwig-1.0-SNAPSHOT.jar \
+  -Xbootclasspath/a:"${INST_DIR}/classes:${INST_JAR}:${INST_DIR}/dependency/asm-all-5.2.jar" \
+  -javaagent:"${INST_JAR}" \
   -Djanala.conf="${SCRIPT_DIR}/janala.conf" \
-  -cp "${ROOT}/target/test-classes:." \
+  -cp "${FUZZ_DIR}/classes:${FUZZ_JAR}:${FUZZ_DIR}/test-classes:." \
   $@
 
