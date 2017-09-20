@@ -5,7 +5,7 @@ endif
 AFLDIR = ${AFL_DIR}
 CC = clang
 
-all: proxy.c
+proxy: proxy.c
 	$(CC) $(CFLAGS) -o proxy proxy.c -I$(AFLDIR)
 
 clean:
