@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
+import com.pholser.junit.quickcheck.internal.GeometricDistribution;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 /**
@@ -46,6 +47,7 @@ public class NonTrackingGenerationStatus implements GenerationStatus {
 
     private final SourceOfRandomness random;
     private final Map<Key<?>, Object> contextValues = new HashMap<>();
+    private final GeometricDistribution geomtric = new GeometricDistribution();
 
     public NonTrackingGenerationStatus(SourceOfRandomness random) {
         this.random = random;
@@ -53,7 +55,7 @@ public class NonTrackingGenerationStatus implements GenerationStatus {
 
     @Override
     public int size() {
-        return random.nextInt();
+        return geomtric.sampleWithMean(100, random);
     }
 
     @Override
