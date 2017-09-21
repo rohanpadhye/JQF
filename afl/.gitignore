@@ -1,4 +1,0 @@
-proxy
-*.o
-afl-in
-afl-out

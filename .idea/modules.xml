@@ -2,9 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/fuzz/junit-quickcheck-guided-fuzz.iml" filepath="$PROJECT_DIR$/fuzz/junit-quickcheck-guided-fuzz.iml" />
-      <module fileurl="file://$PROJECT_DIR$/instrument/junit-quickcheck-guided-instrument.iml" filepath="$PROJECT_DIR$/instrument/junit-quickcheck-guided-instrument.iml" />
-      <module fileurl="file://$PROJECT_DIR$/jwig.iml" filepath="$PROJECT_DIR$/jwig.iml" />
+      <module fileurl="file://$PROJECT_DIR$/jqf.iml" filepath="$PROJECT_DIR$/jqf.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fuzz/jqf-fuzz.iml" filepath="$PROJECT_DIR$/fuzz/jqf-fuzz.iml" />
+      <module fileurl="file://$PROJECT_DIR$/instrument/jqf-instrument.iml" filepath="$PROJECT_DIR$/instrument/jqf-instrument.iml" />
     </modules>
   </component>
 </project>

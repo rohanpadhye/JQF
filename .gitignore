@@ -3,6 +3,6 @@ build/
 target/
 .idea/workspace.xml
 .idea/tasks.xml
-.iml
+*.iml
 *.pyc
 .cache/

@@ -2,8 +2,10 @@
 
 # Figure out script absolute path
 pushd `dirname $0` > /dev/null
-JQF_DIR=`pwd`
+SCRIPT_DIR=`pwd`
 popd > /dev/null
+
+ROOT_DIR=`dirname $SCRIPT_DIR`
 
 # Check arguments
 if [ $# -lt 3 ]; then
@@ -12,4 +14,4 @@ if [ $# -lt 3 ]; then
 fi
 
 # Run the random input driver
-$JQF_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.drivers.RandomDriver $@
+$ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.drivers.RandomDriver $@

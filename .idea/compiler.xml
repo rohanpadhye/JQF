@@ -6,14 +6,14 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="junit-quickcheck-guided-fuzz" />
-        <module name="junit-quickcheck-guided-instrument" />
+        <module name="jqf-fuzz" />
+        <module name="jqf-instrument" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="junit-quickcheck-guided-fuzz" target="1.8" />
-      <module name="junit-quickcheck-guided-instrument" target="1.8" />
-      <module name="jwig" target="1.5" />
+      <module name="jqf" target="1.5" />
+      <module name="jqf-fuzz" target="1.8" />
+      <module name="jqf-instrument" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>

@@ -45,30 +45,6 @@ import java.util.Random;
  * maximize some objective function that can be measured from the
  * execution of each trial, such as code coverage.
  *
- * An instance of this class is associated with exactly one backing
- * file, which is opened and closed by the {@link open()} and
- * {@link close()} methods. Once opened, the instance will maintain
- * a pointer that starts at the beginning of the file and advances
- * as each random value is requested. In particular, data is read from
- * the backing file in chunks of 4-bytes, regardless of the size of
- * the random value requested (i.e. any trailing bits are ignored).
- * If the end-of-file is reached at any point, all further values
- * are assumed to be zeros.
- *
- * The backing file may be re-opened after closing, and this is in fact
- * the intended usage of this class. A common pattern of usage would be:
- * <code>
- *     FileBackedRandom r = new FileBackedRandom(guided.inputFile());
- *     for(int i = 0; i < numTrials; i++) {
- *         guided.waitForInput();
- *         r.open();
- *         // Run the program under test using `r` as the source of
- *         //   randomness.
- *         r.close();ø
- *         guided.notifyEndOfRun();
- *     }
- * </code>
- *
  *
  */
 public class FileBackedRandom extends Random implements AutoCloseable {

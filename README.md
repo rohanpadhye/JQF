@@ -1,6 +1,6 @@
 # JQF: junit-quickcheck-fuzz
 
-JQF is a feedback-directed extension of [`junit-quickcheck`](https://github.com/pholser/junit-quickcheck), that enables coverage-guided fuzzing using tools like [AFL](lcamtuf.coredump.cx/afl).
+JQF is a feedback-directed extension of [junit-quickcheck](https://github.com/pholser/junit-quickcheck), that enables coverage-guided fuzzing using tools like [AFL](lcamtuf.coredump.cx/afl).
 
 ## Building 
 
@@ -36,14 +36,14 @@ $ export AFL_SKIP_BIN_CHECK=1
 Then, run AFL as usual with the target program as `jqf-afl` whose command-line arguments are the Java class and method you want to fuzz, along with the *input file*. The classpath for your Java application may be provided using the `CLASSPATH` environment variable, which is assumed to be `.` by default.
 
 ```
-$ /path/to/afl/afl-fuzz -i seeds -o results /path/to/jqf/jqf-afl TEST_CLASS TEST_METHOD @@
+$ /path/to/afl/afl-fuzz -i seeds -o results /path/to/jqf/bin/jqf-afl TEST_CLASS TEST_METHOD @@
 ```
 
 For example, to run one of the provided benchmarks:
 
 ```
 $ export CLASSPATH=/path/to/jqf/fuzz/target/test-classes 
-$ /path/to/afl/afl-fuzz -i seeds -o results /path/to/jqf/jqf-afl benchmarks.SortTest dualPivotQuicksort @@
+$ /path/to/afl/afl-fuzz -i seeds -o results /path/to/jqf/bin/jqf-afl benchmarks.SortTest dualPivotQuicksort @@
 ```
 
 ### Testing crashes (and other inputs)
@@ -51,12 +51,12 @@ $ /path/to/afl/afl-fuzz -i seeds -o results /path/to/jqf/jqf-afl benchmarks.Sort
 If AFL finds a *crash* (due to a test failure such as an `AssertionError`), you can run the `jqf-repro` script with a specific input file. The script will in turn re-run the Java test, and will dump the exception stack-trace on the standard error stream. The `CLASSPATH` environment variable is honored as above.
 
 ```
-$ /path/to/jqf/jqf-repro TEST_CLASS TEST_METHOD INPUT_FILE
+$ /path/to/jqf/bin/jqf-repro TEST_CLASS TEST_METHOD INPUT_FILE
 ```
 
 For example,
 ```
- /path/to/jqf/jqf-repro benchmarks.SortTest dualPivotQuicksort results/crashes/id_000001
+ /path/to/jqf/bin/jqf-repro benchmarks.SortTest dualPivotQuicksort results/crashes/id_000001
 ```
 
 ## Extending
