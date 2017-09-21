@@ -25,11 +25,13 @@
 package edu.berkeley.cs.jqf.fuzz.junit;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
-import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceIOException;
 import edu.berkeley.cs.jqf.fuzz.guidance.NoGuidance;
+import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import org.junit.internal.TextListener;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Request;
+import org.junit.runner.RunWith;
 
 public class GuidedFuzzing {
 
@@ -58,6 +60,20 @@ public class GuidedFuzzing {
         guidance = null;
     }
 
+    public synchronized static void run(String testClassName, String testMethod,
+                                        Guidance guidance) throws ClassNotFoundException {
+        Class<?> testClass =
+        java.lang.Class.forName(testClassName, true, ClassLoader.getSystemClassLoader());
+
+        RunWith annotation = testClass.getAnnotation(RunWith.class);
+        if (annotation == null || !annotation.value().equals(JQF.class)) {
+            throw new IllegalArgumentException(testClassName + " is not annotated with @RunWith(JQF.class)");
+        }
+
+        run(testClass, testMethod, guidance);
+
+    }
+
     public synchronized static void run(Class<?> testClass,
                            String testMethod, Guidance guidance) {
 
@@ -65,18 +81,20 @@ public class GuidedFuzzing {
         // Set the static guided instance
         setGuidance(guidance);
 
+        // Register callback
+        SingleSnoop.setCallbackGenerator(guidance::generateCallBack);
+
         // Create a JUnit Request
         Request testRequest = Request.method(testClass, testMethod);
 
-        // Run the test until it ends or throws
+        // Start tracing for the test method
+        SingleSnoop.startSnooping(testClass.getName() + "#" + testMethod);
+
+        // Run the test and make sure to de-register the guidance before returning
         try {
             JUnitCore junit = new JUnitCore();
             junit.addListener(new TextListener(System.out));
             junit.run(testRequest);
-            System.out.println("Guided Quickcheck completed successfully.");
-        } catch (GuidanceIOException e) {
-            System.err.println("Guided Quickcheck terminated.");
-            e.getCause().printStackTrace();
         } finally {
             unsetGuidance();
         }

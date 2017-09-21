@@ -29,75 +29,37 @@
 
 package edu.berkeley.cs.jqf.fuzz.drivers;
 
-import java.io.IOException;
-
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.ReproGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
-import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
-import edu.berkeley.cs.jqf.fuzz.guidance.AFLGuidance;
-import edu.berkeley.cs.jqf.fuzz.guidance.NoGuidance;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.runner.RunWith;
 
 /**
  * @author Rohan Padhye
  */
-public class JUnitTestDriver {
+public class ReproDriver {
 
     public static void main(String[] args) {
-        if (args.length < 2) {
-            System.err.println("Usage: java " + JUnitTestDriver.class + " TEST_CLASS TEST_METHOD [TEST_INPUT_FILE] [AFL_TO_JAVA_PIPE] [JAVA_TO_AFL_PIPE]");
+        if (args.length != 3){
+            System.err.println("Usage: java " + ReproDriver.class + " TEST_CLASS TEST_METHOD [TEST_INPUT_FILE]");
             System.exit(1);
         }
 
-        if (args.length > 2 & args.length != 5){
-            System.err.println("Usage: java " + JUnitTestDriver.class + " TEST_CLASS TEST_METHOD [TEST_INPUT_FILE AFL_TO_JAVA_PIPE JAVA_TO_AFL_PIPE]");
-            System.exit(1);
-        }
-
-        Boolean  useGuidance = false;
-
-        if (args.length == 5) {
-            useGuidance = true;
-        }
 
         String testClassName  = args[0];
         String testMethodName = args[1];
-        String testInputFile  = useGuidance ? args[2] : null;
-        String a2jPipe  = useGuidance ? args[3] : null;
-        String j2aPipe  = useGuidance ? args[4] : null;
+        String testInputFile  = args[2];
 
         try {
-            // Load test class
-            Class<?> testClass =
-                    Class.forName(testClassName, true, ClassLoader.getSystemClassLoader());
-
-            if (!testClass.getAnnotation(RunWith.class).value().equals(JQF.class)) {
-                System.err.println(String.format("%s is not a JQF test class", testClassName));
-                System.exit(3);
-            }
-
-            Guidance guidance = useGuidance ?
-                    new AFLGuidance(testInputFile, a2jPipe, j2aPipe) :
-                    new NoGuidance();
-
-            // Register callback
-            SingleSnoop.setCallbackGenerator(guidance::generateCallBack);
-
-            // Start tracing for the test method
-            SingleSnoop.startSnooping(testClassName + "#" + testMethodName);
+            // Load the guidance
+            Guidance guidance = new ReproGuidance(testInputFile);
 
             // Run the Junit test
-            GuidedFuzzing.run(testClass, testMethodName, guidance);
-
+            GuidedFuzzing.run(testClassName, testMethodName, guidance);
 
         } catch (ClassNotFoundException e) {
             System.err.println(String.format("Cannot load class %s", testClassName));
             e.printStackTrace();
             System.exit(2);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(4);
         }
 
     }

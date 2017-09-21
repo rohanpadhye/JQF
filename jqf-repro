@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Figure out script absolute path
+pushd `dirname $0` > /dev/null
+JQF_DIR=`pwd`
+popd > /dev/null
+
+# Check arguments
+if [ $# -lt 3 ]; then
+  echo "Usage: $0 TEST_CLASS TEST_METHOD INPUT_FILE" >&2
+  exit 1
+fi
+
+# Run the repro input driver
+$JQF_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.drivers.ReproDriver $@
