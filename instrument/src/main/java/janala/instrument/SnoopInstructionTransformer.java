@@ -25,7 +25,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
     instDir = ".cache";
   }
   
-  private static String[] banned = {"[", "java/lang", "com/sun", "janala", "org/objectweb/asm", "sun", "jdk", "java/util/function"};
+  private static String[] banned = {"[", "java/lang", "janala", "org/objectweb/asm", "sun", "jdk", "java/util/function"};
   private static String[]  excludes;
   private static String[]  includes;
   

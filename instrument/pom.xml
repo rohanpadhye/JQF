@@ -40,7 +40,7 @@
                     <archive>
                         <manifestEntries>
                             <Premain-Class>janala.instrument.SnoopInstructionTransformer</Premain-Class>
-                            <Can-Redefine-Classes>false</Can-Redefine-Classes>
+                            <Can-Redefine-Classes>true</Can-Redefine-Classes>
                             <Can-Retransform-Classes>true</Can-Retransform-Classes>
                         </manifestEntries>
                     </archive>
