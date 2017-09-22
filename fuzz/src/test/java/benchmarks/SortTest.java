@@ -50,7 +50,7 @@ public class SortTest {
     }
 
     @Fuzz
-    public void timSort(Integer @Size(min=1000, max=1000)[] items) {
+    public void timSort(Integer @Size(min=200, max=200)[] items) {
         // Sort using TimSort
         Arrays.sort(items);
 
@@ -62,7 +62,7 @@ public class SortTest {
 
 
     @Fuzz
-    public void dualPivotQuicksort(int @Size(min=1, max=500)[] items) {
+    public void dualPivotQuicksort(int @Size(min=2000, max=2000)[] items) {
         // Sort using DualPivotQuicksort
         Arrays.sort(items);
 
