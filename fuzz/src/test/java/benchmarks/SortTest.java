@@ -46,7 +46,7 @@ public class SortTest {
 
     @BeforeClass
     public static void ensureTimSortEnabled() {
-        Assert.assertFalse(Boolean.getBoolean(System.getProperty("java.util.Arrays.useLegacyMergeSort")));
+        Assert.assertFalse(Boolean.getBoolean("java.util.Arrays.useLegacyMergeSort"));
     }
 
     @Fuzz

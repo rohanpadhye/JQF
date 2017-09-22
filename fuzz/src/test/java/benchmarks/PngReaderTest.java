@@ -51,8 +51,6 @@ public class PngReaderTest {
         // Disable disk-caching as it slows down fuzzing
         // and makes image reads non-idempotent
         ImageIO.setUseCache(false);
-
-        System.out.println("Testing reader: " + ImageIO.getImageReadersByFormatName("png").next().getClass());
     }
 
     private ImageReader reader;
