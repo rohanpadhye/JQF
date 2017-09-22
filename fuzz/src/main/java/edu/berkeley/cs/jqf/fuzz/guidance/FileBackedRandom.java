@@ -81,7 +81,8 @@ public class FileBackedRandom extends Random implements AutoCloseable {
      * If the backing file source has not yet been set, it defaults to
      * the pseudo-random number generation algorithm from
      * {@link Random}. This is still deterministic, as the seed
-     * of the pseudo-random number generator is deterministically set to 0.
+     * of the pseudo-random number generator is deterministically set in the
+     * constructor.
      *
      * @param bits   the number of random bits to retain (1 to 32 inclusive)
      * @return the integer value whose lower <tt>bits</tt> bits contain the
@@ -98,6 +99,11 @@ public class FileBackedRandom extends Random implements AutoCloseable {
         byteBuffer.putInt(0, 0);
 
         try {
+            // If we have ready past the file, return pseudo-random bytes
+            if (inputStream.available() == 0) {
+                return super.next(bits);
+            }
+
             // Read up to 4 bytes from the backing source
             int maxBytesToRead = ((bits + 7) / 8);
             assert(maxBytesToRead*8 >= bits && maxBytesToRead <= 4);

@@ -45,9 +45,12 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
  */
 public class NonTrackingGenerationStatus implements GenerationStatus {
 
+    public static final int MEAN_SIZE = 100;
+
     private final SourceOfRandomness random;
     private final Map<Key<?>, Object> contextValues = new HashMap<>();
-    private final GeometricDistribution geomtric = new GeometricDistribution();
+    private final GeometricDistribution geometric = new GeometricDistribution();
+
 
     public NonTrackingGenerationStatus(SourceOfRandomness random) {
         this.random = random;
@@ -55,7 +58,7 @@ public class NonTrackingGenerationStatus implements GenerationStatus {
 
     @Override
     public int size() {
-        return geomtric.sampleWithMean(100, random);
+        return geometric.sampleWithMean(MEAN_SIZE, random);
     }
 
     @Override
