@@ -49,5 +49,5 @@ public enum Result {
      * The test method threw an uncaught exception.
      * Assertion failures also fall in this category.
      */
-    ERROR
+    FAILURE
 }

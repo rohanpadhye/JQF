@@ -54,7 +54,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  *         } catch (AssumptionViolatedException e) {
  *             guidance.handleResult(ASSUMPTION_VIOLATED, e);
  *         } catch (Throwable t) {
- *             guidance.handleResult(ERROR, e);
+ *             guidance.handleResult(FAILURE, e);
  *         }
  *     }
  * </code>
@@ -86,7 +86,7 @@ public interface Guidance {
      * then <tt>error</tt> is an
      * <tt>AssumptionViolatedException</tt>.
      *
-     * If <tt>result</tt> is <tt>ERROR</tt>, then
+     * If <tt>result</tt> is <tt>FAILURE</tt>, then
      * <tt>error</tt> is some other throwable. Assertion
      * failures are treated just as any other uncaught
      * exception.

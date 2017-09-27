@@ -126,7 +126,7 @@ public class FuzzStatement extends Statement {
                     result = ASSUMPTION_VIOLATED;
                     error = e;
                 } catch (Throwable e) {
-                    result = ERROR;
+                    result = FAILURE;
                     error = e;
                 }
 
