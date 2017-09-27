@@ -72,5 +72,29 @@ public class SortTest {
         }
     }
 
+    @Fuzz
+    public void smallArraySort(int @Size(min=20, max=20)[] items){
+
+        int comps = 0;
+
+        for (int i = 1; i < items.length; i ++){
+            int key = items[i];
+            int j = i-1;
+            while (j >=0 && (items[j] > key)){
+                comps++;
+                items[j+1]= items[j];
+                j--;
+            }
+            items[j+1] = key;
+        }
+
+         System.out.println("comps: " + comps);
+        Assert.assertTrue(comps != 20*19/2);
+
+        for (int i=1; i < items.length; i++){
+            Assert.assertTrue(items[i-1] <= items[i]);
+        }
+    }
+
 
 }
