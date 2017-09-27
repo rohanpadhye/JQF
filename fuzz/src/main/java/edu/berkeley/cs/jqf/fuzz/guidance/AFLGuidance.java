@@ -46,7 +46,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 import static edu.berkeley.cs.jqf.fuzz.guidance.Result.ASSUMPTION_VIOLATED;
-import static edu.berkeley.cs.jqf.fuzz.guidance.Result.ERROR;
+import static edu.berkeley.cs.jqf.fuzz.guidance.Result.FAILURE;
 
 
 /**
@@ -148,7 +148,7 @@ public class AFLGuidance implements Guidance {
         traceBits = new byte[COVERAGE_MAP_SIZE];
 
         // Always produce new input (AFL can only be stopped abruptly)
-        return true;
+        return everything_ok;
     }
 
     /**
@@ -178,7 +178,7 @@ public class AFLGuidance implements Guidance {
 
         // Put the return status into the feedback buffer
         // --> Return status is 1 if and only if an error occurs
-        int status = result == ERROR ? 1 : 0;
+        int status = result == FAILURE ? 1 : 0;
         feedback.putInt(status);
 
         // Put AFL's trace_bits map into the feedback buffer
