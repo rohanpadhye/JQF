@@ -29,12 +29,13 @@
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
+ * A front-end that only generates random inputs.
+ *
  * This class provides no guidance to quickcheck. It seeds random values from
  * <tt>/dev/urandom</tt>, making it effectively an unguided random test input
  * generator.
@@ -45,10 +46,6 @@ public class NoGuidance implements Guidance {
     private long numTrials = 0;
     private final long maxTrials;
 
-    public NoGuidance() {
-        this(Long.MAX_VALUE);
-    }
-
     public NoGuidance(long maxTrials) {
         if (maxTrials <= 0) {
             throw new IllegalArgumentException("maxTrials must be greater than 0");
@@ -57,17 +54,17 @@ public class NoGuidance implements Guidance {
     }
 
     @Override
-    public File inputFile() {
+    public File getInputFile() {
         return new File("/dev/urandom");
     }
 
     @Override
-    public boolean waitForInput() throws IOException {
+    public boolean hasInput() {
         return keepGoing;
     }
 
     @Override
-    public void notifyEndOfRun(boolean success, Throwable error) throws IOException {
+    public void handleResult(Result result, Throwable error) {
         numTrials++;
         if (error != null) {
             error.printStackTrace();

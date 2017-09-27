@@ -44,6 +44,7 @@ import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.fuzz.guidance.FileBackedRandom;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceIOException;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
@@ -52,6 +53,8 @@ import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
 import ru.vyarus.java.generics.resolver.GenericsResolver;
+
+import static edu.berkeley.cs.jqf.fuzz.guidance.Result.*;
 
 /**
  *
@@ -96,13 +99,13 @@ public class FuzzStatement extends Statement {
         Guidance guidance = GuidedFuzzing.getGuidance();
         try {
 
-            // Wait until guidance populates the input file
-            while (guidance.waitForInput()) {
-                boolean success = true;
+            // Keep fuzzing as long as guidance wants to
+            while (guidance.hasInput()) {
+                Result result;
                 Throwable error = null;
 
                 // Initialize guided fuzzing using a file-backed random number source
-                try (FileBackedRandom randomFile = new FileBackedRandom(guidance.inputFile())) {
+                try (FileBackedRandom randomFile = new FileBackedRandom(guidance.getInputFile())) {
                     SourceOfRandomness random = new SourceOfRandomness(randomFile);
 
                     // Generate input values
@@ -113,18 +116,22 @@ public class FuzzStatement extends Statement {
 
                     // Attempt to run the trial
                     new TrialRunner(testClass.getJavaClass(), method, args).run();
+
+                    // If we reached here, then the trial must be a success
+                    result = SUCCESS;
                 } catch (GuidanceIOException e) {
                     // Throw the captured IOException outside to stop fuzzing
                     throw e.getCause();
                 } catch (AssumptionViolatedException e) {
-
+                    result = ASSUMPTION_VIOLATED;
+                    error = e;
                 } catch (Throwable e) {
-                    success = false;
+                    result = ERROR;
                     error = e;
                 }
 
                 // Inform guidance about the outcome of this trial
-                guidance.notifyEndOfRun(success, error);
+                guidance.handleResult(result, error);
 
 
             }
