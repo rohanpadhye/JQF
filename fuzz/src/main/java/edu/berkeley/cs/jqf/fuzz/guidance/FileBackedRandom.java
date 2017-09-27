@@ -99,17 +99,19 @@ public class FileBackedRandom extends Random implements AutoCloseable {
         byteBuffer.putInt(0, 0);
 
         try {
-            // If we have ready past the file, return pseudo-random bytes
-            if (inputStream.available() == 0) {
-                return super.next(bits);
-            }
-
             // Read up to 4 bytes from the backing source
             int maxBytesToRead = ((bits + 7) / 8);
             assert(maxBytesToRead*8 >= bits && maxBytesToRead <= 4);
+
             // If fewer bytes are read (because EOF is reached), the buffer
             // just keeps containing zeros
-            inputStream.read(byteBuffer.array(), 0, maxBytesToRead);
+            int actualBytesRead = inputStream.read(byteBuffer.array(), 0, maxBytesToRead);
+
+            // If we have ready past the file, return pseudo-random bytes
+            if (actualBytesRead == -1) {
+                return super.next(bits);
+            }
+
         } catch (IOException e) {
             throw new GuidanceIOException(e);
         }
