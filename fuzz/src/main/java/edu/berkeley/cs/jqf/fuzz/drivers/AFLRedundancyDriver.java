@@ -42,7 +42,7 @@ public class AFLRedundancyDriver {
 
     public static void main(String[] args) {
         if (args.length != 5){
-            System.err.println("Usage: java " + AFLRedundancyDriver.class + " TEST_CLASS TEST_METHOD [TEST_INPUT_FILE AFL_TO_JAVA_PIPE JAVA_TO_AFL_PIPE]");
+            System.err.println("Usage: java " + AFLRedundancyDriver.class + " TEST_CLASS TEST_METHOD TEST_INPUT_FILE AFL_TO_JAVA_PIPE JAVA_TO_AFL_PIPE");
             System.exit(1);
         }
 
