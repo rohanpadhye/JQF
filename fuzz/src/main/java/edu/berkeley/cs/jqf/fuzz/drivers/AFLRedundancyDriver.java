@@ -26,54 +26,47 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
+package edu.berkeley.cs.jqf.fuzz.drivers;
+
 import java.io.IOException;
 
-import benchmarks.generators.ImageInputStreamGenerator;
-import com.pholser.junit.quickcheck.From;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import edu.berkeley.cs.jqf.fuzz.guidance.AFLRedundancyGuidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
+import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
-@RunWith(JQF.class)
-public class PngReaderTest {
+/**
+ * @author Rohan Padhye
+ */
+public class AFLRedundancyDriver {
 
-    @BeforeClass
-    public static void disableCaching() {
-        // Disable disk-caching as it slows down fuzzing
-        // and makes image reads non-idempotent
-        ImageIO.setUseCache(false);
-    }
+    public static void main(String[] args) {
+        if (args.length != 5){
+            System.err.println("Usage: java " + AFLRedundancyDriver.class + " TEST_CLASS TEST_METHOD [TEST_INPUT_FILE AFL_TO_JAVA_PIPE JAVA_TO_AFL_PIPE]");
+            System.exit(1);
+        }
 
-    private ImageReader reader;
 
-    @Before
-    public void setUp() {
-        this.reader = ImageIO.getImageReadersByFormatName("png").next();
-    }
+        String testClassName  = args[0];
+        String testMethodName = args[1];
+        String testInputFile  = args[2];
+        String a2jPipe  = args[3];
+        String j2aPipe  = args[4];
 
-    @After
-    public void tearDown() {
-        this.reader.dispose();
-    }
-
-    @Fuzz
-    public void read(@From(ImageInputStreamGenerator.class) ImageInputStream input) {
         try {
-            // Decode image from input stream
-            ImageReadParam param = reader.getDefaultReadParam();
-            reader.setInput(input, true, true);
-            reader.read(0, param);
+            // Load the guidance
+            Guidance guidance = new AFLRedundancyGuidance(testInputFile, a2jPipe, j2aPipe);
+
+            // Run the Junit test
+            GuidedFuzzing.run(testClassName, testMethodName, guidance);
+
+        } catch (ClassNotFoundException e) {
+            System.err.println(String.format("Cannot load class %s", testClassName));
+            e.printStackTrace();
+            System.exit(2);
         } catch (IOException e) {
-            // Ignore decode errors
+            e.printStackTrace();
+            System.exit(3);
         }
 
     }

@@ -41,23 +41,42 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.Consumer;
 
-import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
+import static edu.berkeley.cs.jqf.fuzz.guidance.Result.ASSUMPTION_VIOLATED;
+import static edu.berkeley.cs.jqf.fuzz.guidance.Result.FAILURE;
+
 
 /**
+ * A front-end that uses AFL for guided fuzzing.
+ *
+ * An instance of this class actually communicates with a proxy that
+ * sits between AFL and JQF. The proxy is the target program launched by
+ * AFL; it passes messages back and forth between AFL and JQF and
+ * helps populate the shared memory coverage buffer that the JVM cannot
+ * access.
+ *
  * @author Rohan Padhye and Caroline Lemieux
  */
 public class AFLGuidance implements Guidance {
 
-    private File inputFile;
-    private InputStream in;
-    private OutputStream out;
-    ByteBuffer feedback;
-    private static final int COVERAGE_MAP_SIZE = 1 << 16;
-    private byte[] traceBits;
+    protected File inputFile;
+    protected InputStream in;
+    protected OutputStream out;
+    protected static final int COVERAGE_MAP_SIZE = 1 << 16;
+    protected byte[] traceBits;
+    protected boolean everything_ok = true;
 
+    private ByteBuffer feedback;
+
+    /**
+     *
+     * @param inputFile  the file that AFL will write inputs to
+     * @param inPipe     a FIFO-like pipe for receiving messages from the AFL proxy
+     * @param outPipe    a FIFO-like pipe for sending messages to the AFL proxy
+     * @throws IOException  if any file or pipe could not be opened
+     */
     public AFLGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
         this.inputFile = inputFile;
         this.in = new BufferedInputStream(new FileInputStream(inPipe));
@@ -70,6 +89,9 @@ public class AFLGuidance implements Guidance {
         this(new File(inputFileName), new File(inPipeName), new File(outPipeName));
     }
 
+    /**
+     * Closes the pipes used to communicate with the AFL proxy.
+     */
     @Override
     public void finalize() {
         if (in != null) {
@@ -92,47 +114,84 @@ public class AFLGuidance implements Guidance {
     }
 
 
+    /**
+     * Returns a handle to the file that AFL will write inputs to.
+     *
+     * @return the file handle
+     */
     @Override
-    public File inputFile() {
+    public File getInputFile() {
         return this.inputFile;
     }
 
+    /**
+     * Waits for the AFL proxy to send a ready signal.
+     *
+     * @return Always returns <tt>true</tt>.
+     * @throws IOException  if the ready signal cannot be read
+     */
     @Override
-    public boolean waitForInput() throws IOException {
+    public boolean hasInput() {
         // Get a 4-byte signal from AFL
         byte[] signal = new byte[4];
-        int received = in.read(signal, 0, 4);
-        if (received != 4) {
-            throw new IOException("Did not receive `ready` from AFL");
+        try {
+            int received = in.read(signal, 0, 4);
+            if (received != 4) {
+                throw new IOException("Could not read `ready` from AFL");
+            }
+        } catch (IOException e) {
+            everything_ok = false;
         }
 
         // Reset trace-bits
         traceBits = new byte[COVERAGE_MAP_SIZE];
 
         // Always produce new input (AFL can only be stopped abruptly)
-        return true;
+        return everything_ok;
     }
 
+    /**
+     * Notifies the AFL proxy that a run has completed and whether
+     * it was a success.
+     *
+     * This method also sends coverage information back to the AFL
+     * proxy, which is responsible for updating the shared memory
+     * region used by afl-fuzz.
+     *
+     * If the trial resulted in an assumption violation, we do not
+     * mark it is a crash, but we also do not send any coverage feedback
+     * so that AFL does not consider the last input interesting enough to
+     * keep in its queue.
+     *
+     * @param result    the result of the fuzzing tiral
+     * @param error     the exception thrown by the test, or <tt>null</tt>
+     * @throws IOException
+     */
     @Override
-    public void notifyEndOfRun(boolean success, Throwable error) throws IOException {
-        // Wait for instrumentation to process this thread's instructions
-        SingleSnoop.waitForQuiescence();
-
+    public void handleResult(Result result, Throwable error) {
         // Reset the feedback buffer for a new run
         feedback.clear();
 
         // Put the return status into the feedback buffer
-        int status = error == null ? 0 : 1;
+        // --> Return status is 1 if and only if an error occurs
+        int status = result == FAILURE ? 1 : 0;
         feedback.putInt(status);
 
         // Put AFL's trace_bits map into the feedback buffer
-        for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
-            feedback.put(traceBits[i]);
+        // --> Skip this step if an assumption was violated
+        if (result != ASSUMPTION_VIOLATED) {
+            for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
+                feedback.put(traceBits[i]);
+            }
         }
 
         // Send feedback to AFL
-        out.write(feedback.array(), 0, feedback.position());
-        out.flush();
+        try {
+            out.write(feedback.array(), 0, feedback.position());
+            out.flush();
+        } catch (IOException e) {
+            everything_ok = false;
+        }
 
     }
 
@@ -140,14 +199,18 @@ public class AFLGuidance implements Guidance {
         return this::handleEvent;
     }
 
-    private void handleEvent(TraceEvent e) {
+    /**
+     * Records branch coverage by snooping on branch events
+     * and incrementing the branch-specific counter in
+     * the tracebits map.
+     *
+     * @param e  the trace event to handle
+     */
+    protected void handleEvent(TraceEvent e) {
         if (e instanceof BranchEvent) {
             BranchEvent b = (BranchEvent) e;
             // Take positive modulo of MAP_SIZE
-            int edgeId = b.getIid() % COVERAGE_MAP_SIZE;
-            if (edgeId < 0) {
-                edgeId += COVERAGE_MAP_SIZE;
-            }
+            int edgeId = iidToEdgeId(b.getIid());
 
             // Take complement for reverse branches
             if (b.isTaken()) {
@@ -155,8 +218,40 @@ public class AFLGuidance implements Guidance {
             }
 
             // Increment the 8-bit branch counter
-            traceBits[edgeId]++;
+            incrementTraceBits(edgeId);
         }
+    }
+
+    /**
+     * Increments the 8-bit counter at given index.
+     *
+     * Overflows possible.
+     *
+     * @param index the key in the trace bits map
+     */
+    protected void incrementTraceBits(int index) {
+        assert(index >= 0 && index < COVERAGE_MAP_SIZE);
+        traceBits[index]++;
+    }
+
+
+    /**
+     * Converts a Janala-generated instruction identifier to
+     * an edge index in AFL's trace bits map.
+     *
+     * @param iid   the Janala-generated instruction ID
+     * @return      a value in [0, MAP_SIZE)
+     */
+    protected static int iidToEdgeId(int iid) {
+        // TODO: Replace modulo operator with something more
+        // uniform, because IIDs are biased towards lower values
+
+        int edgeId = iid % COVERAGE_MAP_SIZE;
+        if (edgeId < 0) {
+            edgeId += COVERAGE_MAP_SIZE;
+        }
+        assert(edgeId >= 0 && edgeId < COVERAGE_MAP_SIZE);
+        return edgeId;
     }
 
 }

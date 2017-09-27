@@ -26,55 +26,28 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks;
+package edu.berkeley.cs.jqf.fuzz.guidance;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
+/**
+ * Represents the result of a guided fuzzing trial.
+ *
+ * @author Rohan Padhye
+ */
+public enum Result {
 
-import benchmarks.generators.ImageInputStreamGenerator;
-import com.pholser.junit.quickcheck.From;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+    /**
+     * The run completed successfully without errors.
+     */
+    SUCCESS,
 
-@RunWith(JQF.class)
-public class PngReaderTest {
+    /**
+     * An <tt>assume</tt> statement was falsified.
+     */
+    ASSUMPTION_VIOLATED,
 
-    @BeforeClass
-    public static void disableCaching() {
-        // Disable disk-caching as it slows down fuzzing
-        // and makes image reads non-idempotent
-        ImageIO.setUseCache(false);
-    }
-
-    private ImageReader reader;
-
-    @Before
-    public void setUp() {
-        this.reader = ImageIO.getImageReadersByFormatName("png").next();
-    }
-
-    @After
-    public void tearDown() {
-        this.reader.dispose();
-    }
-
-    @Fuzz
-    public void read(@From(ImageInputStreamGenerator.class) ImageInputStream input) {
-        try {
-            // Decode image from input stream
-            ImageReadParam param = reader.getDefaultReadParam();
-            reader.setInput(input, true, true);
-            reader.read(0, param);
-        } catch (IOException e) {
-            // Ignore decode errors
-        }
-
-    }
+    /**
+     * The test method threw an uncaught exception.
+     * Assertion failures also fall in this category.
+     */
+    FAILURE
 }
