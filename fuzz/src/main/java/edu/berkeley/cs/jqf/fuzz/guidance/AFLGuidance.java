@@ -41,7 +41,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.Consumer;
 
-import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
@@ -170,9 +169,6 @@ public class AFLGuidance implements Guidance {
      */
     @Override
     public void handleResult(Result result, Throwable error) {
-        // Wait for instrumentation to process this thread's instructions
-        SingleSnoop.waitForQuiescence();
-
         // Reset the feedback buffer for a new run
         feedback.clear();
 
@@ -214,10 +210,7 @@ public class AFLGuidance implements Guidance {
         if (e instanceof BranchEvent) {
             BranchEvent b = (BranchEvent) e;
             // Take positive modulo of MAP_SIZE
-            int edgeId = b.getIid() % COVERAGE_MAP_SIZE;
-            if (edgeId < 0) {
-                edgeId += COVERAGE_MAP_SIZE;
-            }
+            int edgeId = iidToEdgeId(b.getIid());
 
             // Take complement for reverse branches
             if (b.isTaken()) {
@@ -225,8 +218,40 @@ public class AFLGuidance implements Guidance {
             }
 
             // Increment the 8-bit branch counter
-            traceBits[edgeId]++;
+            incrementTraceBits(edgeId);
         }
+    }
+
+    /**
+     * Increments the 8-bit counter at given index.
+     *
+     * Overflows possible.
+     *
+     * @param index the key in the trace bits map
+     */
+    protected void incrementTraceBits(int index) {
+        assert(index >= 0 && index < COVERAGE_MAP_SIZE);
+        traceBits[index]++;
+    }
+
+
+    /**
+     * Converts a Janala-generated instruction identifier to
+     * an edge index in AFL's trace bits map.
+     *
+     * @param iid   the Janala-generated instruction ID
+     * @return      a value in [0, MAP_SIZE)
+     */
+    protected static int iidToEdgeId(int iid) {
+        // TODO: Replace modulo operator with something more
+        // uniform, because IIDs are biased towards lower values
+
+        int edgeId = iid % COVERAGE_MAP_SIZE;
+        if (edgeId < 0) {
+            edgeId += COVERAGE_MAP_SIZE;
+        }
+        assert(edgeId >= 0 && edgeId < COVERAGE_MAP_SIZE);
+        return edgeId;
     }
 
 }

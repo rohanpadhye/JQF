@@ -28,6 +28,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.NoGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
+import org.junit.internal.TextListener;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Request;
 import org.junit.runner.RunWith;
@@ -92,7 +93,7 @@ public class GuidedFuzzing {
         // Run the test and make sure to de-register the guidance before returning
         try {
             JUnitCore junit = new JUnitCore();
-            //junit.addListener(new TextListener(System.out));
+            junit.addListener(new TextListener(System.out));
             junit.run(testRequest);
         } finally {
             unsetGuidance();

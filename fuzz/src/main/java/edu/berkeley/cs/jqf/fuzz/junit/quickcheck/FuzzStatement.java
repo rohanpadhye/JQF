@@ -48,6 +48,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceIOException;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
+import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
@@ -129,6 +130,9 @@ public class FuzzStatement extends Statement {
                     result = FAILURE;
                     error = e;
                 }
+
+                // Wait for any instrumentation events to finish processing
+                SingleSnoop.waitForQuiescence();
 
                 // Inform guidance about the outcome of this trial
                 guidance.handleResult(result, error);

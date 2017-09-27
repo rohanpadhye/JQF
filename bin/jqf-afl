@@ -19,6 +19,13 @@ if [ ! -f "$ROOT_DIR/bin/afl-proxy" ]; then
   exit 2
 fi
 
+driver="edu.berkeley.cs.jqf.fuzz.drivers.AFLDriver"
+
+if [ $1 = '-r' ]; then
+  driver="edu.berkeley.cs.jqf.fuzz.drivers.AFLRedundancyDriver"
+  shift 1
+fi
+
 
 class=$1
 method=$2
@@ -34,7 +41,7 @@ mkfifo $j2a
 
 # Run the AFL driver in the background
 "$ROOT_DIR/scripts/jqf-driver.sh" \
-  edu.berkeley.cs.jqf.fuzz.drivers.AFLDriver $class $method $input $a2j $j2a \
+  $driver $class $method $input $a2j $j2a \
   1> /dev/null 2> /dev/null &
 
 # Run the proxy
