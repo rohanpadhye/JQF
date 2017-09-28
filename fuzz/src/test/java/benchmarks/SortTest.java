@@ -96,5 +96,16 @@ public class SortTest {
         }
     }
 
+    @Fuzz
+    public void insertionSort(int @Size(min=20, max=20)[] items) {
+        // Sort using InsertionSort (because size = 20)
+        Arrays.sort(items);
+
+        // Assert sorted
+        for (int i = 1; i < items.length; i++) {
+            Assert.assertTrue(items[i-1] <= items[i]);
+        }
+    }
+
 
 }
