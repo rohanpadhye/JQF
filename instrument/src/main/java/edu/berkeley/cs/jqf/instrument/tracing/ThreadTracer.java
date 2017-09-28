@@ -233,7 +233,7 @@ class ThreadTracer extends Thread {
                 // Try to match the top-level call with the entry point
                 if (getOwnerName(begin).replace("/",".").equals(entryPoint)) {
                     emit(new CallEvent(0, "<entry>", 0, getOwnerNameDesc(begin)));
-                    handlers.push(new TravioliHandler(begin, 0));
+                    handlers.push(new TraceEventGeneratingHandler(begin, 0));
                 } else {
                     // Ignore all top-level calls that are not the entry point
                     handlers.push(new MatchingNullHandler());
@@ -246,12 +246,12 @@ class ThreadTracer extends Thread {
         }
     }
 
-    class TravioliHandler implements Callable<Void> {
+    class TraceEventGeneratingHandler implements Callable<Void> {
 
         private final int depth;
         private final String methodDesc;
         private final String fileName;
-        TravioliHandler(METHOD_BEGIN begin, int depth) {
+        TraceEventGeneratingHandler(METHOD_BEGIN begin, int depth) {
             this.depth = depth;
             this.methodDesc = getNameDesc(begin);
             this.fileName = getFileName(begin);
@@ -283,7 +283,7 @@ class ThreadTracer extends Thread {
                 if (beginNameDesc.equals(this.invokeTarget)) {
                     // Trace continues with callee
                     emit(new CallEvent(lastIid, fileName, lastMid, getOwnerNameDesc(begin)));
-                    handlers.push(new TravioliHandler(begin, depth+1));
+                    handlers.push(new TraceEventGeneratingHandler(begin, depth+1));
                 } else {
                     // Class loading or static initializer
                     handlers.push(new MatchingNullHandler());
@@ -339,15 +339,15 @@ class ThreadTracer extends Thread {
                                 handlers.pop();
                                 Callable<?> handler = handlers.peek();
                                 // We should not reach the BaseHandler without finding
-                                // the TravioliHandler who called the outer <init>().
-                                assert (handler instanceof TravioliHandler);
-                                TravioliHandler travioliHandler = (TravioliHandler) handler;
-                                if (travioliHandler.invokingSuperOrThis) {
+                                // the TraceEventGeneratingHandler who called the outer <init>().
+                                assert (handler instanceof TraceEventGeneratingHandler);
+                                TraceEventGeneratingHandler traceEventGeneratingHandler = (TraceEventGeneratingHandler) handler;
+                                if (traceEventGeneratingHandler.invokingSuperOrThis) {
                                     // Go down the stack further
                                     continue;
                                 } else {
                                     // Found caller of new()
-                                    assert(travioliHandler.invokeTarget.startsWith("<init>"));
+                                    assert(traceEventGeneratingHandler.invokeTarget.startsWith("<init>"));
                                     restore(ins);
                                     return null; // defer handling to new top of stack
                                 }
