@@ -135,7 +135,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             byte redundancyByte = (byte) discretizeScore(redundancyScore);
 
             // Add mapping to trace bits
-            traceBits[hashToEdgeId(aec)] = redundancyByte;
+            traceBits[iidToEdgeId(aec)] = redundancyByte;
         }
 
         // Delegate feedback-sending to parent
