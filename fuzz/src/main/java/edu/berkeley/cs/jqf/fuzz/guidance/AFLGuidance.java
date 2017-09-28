@@ -209,8 +209,8 @@ public class AFLGuidance implements Guidance {
     protected void handleEvent(TraceEvent e) {
         if (e instanceof BranchEvent) {
             BranchEvent b = (BranchEvent) e;
-            // Take positive modulo of MAP_SIZE
-            int edgeId = iidToEdgeId(b.getIid());
+            // Map branch IID to [0, MAP_SIZE)
+            int edgeId = iidToEdgeIdx(b.getIid(), COVERAGE_MAP_SIZE);
 
             // Take complement for reverse branches
             if (b.isTaken()) {
@@ -230,25 +230,25 @@ public class AFLGuidance implements Guidance {
      * @param index the key in the trace bits map
      */
     protected void incrementTraceBits(int index) {
-        assert(index >= 0 && index < COVERAGE_MAP_SIZE);
         traceBits[index]++;
     }
 
 
     /**
      * Converts a Janala-generated instruction identifier to
-     * an edge index in AFL's trace bits map.
+     * a pseudo-uniformly distributed edge index
      *
      * @param iid   the Janala-generated instruction ID
+     * @param bound the upper bound (exclusive) on the edge ID
      * @return      a value in [0, MAP_SIZE)
      */
-    protected static int iidToEdgeId(int iid) {
+    protected static int iidToEdgeIdx(int iid, int bound) {
         int hash = (int)((iid * 0x5DEECE66DL + 0xBL) >> 32);
-        int edgeId = hash % COVERAGE_MAP_SIZE;
+        int edgeId = hash % bound;
         if (edgeId < 0) {
-            edgeId += COVERAGE_MAP_SIZE;
+            edgeId += bound;
         }
-        assert(edgeId >= 0 && edgeId < COVERAGE_MAP_SIZE);
+        assert(edgeId >= 0 && edgeId < bound);
         return edgeId;
     }
 

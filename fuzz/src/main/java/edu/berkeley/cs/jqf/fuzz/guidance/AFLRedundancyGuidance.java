@@ -71,6 +71,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
     public AFLRedundancyGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
         super(inputFileName, inPipeName, outPipeName);
+
     }
 
     @Override
@@ -93,8 +94,13 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     protected void handleEvent(TraceEvent e) {
         //trace.println(e.toString());
         if (e instanceof BranchEvent) {
-            // Handle branch coverage in parent
-            super.handleEvent(e);
+            BranchEvent b = (BranchEvent) e;
+            // Map branch IID to first half of the tracebits map
+            int iid = b.isTaken() ? b.getIid() : -b.getIid();
+            int edgeIdx = iidToEdgeIdx(iid, COVERAGE_MAP_SIZE/2);
+
+            // Increment the 8-bit branch counter
+            incrementTraceBits(edgeIdx);
         } else if (e instanceof ReadEvent) {
             ReadEvent read = (ReadEvent) e;
             // Get memory location that was accessed
@@ -132,10 +138,16 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
             //scores.println(redundancyScore);
 
+            // Discretize the score to a 8-bit value
             byte redundancyByte = (byte) discretizeScore(redundancyScore);
 
-            // Add mapping to trace bits
-            traceBits[iidToEdgeId(aec)] = redundancyByte;
+            if (redundancyByte > 0) {
+                // Get an index in the upper half of the tracebits map
+                int idx = COVERAGE_MAP_SIZE / 2 + iidToEdgeIdx(aec, COVERAGE_MAP_SIZE / 2);
+
+                // Add mapping to trace bits
+                traceBits[idx] = redundancyByte;
+            }
         }
 
         // Delegate feedback-sending to parent
