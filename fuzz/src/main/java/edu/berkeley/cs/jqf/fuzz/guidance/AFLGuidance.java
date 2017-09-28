@@ -243,10 +243,20 @@ public class AFLGuidance implements Guidance {
      * @return      a value in [0, MAP_SIZE)
      */
     protected static int iidToEdgeId(int iid) {
-        // TODO: Replace modulo operator with something more
-        // uniform, because IIDs are biased towards lower values
+        // TODO: Implement something to make IID more uniform
+        return hashToEdgeId(iid);
+    }
 
-        int edgeId = iid % COVERAGE_MAP_SIZE;
+
+    /**
+     * Converts a hash value to an edge index in AFL's
+     * trace bits map.
+     *
+     * @param hash  a hash value
+     * @return      a value in [0, MAP_SIZE)
+     */
+    protected static int hashToEdgeId(int hash) {
+        int edgeId = hash % COVERAGE_MAP_SIZE;
         if (edgeId < 0) {
             edgeId += COVERAGE_MAP_SIZE;
         }

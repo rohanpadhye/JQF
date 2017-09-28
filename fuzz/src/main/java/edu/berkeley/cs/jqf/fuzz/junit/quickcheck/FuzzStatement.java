@@ -42,11 +42,12 @@ import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.internal.ParameterTypeContext;
 import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import edu.berkeley.cs.jqf.fuzz.guidance.FastSourceOfRandomness;
 import edu.berkeley.cs.jqf.fuzz.guidance.FileBackedRandom;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceIOException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
-import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceIOException;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import org.junit.AssumptionViolatedException;
@@ -107,7 +108,7 @@ public class FuzzStatement extends Statement {
 
                 // Initialize guided fuzzing using a file-backed random number source
                 try (FileBackedRandom randomFile = new FileBackedRandom(guidance.getInputFile())) {
-                    SourceOfRandomness random = new SourceOfRandomness(randomFile);
+                    SourceOfRandomness random = new FastSourceOfRandomness(randomFile);
 
                     // Generate input values
                     GenerationStatus genStatus = new NonTrackingGenerationStatus(random);
