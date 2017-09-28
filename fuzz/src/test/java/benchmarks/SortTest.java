@@ -76,6 +76,12 @@ public class SortTest {
     public void smallArraySort(int @Size(min=20, max=20)[] items){
 
         int comps = 0;
+        System.out.print("array: ");
+        for (int i =0; i < items.length; i++){
+            if (i> 0) Sytem.out.print(", ");
+            System.out.print(items[i]);
+        }
+        System.out.println("");
 
         for (int i = 1; i < items.length; i ++){
             int key = items[i];
