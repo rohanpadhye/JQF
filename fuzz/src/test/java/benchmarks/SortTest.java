@@ -78,7 +78,7 @@ public class SortTest {
         int comps = 0;
         System.out.print("array: ");
         for (int i =0; i < items.length; i++){
-            if (i> 0) Sytem.out.print(", ");
+            if (i> 0) System.out.print(", ");
             System.out.print(items[i]);
         }
         System.out.println("");
