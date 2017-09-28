@@ -30,13 +30,18 @@ package edu.berkeley.cs.jqf.fuzz.guidance;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Deque;
+import java.util.HashMap;
 import java.util.Map;
 
 import edu.berkeley.cs.jqf.fuzz.util.Counter;
 import edu.berkeley.cs.jqf.fuzz.util.ProducerHashMap;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
@@ -57,6 +62,9 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     /** Maps acyclic execution contexts to accessed memory locations. */
     protected Map<Integer, Counter<Integer>> memoryAccesses;
 
+    /** Maintains a dynamic calling context (i.e. call stack) */
+    protected CallingContext callingContext = new CallingContext();
+
     public AFLRedundancyGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
         super(inputFile, inPipe, outPipe);
     }
@@ -70,12 +78,20 @@ public class AFLRedundancyGuidance extends AFLGuidance {
         // Reset memory accesses
         // For unmapped AECs, return a counter (map with 0 as default)
         memoryAccesses = new ProducerHashMap<>(() -> new Counter<>());
+
+        // Ensure that calling context is empty
+        assert(callingContext.isEmpty());
+
         // Delegate input generation to parent
         return super.hasInput();
     }
 
+    //private PrintWriter trace = new PrintWriter(new FileOutputStream("trace.log"), true);
+    //private PrintWriter scores = new PrintWriter(new FileOutputStream("scores.log"), true);
+
     @Override
     protected void handleEvent(TraceEvent e) {
+        //trace.println(e.toString());
         if (e instanceof BranchEvent) {
             // Handle branch coverage in parent
             super.handleEvent(e);
@@ -84,27 +100,42 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             // Get memory location that was accessed
             int memoryLocation =
                     hashMemorylocation(read.getObjectId(), read.getField());
-            // Get current AEC
-            int aec = currentAecFor(read.getIid());
+            // Get AEC for read operation
+            int aec = getAyclicExecutionContextForEvent(read);
 
             // Map memory access to AEC
             memoryAccesses.get(aec).increment(memoryLocation);
 
 
+        } else if (e instanceof CallEvent) {
+            // Push to calling context
+            callingContext.push((CallEvent) e);
+        } else if (e instanceof ReturnEvent) {
+            // Pop from calling context
+            callingContext.pop();
         }
     }
 
+
     @Override
     public void handleResult(Result result, Throwable error) {
+        // Wait for calling context to be empty
+        // (i.e. all AECs are processed)
+        while (!callingContext.isEmpty());
+
+
         // Compute redundancy scores for all memory accesses and add
         // 8-bit quantized values to "coverage" map
         for (int aec : memoryAccesses.keySet()) {
             double redundancyScore =
                     computeRedundancyScore(memoryAccesses.get(aec).values());
+
+            //scores.println(redundancyScore);
+
             byte redundancyByte = (byte) discretizeScore(redundancyScore);
 
             // Add mapping to trace bits
-            traceBits[aec % COVERAGE_MAP_SIZE] = redundancyByte;
+            traceBits[hashToEdgeId(aec)] = redundancyByte;
         }
 
         // Delegate feedback-sending to parent
@@ -115,11 +146,30 @@ public class AFLRedundancyGuidance extends AFLGuidance {
         return field.hashCode() * 31 + objectId;
     }
 
-    protected int currentAecFor(int iid) {
-        // TODO: Compute AEC by maintaining a shadow stack
-        return iidToEdgeId(iid);
+    boolean optimized = true;
+
+    protected int getAyclicExecutionContextForEvent(TraceEvent e) {
+        int aecHash = optimized ?
+                callingContext.fastComputeAecHash(e) :
+                callingContext.computeAcyclicExecutionContextHash(e);
+
+        return aecHash;
     }
 
+    /**
+     * Computes a "redundancy score" for memory accesses at some program
+     * location or AEC.
+     *
+     * The redundancy score formula is chosen such that the value is high
+     * when many memory locations are accessed many times each. For a total
+     * of N^2 accesses, the score is maximized when N items are accessed N
+     * times each. The score is zero when either all items are accessed just
+     * once or when only one item is accessed always.
+     *
+     * @param accessCounts A collection of access counts,
+     *                     one positive integer for each memory access
+     * @return     the redundancy score
+     */
     public static double computeRedundancyScore(Collection<Integer> accessCounts) {
         double numCounts = accessCounts.size();
         double sumCounts = 0.0;
@@ -140,6 +190,162 @@ public class AFLRedundancyGuidance extends AFLGuidance {
      */
     public static int discretizeScore(double score) {
         return (int) Math.round(255 * (Math.pow(2, score) - 1));
+    }
+
+
+
+    protected class CallingContext {
+
+        protected class Frame {
+            final CallEvent call;
+            final Frame parent;
+            boolean firstInvocation;
+            int aecHash;
+
+            Frame(CallEvent call, Frame parent) {
+                this.call = call;
+                this.parent = parent;
+            }
+
+            void precomputeAecHash(Frame acyclicParent) {
+                this.aecHash = acyclicParent.aecHash * 31 + this.call.getIid();
+            }
+
+        }
+
+        Map<String, Frame> firstInvocations = new HashMap<>();
+
+        Deque<Frame> callStack = new ArrayDeque<>();
+
+        private volatile boolean empty = true;
+
+        public void push(CallEvent callEvent) {
+            // Create a new stack frame for this call
+            Frame frame = new Frame(callEvent, callStack.peek());
+
+            // If this is the first invocation of a method,
+            // then remember this frame (and mark it as a first)
+            String methodName = callEvent.getInvokedMethod();
+            if (!firstInvocations.containsKey(methodName)) {
+                firstInvocations.put(methodName, frame);
+                frame.firstInvocation = true;
+                // Pre-compute AEC hash
+                if (frame.parent != null) {
+                    String callingMethod = frame.parent.call.getInvokedMethod();
+                    frame.precomputeAecHash(firstInvocations.get(callingMethod));
+                }
+            }
+
+
+            // Push the stack frame onto the call stack
+            callStack.push(frame);
+
+            // This makes us non-empty
+            empty = false;
+        }
+
+
+        public void pop() {
+            // Remove frame from call stack
+            Frame frame = callStack.pop();
+
+            // If this was the first invocation of the method, remove
+            // the entry from the `firstInvoker` map too
+            if (frame.firstInvocation) {
+                firstInvocations.remove(frame.call.getInvokedMethod());
+            }
+
+            // Sanity check: We can't have more first invokers than actual frames
+            assert(callStack.size() >= firstInvocations.size());
+
+            if (callStack.size() == 0) {
+                empty = true;
+            }
+
+        }
+
+        public boolean isEmpty() {
+            return empty;
+        }
+
+        public String getExecutionContext(TraceEvent e) {
+            // At least one frame must be on the stack for this operation
+            assert(!callStack.isEmpty());
+
+            // Build the EC by walking down the call stack
+            String str = "";
+            for (Frame frame : callStack) {
+                str += String.format("%s(%s:%d)\n",
+                        trimMethodNameOfDesc(frame.call.getInvokedMethod()), e.getFileName(), e.getLineNumber());
+                e = frame.call;
+            }
+
+            return str;
+
+        }
+
+        public String getAcyclicExecutionContext(TraceEvent e) {
+            // At least one frame must be on the stack for this operation
+            assert(!callStack.isEmpty());
+
+            // Build the AEC by walking back the `firstInvocation` chain
+            String str = "";
+            Frame frame = callStack.peek();
+            while (frame != null) {
+                str += String.format("%s(%s:%d)\n",
+                        trimMethodNameOfDesc(frame.call.getInvokedMethod()), e.getFileName(), e.getLineNumber());
+                Frame firstInvocationFrame = firstInvocations.get(frame.call.getInvokedMethod());
+                e = firstInvocationFrame.call;
+                frame = firstInvocationFrame.parent;
+            }
+
+            return str;
+
+        }
+
+        public int fastComputeAecHash(TraceEvent e) {
+            // At least one frame must be on the stack for this operation
+            assert(!callStack.isEmpty());
+
+            // Get the stack frame corresponding to the first call of the current method
+            Frame top = callStack.peek();
+            Frame firstInvocationOfTopMethod = firstInvocations.get(top.call.getInvokedMethod());
+
+            // Compute AEC hash of current event
+            return firstInvocationOfTopMethod.aecHash * 31 + e.getIid();
+
+        }
+
+
+        public int computeAcyclicExecutionContextHash(TraceEvent e) {
+            // At least one frame must be on the stack for this operation
+            assert(!callStack.isEmpty());
+
+            // Collect the AEC call sites by walking back the `firstInvocation` chain
+            Frame frame = callStack.peek();
+            Deque<Integer> iids = new ArrayDeque<>();
+            while (frame != null) {
+                iids.addFirst(e.getIid());
+                Frame firstInvocationFrame = firstInvocations.get(frame.call.getInvokedMethod());
+                e = firstInvocationFrame.call;
+                frame = firstInvocationFrame.parent;
+            }
+
+            // Compute the hash
+            int hash = 0;
+            for (int iid : iids) {
+                hash = 31 * hash + iid;
+            }
+
+            return hash;
+
+        }
+
+        private String trimMethodNameOfDesc(String methodName) {
+            return methodName.substring(0, methodName.indexOf('('));
+        }
+
+
     }
 
 }
