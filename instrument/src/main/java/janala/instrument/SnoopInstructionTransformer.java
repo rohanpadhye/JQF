@@ -18,17 +18,12 @@ import org.objectweb.asm.ClassWriter;
 
 @SuppressWarnings("unused") // Registered via -javaagent
 public class SnoopInstructionTransformer implements ClassFileTransformer {
-  private final String instDir;
-  private final boolean verbose;
-
-  public SnoopInstructionTransformer() {
-    instDir = Config.instance.instrumentationCacheDir;
-    verbose = Config.instance.verbose;
-  }
+  private static final String instDir = Config.instance.instrumentationCacheDir;
+  private static final boolean verbose = Config.instance.verbose;
   
   private static String[] banned = {"[", "java/lang", "janala", "org/objectweb/asm", "sun", "jdk", "java/util/function"};
-  private static String[]  excludes;
-  private static String[]  includes;
+  private static String[] excludes;
+  private static String[] includes;
   
   public static void premain(String agentArgs, Instrumentation inst) throws ClassNotFoundException {
 
@@ -45,7 +40,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
             if (inst.isModifiableClass(clazz)) {
               inst.retransformClasses(clazz);
             } else {
-              System.err.println("[JANALA] Could not instrument " + clazz + " :-(");
+              println("[JANALA] Could not instrument " + clazz + " :-(");
             }
           }
         } catch (Exception e){
@@ -94,15 +89,15 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
     boolean toInstrument = !shouldExclude(cname);
 
     if (toInstrument) {
-      System.err.print("[JANALA] ");
+      print("[JANALA] ");
       if (classBeingRedefined != null) {
-        System.err.print("* ");
+        print("* ");
       }
-      System.err.print("Instrumenting: " + cname + "... ");
+      print("Instrumenting: " + cname + "... ");
       GlobalStateForInstrumentation.instance.setCid(cname.hashCode());
 
       if (instrumentedBytes.containsKey(cname)) {
-        System.err.println(" Found in fast-cache!");
+        println(" Found in fast-cache!");
         return instrumentedBytes.get(cname);
       }
 
@@ -114,12 +109,12 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
             byte[] origBytes = Files.readAllBytes(referenceFile.toPath());
             if (Arrays.equals(cbuf, origBytes)) {
               byte[] instBytes = Files.readAllBytes(cachedFile.toPath());
-              System.err.println(" Found in disk-cache!");
+              println(" Found in disk-cache!");
               instrumentedBytes.put(cname, instBytes);
               return instBytes;
             }
           } catch (IOException e) {
-            System.err.print(" <cache error> ");
+            print(" <cache error> ");
           }
         }
       }
@@ -137,7 +132,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
       }
 
       byte[] ret = cw.toByteArray();
-      System.err.println("Done!");
+      println("Done!");
       instrumentedBytes.put(cname, ret);
 
       if (instDir != null) {
@@ -159,6 +154,18 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
       return ret;
     } else {
       return cbuf;
+    }
+  }
+
+  private static void print(String str) {
+    if (verbose) {
+      System.out.print(str);
+    }
+  }
+
+  private static void println(String line) {
+    if (verbose) {
+      System.out.println(line);
     }
   }
 }
