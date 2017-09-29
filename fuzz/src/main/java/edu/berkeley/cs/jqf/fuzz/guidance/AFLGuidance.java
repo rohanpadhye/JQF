@@ -243,7 +243,7 @@ public class AFLGuidance implements Guidance {
      * @return      a value in [0, MAP_SIZE)
      */
     protected static int iidToEdgeIdx(int iid, int bound) {
-        int hash = (int)((iid * 0x5DEECE66DL + 0xBL) >> 32);
+        int hash = (int)((iid * 0x5DEECE66DL + 0xBL));
         int edgeId = hash % bound;
         if (edgeId < 0) {
             edgeId += bound;
