@@ -108,13 +108,21 @@ public class FuzzStatement extends Statement {
 
                 // Initialize guided fuzzing using a file-backed random number source
                 try (FileBackedRandom randomFile = new FileBackedRandom(guidance.getInputFile())) {
-                    SourceOfRandomness random = new FastSourceOfRandomness(randomFile);
 
                     // Generate input values
-                    GenerationStatus genStatus = new NonTrackingGenerationStatus(random);
-                    Object[] args = generators.stream()
-                            .map(g -> g.generate(random, genStatus))
-                            .toArray();
+                    Object[] args;
+                    try {
+                        SourceOfRandomness random = new FastSourceOfRandomness(randomFile);
+                        GenerationStatus genStatus = new NonTrackingGenerationStatus(random);
+                        args = generators.stream()
+                                .map(g -> g.generate(random, genStatus))
+                                .toArray();
+                    } catch (IllegalStateException e) {
+                        // This happens when we reach EOF before reading all the random values.
+                        // Treat this as an assumption failure, so that the guidance considers the
+                        // generated input as INVALID
+                        throw new AssumptionViolatedException("FileBackedRandom does not have enough data", e);
+                    }
 
                     // Attempt to run the trial
                     new TrialRunner(testClass.getJavaClass(), method, args).run();

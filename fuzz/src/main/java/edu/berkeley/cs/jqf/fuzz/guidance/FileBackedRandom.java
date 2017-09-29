@@ -73,10 +73,11 @@ public class FileBackedRandom extends Random implements AutoCloseable {
      * Generates upto 32 bits of random data for internal use by the Random
      * class.
      *
-     * Always attempts to read 32-bits (4 bytes) of data from the backing file,
-     * regardless of how many bits of random data are requested. If end-of-file
-     * is reached before reading 4 bytes, the remaining bytes are assumed to be
-     * zeros.
+     * Attempts to read up to 4 bytes of data from the input file, and
+     * returns the requested lower order bits as a pseudo-random value.
+     *
+     * If end-of-file is reached before reading 4 bytes,
+     * an {@link IllegalStateException} is thrown.
      *
      * If the backing file source has not yet been set, it defaults to
      * the pseudo-random number generation algorithm from
@@ -87,6 +88,7 @@ public class FileBackedRandom extends Random implements AutoCloseable {
      * @param bits   the number of random bits to retain (1 to 32 inclusive)
      * @return the integer value whose lower <tt>bits</tt> bits contain the
      *    next random data available in the backing source
+     * @throws IllegalStateException  if EOF has already been reached
      */
     @Override
     protected synchronized int next(int bits) {
@@ -107,9 +109,9 @@ public class FileBackedRandom extends Random implements AutoCloseable {
             // just keeps containing zeros
             int actualBytesRead = inputStream.read(byteBuffer.array(), 0, maxBytesToRead);
 
-            // If we have ready past the file, return pseudo-random bytes
-            if (actualBytesRead == -1) {
-                return super.next(bits);
+            // If EOF was reached, throw an exception
+            if (actualBytesRead != maxBytesToRead) {
+                throw new IllegalStateException("Random bits requested but end-of-file reached");
             }
 
         } catch (IOException e) {
