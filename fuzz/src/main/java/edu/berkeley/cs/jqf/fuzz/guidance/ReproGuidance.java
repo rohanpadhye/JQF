@@ -29,6 +29,10 @@
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
@@ -43,15 +47,18 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  * @author Rohan Padhye
  */
 public class ReproGuidance implements Guidance {
-    private boolean reproduced = false;
-    private final File inputFile;
+    protected boolean reproduced = false;
+    protected final File inputFile;
+    protected final File traceDir;
+    private List<PrintStream> traceStreams = new ArrayList<>();
 
-    public ReproGuidance(File inputFile) {
+    public ReproGuidance(File inputFile, File traceDir) {
         this.inputFile = inputFile;
+        this.traceDir = traceDir;
     }
 
-    public ReproGuidance(String inputFileName) {
-        this(new File(inputFileName));
+    public ReproGuidance(String inputFileName, File traceDir) {
+        this(new File(inputFileName), traceDir);
     }
 
     @Override
@@ -75,7 +82,26 @@ public class ReproGuidance implements Guidance {
 
     @Override
     public Consumer<TraceEvent> generateCallBack(String threadName) {
+        // Create trace file if available
+        if (traceDir != null) {
+            File traceFile = new File(traceDir, threadName + ".log");
+            try {
+                PrintStream out = new PrintStream(traceFile);
+                traceStreams.add(out);
+
+                // Return an event logging callback
+                return (e) -> {
+                    out.println(e);
+                };
+            } catch (FileNotFoundException e) {
+                // Note the exception, but ignore trace events
+                System.err.println("Could not open trace file: " + traceFile.getAbsolutePath());
+            }
+        }
+
         // Ignore trace events
         return (e) -> {};
     }
+
+
 }

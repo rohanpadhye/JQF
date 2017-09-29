@@ -29,6 +29,8 @@
 
 package edu.berkeley.cs.jqf.fuzz.drivers;
 
+import java.io.File;
+
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.ReproGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
@@ -40,7 +42,7 @@ public class ReproDriver {
 
     public static void main(String[] args) {
         if (args.length != 3){
-            System.err.println("Usage: java " + ReproDriver.class + " TEST_CLASS TEST_METHOD [TEST_INPUT_FILE]");
+            System.err.println("Usage: java " + ReproDriver.class + " TEST_CLASS TEST_METHOD TEST_INPUT_FILE");
             System.exit(1);
         }
 
@@ -50,8 +52,12 @@ public class ReproDriver {
         String testInputFile  = args[2];
 
         try {
+            // Maybe log the trace
+            String traceDirName = System.getProperty("jqf.traceDir");
+            File traceDir = traceDirName != null ? new File(traceDirName) : null;
+
             // Load the guidance
-            Guidance guidance = new ReproGuidance(testInputFile);
+            Guidance guidance = new ReproGuidance(testInputFile, traceDir);
 
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
