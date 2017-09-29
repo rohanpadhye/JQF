@@ -44,7 +44,7 @@ import java.util.function.Consumer;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
-import static edu.berkeley.cs.jqf.fuzz.guidance.Result.ASSUMPTION_VIOLATED;
+import static edu.berkeley.cs.jqf.fuzz.guidance.Result.INVALID;
 import static edu.berkeley.cs.jqf.fuzz.guidance.Result.FAILURE;
 
 
@@ -179,7 +179,7 @@ public class AFLGuidance implements Guidance {
 
         // Put AFL's trace_bits map into the feedback buffer
         // --> Skip this step if an assumption was violated
-        if (result != ASSUMPTION_VIOLATED) {
+        if (result != INVALID) {
             for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
                 feedback.put(traceBits[i]);
             }

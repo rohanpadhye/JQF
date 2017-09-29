@@ -125,7 +125,7 @@ public class FuzzStatement extends Statement {
                     // Throw the captured IOException outside to stop fuzzing
                     throw e.getCause();
                 } catch (AssumptionViolatedException e) {
-                    result = ASSUMPTION_VIOLATED;
+                    result = INVALID;
                     error = e;
                 } catch (Throwable e) {
                     result = FAILURE;

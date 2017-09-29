@@ -52,7 +52,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  *             run_trial(input) // generates many trace events
  *             guidance.handleResult(SUCCESS, null);
  *         } catch (AssumptionViolatedException e) {
- *             guidance.handleResult(ASSUMPTION_VIOLATED, e);
+ *             guidance.handleResult(INVALID, e);
  *         } catch (Throwable t) {
  *             guidance.handleResult(FAILURE, e);
  *         }
@@ -82,7 +82,7 @@ public interface Guidance {
      * If <tt>result</tt> is <tt>SUCCESS</tt>, then
      * <tt>error</tt> MUST be <tt>null</tt>.
      *
-     * If <tt>result</tt> is <tt>ASSUMPTION_VIOLATED</tt>,
+     * If <tt>result</tt> is <tt>INVALID</tt>,
      * then <tt>error</tt> is an
      * <tt>AssumptionViolatedException</tt>.
      *

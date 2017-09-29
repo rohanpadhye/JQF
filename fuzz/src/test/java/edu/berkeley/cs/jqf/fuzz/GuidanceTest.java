@@ -91,7 +91,7 @@ public class GuidanceTest {
     public void testAssumptionViolated() {
         GuidedFuzzing.run(GuidanceTestFuzzer.class, "assumptionViolated", guidance);
         Mockito.verify(guidance).handleResult(
-                ArgumentMatchers.eq(Result.ASSUMPTION_VIOLATED),
+                ArgumentMatchers.eq(Result.INVALID),
                 ArgumentMatchers.isA(AssumptionViolatedException.class));
     }
 

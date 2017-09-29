@@ -41,9 +41,10 @@ public enum Result {
     SUCCESS,
 
     /**
-     * An <tt>assume</tt> statement was falsified.
+     * The results of this run are to be discarded, as
+     * the input invalidated certain assumptions.
      */
-    ASSUMPTION_VIOLATED,
+    INVALID,
 
     /**
      * The test method threw an uncaught exception.
