@@ -136,18 +136,17 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             double redundancyScore =
                     computeRedundancyScore(memoryAccesses.get(aec).values());
 
-            //scores.println(redundancyScore);
 
             // Discretize the score to a 8-bit value
             byte redundancyByte = (byte) discretizeScore(redundancyScore);
 
-            if (redundancyByte > 0) {
-                // Get an index in the upper half of the tracebits map
-                int idx = COVERAGE_MAP_SIZE / 2 + iidToEdgeIdx(aec, COVERAGE_MAP_SIZE / 2);
+            // Get an index in the upper half of the tracebits map
+            int idx = COVERAGE_MAP_SIZE / 2 + iidToEdgeIdx(aec, COVERAGE_MAP_SIZE / 2);
 
-                // Add mapping to trace bits
-                traceBits[idx] = redundancyByte;
-            }
+            // Add mapping to trace bits
+            traceBits[idx] = redundancyByte;
+            //scores.println(String.format("idx = %d, score = %f, value = %d", idx, redundancyScore, redundancyByte));
+
         }
 
         // Delegate feedback-sending to parent
