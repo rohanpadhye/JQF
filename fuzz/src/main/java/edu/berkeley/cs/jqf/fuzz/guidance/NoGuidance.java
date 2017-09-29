@@ -29,6 +29,7 @@
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
@@ -42,15 +43,17 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  */
 public class NoGuidance implements Guidance {
 
-    private boolean keepGoing = true;
-    private long numTrials = 0;
-    private final long maxTrials;
+    protected boolean keepGoing = true;
+    protected long numTrials = 0;
+    protected final long maxTrials;
+    protected final PrintStream out;
 
-    public NoGuidance(long maxTrials) {
+    public NoGuidance(long maxTrials, PrintStream out) {
         if (maxTrials <= 0) {
             throw new IllegalArgumentException("maxTrials must be greater than 0");
         }
         this.maxTrials = maxTrials;
+        this.out = out;
     }
 
     @Override
@@ -67,8 +70,10 @@ public class NoGuidance implements Guidance {
     public void handleResult(Result result, Throwable error) {
         numTrials++;
         if (error != null) {
-            error.printStackTrace();
-            this.keepGoing = false;
+            if (out != null) {
+                error.printStackTrace(out);
+            }
+            // this.keepGoing = false;
         }
 
         if (numTrials >= maxTrials) {

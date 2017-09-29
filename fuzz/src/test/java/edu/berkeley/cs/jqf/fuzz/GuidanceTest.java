@@ -75,7 +75,7 @@ public class GuidanceTest {
     }
 
     @Spy
-    Guidance guidance = new NoGuidance(1);
+    Guidance guidance = new NoGuidance(1, null);
 
     @Mock()
     Consumer<TraceEvent> eventHandler;
@@ -83,13 +83,13 @@ public class GuidanceTest {
 
     @Test
     public void testSuccess() {
-        GuidedFuzzing.run(GuidanceTestFuzzer.class, "success", guidance);
+        GuidedFuzzing.run(GuidanceTestFuzzer.class, "success", guidance, null);
         Mockito.verify(guidance).handleResult(Result.SUCCESS, null);
     }
 
     @Test
     public void testAssumptionViolated() {
-        GuidedFuzzing.run(GuidanceTestFuzzer.class, "assumptionViolated", guidance);
+        GuidedFuzzing.run(GuidanceTestFuzzer.class, "assumptionViolated", guidance, null);
         Mockito.verify(guidance).handleResult(
                 ArgumentMatchers.eq(Result.INVALID),
                 ArgumentMatchers.isA(AssumptionViolatedException.class));
@@ -97,7 +97,7 @@ public class GuidanceTest {
 
     @Test
     public void testUncaughtException() {
-        GuidedFuzzing.run(GuidanceTestFuzzer.class, "uncaughtException", guidance);
+        GuidedFuzzing.run(GuidanceTestFuzzer.class, "uncaughtException", guidance, null);
         Mockito.verify(guidance).handleResult(
                 ArgumentMatchers.eq(Result.FAILURE),
                 ArgumentMatchers.isA(RuntimeException.class));
@@ -106,7 +106,7 @@ public class GuidanceTest {
 
     @Test
     public void testAssertionFailure() {
-        GuidedFuzzing.run(GuidanceTestFuzzer.class, "assertionFailure", guidance);
+        GuidedFuzzing.run(GuidanceTestFuzzer.class, "assertionFailure", guidance, null);
         Mockito.verify(guidance).handleResult(
                 ArgumentMatchers.eq(Result.FAILURE),
                 ArgumentMatchers.isA(AssertionError.class));

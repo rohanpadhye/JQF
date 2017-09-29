@@ -24,6 +24,8 @@
 */
 package edu.berkeley.cs.jqf.fuzz.junit;
 
+import java.io.PrintStream;
+
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.NoGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
@@ -50,7 +52,7 @@ public class GuidedFuzzing {
         if (guidance == null) {
             System.err.println(String.format("Warning: No guidance set. " +
                     " Falling back to default %d trials with no feedback", DEFAULT_MAX_TRIALS));
-            setGuidance(new NoGuidance(100_000L));
+            setGuidance(new NoGuidance(DEFAULT_MAX_TRIALS, System.err));
         }
 
         return guidance;
@@ -61,7 +63,7 @@ public class GuidedFuzzing {
     }
 
     public synchronized static void run(String testClassName, String testMethod,
-                                        Guidance guidance) throws ClassNotFoundException {
+                                        Guidance guidance, PrintStream out) throws ClassNotFoundException {
         Class<?> testClass =
         java.lang.Class.forName(testClassName, true, ClassLoader.getSystemClassLoader());
 
@@ -70,13 +72,12 @@ public class GuidedFuzzing {
             throw new IllegalArgumentException(testClassName + " is not annotated with @RunWith(JQF.class)");
         }
 
-        run(testClass, testMethod, guidance);
+        run(testClass, testMethod, guidance, out);
 
     }
 
-    public synchronized static void run(Class<?> testClass,
-                           String testMethod, Guidance guidance) {
-
+    public synchronized static void run(Class<?> testClass, String testMethod,
+                                        Guidance guidance, PrintStream out) {
 
         // Set the static guided instance
         setGuidance(guidance);
@@ -93,7 +94,9 @@ public class GuidedFuzzing {
         // Run the test and make sure to de-register the guidance before returning
         try {
             JUnitCore junit = new JUnitCore();
-            junit.addListener(new TextListener(System.out));
+            if (out != null) {
+                junit.addListener(new TextListener(out));
+            }
             junit.run(testRequest);
         } finally {
             unsetGuidance();

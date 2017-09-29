@@ -54,7 +54,7 @@ public class ReproDriver {
             Guidance guidance = new ReproGuidance(testInputFile);
 
             // Run the Junit test
-            GuidedFuzzing.run(testClassName, testMethodName, guidance);
+            GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
 
         } catch (ClassNotFoundException e) {
             System.err.println(String.format("Cannot load class %s", testClassName));

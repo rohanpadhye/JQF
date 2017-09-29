@@ -50,10 +50,10 @@ public class RandomDriver {
 
         try {
             // Load the guidance
-            Guidance guidance = new NoGuidance(maxTrials);
+            Guidance guidance = new NoGuidance(maxTrials, System.err);
 
             // Run the Junit test
-            GuidedFuzzing.run(testClassName, testMethodName, guidance);
+            GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
 
         } catch (ClassNotFoundException e) {
             System.err.println(String.format("Cannot load class %s", testClassName));
