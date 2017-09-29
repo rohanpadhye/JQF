@@ -50,7 +50,7 @@ public class RedundancyTest {
         int discrete = AFLRedundancyGuidance.discretizeScore(score);
 
         // Ensure that the discretization is within the byte range
-        Assert.assertTrue(discrete >= 0 && discrete < 256);
+        Assert.assertTrue(discrete >= 0 && discrete < 65536);
 
     }
 

@@ -137,15 +137,21 @@ public class AFLRedundancyGuidance extends AFLGuidance {
                     computeRedundancyScore(memoryAccesses.get(aec).values());
 
             if (redundancyScore > 0.0) {
-                // Discretize the score to a 8-bit value
-                byte redundancyByte = (byte) discretizeScore(redundancyScore);
+                // Discretize the score to a 16-bit value
+                int discreteScore = discretizeScore(redundancyScore);
+                assert (discreteScore > 0 && discreteScore < (1 << 16));
 
                 // Get an index in the upper half of the tracebits map
-                int idx = COVERAGE_MAP_SIZE / 2 + iidToEdgeIdx(aec, COVERAGE_MAP_SIZE / 2);
+                int idx = COVERAGE_MAP_SIZE / 2 +
+                        2 * iidToEdgeIdx(aec, COVERAGE_MAP_SIZE / 4);
+                assert(idx > COVERAGE_MAP_SIZE / 2 && idx < COVERAGE_MAP_SIZE);
+                assert(idx % 2 == 0);
 
-                // Add mapping to trace bits
-                traceBits[idx] = redundancyByte;
-                // scores.println(String.format("idx = %d, score = %f, value = %d", idx, redundancyScore, redundancyByte));
+                // Add mapping to trace bits (little-endian 16-bit value)
+                traceBits[idx] = (byte) discreteScore;
+                traceBits[idx + 1] = (byte) (discreteScore >> 8);
+                //scores.println(String.format("idx = %d, score = %f, value = %d (0x%04x = 0x%02x%02x)", idx, redundancyScore, discreteScore,
+                //        discreteScore, traceBits[idx+1], traceBits[idx]));
             }
 
         }
@@ -196,13 +202,13 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     }
 
     /**
-     * Discretizes a redundancy score to a byte using constrast scaling.
+     * Discretizes a redundancy score to a 16-bit value.
      *
      * @param score a value between 0.0 and 1.0, inclusive
-     * @return      a value between 0 and 255, inclusive
+     * @return      a value between 0 and 2^16-1, inclusive
      */
     public static int discretizeScore(double score) {
-        return (int) Math.round(255 * (Math.pow(2, score) - 1));
+        return (int) Math.round(((1 << 16) - 1) * (Math.pow(2, score) - 1));
     }
 
 
