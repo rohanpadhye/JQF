@@ -18,11 +18,12 @@ import org.objectweb.asm.ClassWriter;
 
 @SuppressWarnings("unused") // Registered via -javaagent
 public class SnoopInstructionTransformer implements ClassFileTransformer {
-  private boolean writeInstrumentedClasses = true;
-  private String instDir = "instrumented";
+  private final String instDir;
+  private final boolean verbose;
+
   public SnoopInstructionTransformer() {
-    writeInstrumentedClasses = Config.instance.writeInstrumentedClasses;
-    instDir = ".cache";
+    instDir = Config.instance.instrumentationCacheDir;
+    verbose = Config.instance.verbose;
   }
   
   private static String[] banned = {"[", "java/lang", "janala", "org/objectweb/asm", "sun", "jdk", "java/util/function"};
@@ -105,19 +106,21 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
         return instrumentedBytes.get(cname);
       }
 
-      File cachedFile = new File(instDir + "/" + cname + ".instrumented.class");
-      File referenceFile = new File(instDir + "/" + cname + ".original.class");
-      if (cachedFile.exists() && referenceFile.exists()) {
-        try {
-          byte[] origBytes = Files.readAllBytes(referenceFile.toPath());
-          if (Arrays.equals(cbuf, origBytes)) {
-            byte[] instBytes = Files.readAllBytes(cachedFile.toPath());
-            System.err.println(" Found in disk-cache!");
-            instrumentedBytes.put(cname, instBytes);
-            return instBytes;
+      if (instDir != null) {
+        File cachedFile = new File(instDir + "/" + cname + ".instrumented.class");
+        File referenceFile = new File(instDir + "/" + cname + ".original.class");
+        if (cachedFile.exists() && referenceFile.exists()) {
+          try {
+            byte[] origBytes = Files.readAllBytes(referenceFile.toPath());
+            if (Arrays.equals(cbuf, origBytes)) {
+              byte[] instBytes = Files.readAllBytes(cachedFile.toPath());
+              System.err.println(" Found in disk-cache!");
+              instrumentedBytes.put(cname, instBytes);
+              return instBytes;
+            }
+          } catch (IOException e) {
+            System.err.print(" <cache error> ");
           }
-        } catch (IOException e) {
-          System.err.print(" <cache error> ");
         }
       }
 
@@ -137,8 +140,10 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
       System.err.println("Done!");
       instrumentedBytes.put(cname, ret);
 
-      if (writeInstrumentedClasses) {
+      if (instDir != null) {
         try {
+          File cachedFile = new File(instDir + "/" + cname + ".instrumented.class");
+          File referenceFile = new File(instDir + "/" + cname + ".original.class");
           File parent = new File(cachedFile.getParent());
           parent.mkdirs();
           try(FileOutputStream out = new FileOutputStream(cachedFile)) {

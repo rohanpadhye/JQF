@@ -11,36 +11,50 @@ class Config {
 
   public static final Config instance = new Config();
 
-  public boolean verbose = true;
-  public boolean writeInstrumentedClasses = true;
-  public String analysisClass = "janala/logger/StringLogger";
-  public String[] excludeInst = new String[0];
-  public String[] includeInst  = new String[0];
-  public boolean instrumentHeapLoad = false;
+  public final boolean verbose;
+  public final String analysisClass;
+  public final String[] excludeInst;
+  public final String[] includeInst;
+  public final boolean instrumentHeapLoad;
+  public final String instrumentationCacheDir;
 
-  public Config() {
+  private Config() {
+      // Read properties from the conf file
       Properties properties = new Properties();
-      try(InputStream propStream = new FileInputStream(propFile)) {
-        properties.load(propStream);
+      try (InputStream propStream = new FileInputStream(propFile)) {
+          properties.load(propStream);
       } catch (IOException e) {
-        // Swallow exception and continue with defaults
-        e.printStackTrace();
-        return;
+          // Swallow exception and continue with defaults
+          e.printStackTrace();
       }
 
-      verbose = Boolean.parseBoolean(properties.getProperty("janala.isVerbose", "false"));
-      writeInstrumentedClasses = Boolean.parseBoolean(properties.getProperty("janala.writeInstrumentedClasses", "true"));
+      // Let JVM command-line properties override these
+      properties.putAll(System.getProperties());
+
+      verbose = Boolean.parseBoolean(properties.getProperty("janala.verbose", "false"));
+
       analysisClass =
-              properties.getProperty("janala.snoopClass", "janala.instrument.SnoopLogger").replace('.', '/');
-      String excludeInstStr = properties.getProperty("janala.excludes", "");
-      if (excludeInstStr.length() > 0)
-        excludeInst = excludeInstStr.split(",");
-      else
-        excludeInst = new String[0];
-      String includeInstStr = properties.getProperty("janala.includes", "");
-      if (includeInstStr.length() > 0)
-        includeInst = includeInstStr.split(",");
+              properties.getProperty("janala.snoopClass", "janala.instrument.SnoopLogger")
+                      .replace('.', '/');
+
+
       instrumentHeapLoad = Boolean.parseBoolean(properties.getProperty("janala.instrumentHeapLoad", "false"));
+
+      String excludeInstStr = properties.getProperty("janala.excludes", "");
+      if (excludeInstStr.length() > 0) {
+          excludeInst = excludeInstStr.replace('.', '/').split(",");
+      } else {
+          excludeInst = new String[0];
+      }
+
+      String includeInstStr = properties.getProperty("janala.includes", "");
+      if (includeInstStr.length() > 0) {
+          includeInst = includeInstStr.replace('.', '/').split(",");
+      } else {
+          includeInst = new String[0];
+      }
+
+      instrumentationCacheDir = properties.getProperty("janala.instrumentationCacheDir");
 
   }
 }
