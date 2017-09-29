@@ -44,9 +44,6 @@ import java.util.function.Consumer;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
-import static edu.berkeley.cs.jqf.fuzz.guidance.Result.INVALID;
-import static edu.berkeley.cs.jqf.fuzz.guidance.Result.FAILURE;
-
 
 /**
  * A front-end that uses AFL for guided fuzzing.
@@ -172,18 +169,46 @@ public class AFLGuidance implements Guidance {
         // Reset the feedback buffer for a new run
         feedback.clear();
 
-        // Put the return status into the feedback buffer
-        // --> Return status is 1 if and only if an error occurs
-        int status = result == FAILURE ? 1 : 0;
-        feedback.putInt(status);
 
-        // Put AFL's trace_bits map into the feedback buffer
-        // --> Skip this step if an assumption was violated
-        if (result != INVALID) {
-            for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
-                feedback.put(traceBits[i]);
+        // Check result and set status value
+        int status;
+        switch (result) {
+            case SUCCESS: {
+                // For success, the exit value is zero
+                status = 0;
+                break;
+            }
+            case FAILURE: {
+                // For failure, the exit value is non-zero
+                status = 1;
+                break;
+            }
+            case INVALID: {
+                // For invalid inputs, we don't send a non-zero
+                // status to prevent AFL from marking this as a "crash"
+                status = 0;
+
+                // However, we clear trace-bits so that AFL does not
+                // ever consider such an input as interesting enough to
+                // save in its queue
+                for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
+                    traceBits[i] = 0;
+                }
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Invalid result: " + result);
             }
         }
+
+        // Send the status value to AFL
+        feedback.putInt(status);
+
+        // Send trace-bits to AFL as a contiguous array
+        for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
+            feedback.put(traceBits[i]);
+        }
+
 
         // Send feedback to AFL
         try {
