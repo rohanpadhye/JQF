@@ -53,7 +53,7 @@ public class ReproDriver {
 
         try {
             // Maybe log the trace
-            String traceDirName = System.getProperty("jqf.traceDir");
+            String traceDirName = System.getProperty("jqf.repro.traceDir");
             File traceDir = traceDirName != null ? new File(traceDirName) : null;
 
             // Load the guidance

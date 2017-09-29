@@ -27,10 +27,17 @@ if [ -z "${CLASSPATH}" ]; then
   CLASSPATH="."
 fi  
 
+# Java Agent config (can be turned off using env var)
+if [ -n "$JQF_DISABLE_INSTRUMENTATION" ]; then
+  JAVAAGENT=""
+else
+  JAVAAGENT="-javaagent:${INST_JAR}"
+fi
+
 # Run Java
 java -ea \
   -Xbootclasspath/a:"$INST_CLASSPATH" \
-  -javaagent:"${INST_JAR}" \
+  ${JAVAAGENT} \
   -Djanala.conf="${SCRIPT_DIR}/janala.conf" \
   -cp "${FUZZ_CLASSPATH}:${CLASSPATH}" \
   ${JVM_OPTS} \

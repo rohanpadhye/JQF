@@ -14,4 +14,5 @@ if [ $# -lt 3 ]; then
 fi
 
 # Run the random input driver
+export JQF_DISABLE_INSTRUMENTATION=1
 $ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.drivers.RandomDriver $@

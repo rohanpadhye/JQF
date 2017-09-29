@@ -9,9 +9,17 @@ ROOT_DIR=`dirname $SCRIPT_DIR`
 
 # Check arguments
 if [ $# -lt 3 ]; then
-  echo "Usage: $0 TEST_CLASS TEST_METHOD INPUT_FILE" >&2
+  echo "Usage: $0 [-i] TEST_CLASS TEST_METHOD INPUT_FILE" >&2
   exit 1
 fi
+
+if [ "$1" = "-i" ]; then
+  export JVM_OPTS="-Djqf.repro.traceDir=. $JVM_OPTS"
+  shift 1
+else
+  export JQF_DISABLE_INSTRUMENTATION=1
+fi
+
 
 # Run the repro input driver
 $ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.drivers.ReproDriver $@
