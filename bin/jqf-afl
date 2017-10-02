@@ -31,13 +31,13 @@ class=$1
 method=$2
 input=$3
 
-a2j=/tmp/a2j
-j2a=/tmp/j2a
+tmpdir=$(mktemp -d /tmp/jqf.XXX)
 
-rm -f $a2j
-rm -f $j2a
-mkfifo $a2j
-mkfifo $j2a
+a2j="$tmpdir/a2j"
+j2a="$tmpdir/j2a"
+
+mkfifo "$a2j"
+mkfifo "$j2a"
 
 # Run the AFL driver in the background
 "$ROOT_DIR/scripts/jqf-driver.sh" \
