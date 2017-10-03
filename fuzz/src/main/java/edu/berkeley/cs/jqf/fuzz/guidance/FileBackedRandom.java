@@ -115,7 +115,7 @@ public class FileBackedRandom extends Random implements AutoCloseable {
             }
 
         } catch (IOException e) {
-            throw new GuidanceIOException(e);
+            throw new GuidanceException(e);
         }
 
         // Interpret the bytes read as an integer

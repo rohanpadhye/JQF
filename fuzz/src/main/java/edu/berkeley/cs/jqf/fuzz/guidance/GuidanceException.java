@@ -24,10 +24,8 @@
 */
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
-import java.io.IOException;
-
-public class GuidanceIOException extends RuntimeException {
-    public GuidanceIOException(IOException e) {
+public class GuidanceException extends RuntimeException {
+    public GuidanceException(Throwable e) {
         super(e);
     }
 

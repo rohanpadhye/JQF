@@ -28,7 +28,6 @@
  */
 package edu.berkeley.cs.jqf.fuzz.junit.quickcheck;
 
-import java.io.IOException;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
@@ -45,7 +44,7 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.fuzz.guidance.FastSourceOfRandomness;
 import edu.berkeley.cs.jqf.fuzz.guidance.FileBackedRandom;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
-import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceIOException;
+import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
@@ -122,6 +121,9 @@ public class FuzzStatement extends Statement {
                         // Treat this as an assumption failure, so that the guidance considers the
                         // generated input as INVALID
                         throw new AssumptionViolatedException("FileBackedRandom does not have enough data", e);
+                    } catch (Throwable e) {
+                        // Throw the guidance exception outside to stop fuzzing
+                        throw new GuidanceException(e);
                     }
 
                     // Attempt to run the trial
@@ -129,9 +131,9 @@ public class FuzzStatement extends Statement {
 
                     // If we reached here, then the trial must be a success
                     result = SUCCESS;
-                } catch (GuidanceIOException e) {
-                    // Throw the captured IOException outside to stop fuzzing
-                    throw e.getCause();
+                } catch (GuidanceException e) {
+                    // Throw the guidance exception outside to stop fuzzing
+                    throw e;
                 } catch (AssumptionViolatedException e) {
                     result = INVALID;
                     error = e;
@@ -148,8 +150,8 @@ public class FuzzStatement extends Statement {
 
 
             }
-        } catch (IOException e) {
-            System.err.println("Fuzzing stopped due to I/O exception: " + e.getMessage());
+        } catch (GuidanceException e) {
+            System.err.println("Fuzzing stopped due to guidance exception: " + e.getMessage());
         }
 
     }

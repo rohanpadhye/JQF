@@ -35,6 +35,16 @@ import com.pholser.junit.quickcheck.internal.Ranges.Type;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 /**
+ * A source of randomness with better performance but looser
+ * statistical guarantees.
+ *
+ * This class is meant for use with guided fuzzing, where the
+ * {@link Random} delegate is usually a {@link FileBackedRandom}.
+ * In this case, the random source does not have to give any
+ * statistical guarantees such as uniformity or independentness,
+ * and therefore is amenable to several optimizations, which are
+ * implemented in this class.
+ *
  * @author Rohan Padhye
  */
 public class FastSourceOfRandomness extends SourceOfRandomness {
@@ -48,7 +58,12 @@ public class FastSourceOfRandomness extends SourceOfRandomness {
         this.delegate = delegate;
     }
 
+    @Override
+    public Random toJDKRandom() {
+        return this.delegate;
+    }
 
+    @Override
     public int nextInt(int min, int max) {
         if (min == Integer.MIN_VALUE && max == Integer.MAX_VALUE) {
             return delegate.nextInt();
@@ -57,6 +72,7 @@ public class FastSourceOfRandomness extends SourceOfRandomness {
         return this.fastChooseIntInRange(min, max);
     }
 
+    @Override
     public long nextLong(long min, long max) {
         int comparison = Ranges.checkRange(Type.INTEGRAL, min, max);
 
@@ -67,14 +83,17 @@ public class FastSourceOfRandomness extends SourceOfRandomness {
         return comparison == 0 ? min : Ranges.choose(this, min, max);
     }
 
+    @Override
     public short nextShort(short min, short max) {
         return (short)(this.fastChooseIntInRange(min, max));
     }
 
+    @Override
     public byte nextByte(byte min, byte max) {
         return (byte)(this.fastChooseIntInRange(min, max));
     }
 
+    @Override
     public char nextChar(char min, char max) {
         Ranges.checkRange(Type.CHARACTER, min, max);
         return (char)(this.fastChooseIntInRange(min, max));

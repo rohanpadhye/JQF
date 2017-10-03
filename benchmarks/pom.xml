@@ -36,6 +36,12 @@
             <artifactId>junit-quickcheck-generators</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.jgrapht</groupId>
+            <artifactId>jgrapht-core</artifactId>
+            <version>1.0.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
