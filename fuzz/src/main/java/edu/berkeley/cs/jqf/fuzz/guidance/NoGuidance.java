@@ -73,7 +73,7 @@ public class NoGuidance implements Guidance {
             if (out != null) {
                 error.printStackTrace(out);
             }
-            // this.keepGoing = false;
+            this.keepGoing = false;
         }
 
         if (numTrials >= maxTrials) {
