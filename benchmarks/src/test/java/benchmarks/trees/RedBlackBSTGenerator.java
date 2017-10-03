@@ -1,12 +1,12 @@
-package benchmarks;
+package benchmarks.trees;
+
+import java.util.function.Predicate;
 
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.generator.internal.Comparables;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-
-import java.util.function.Predicate;
 
 import static com.pholser.junit.quickcheck.internal.Reflection.defaultValueOf;
 

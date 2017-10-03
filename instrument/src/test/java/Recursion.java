@@ -7,7 +7,7 @@ public class Recursion {
 
     public static void main(String args[]) {
         int[] data = {1, 34, 21, 15, 61, 31, -2, 14, 8, 99, 7};
-        BinaryTree tree = new BinaryTree();
+        benchmarks.BinaryTree tree = new benchmarks.BinaryTree();
         for (int x : data) {
             tree.insert(x);
         }

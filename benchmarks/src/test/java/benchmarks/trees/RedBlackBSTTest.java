@@ -1,3 +1,5 @@
+package benchmarks.trees;
+
 /*
  * Copyright (c) 2017, University of California, Berkeley
  *
@@ -26,55 +28,26 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks;
 
-import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
-
-import benchmarks.generators.ImageInputStreamGenerator;
 import com.pholser.junit.quickcheck.From;
+import com.pholser.junit.quickcheck.generator.InRange;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import org.junit.Assert;
 import org.junit.runner.RunWith;
 
+
+/**
+ * Created by clemieux on 9/15/17.
+ */
 @RunWith(JQF.class)
-public class PngReaderTest {
+public class RedBlackBSTTest {
 
-    @BeforeClass
-    public static void disableCaching() {
-        // Disable disk-caching as it slows down fuzzing
-        // and makes image reads non-idempotent
-        ImageIO.setUseCache(false);
-    }
-
-    private ImageReader reader;
-
-    @Before
-    public void setUp() {
-        this.reader = ImageIO.getImageReadersByFormatName("png").next();
-    }
-
-    @After
-    public void tearDown() {
-        this.reader.dispose();
-    }
 
     @Fuzz
-    public void read(@From(ImageInputStreamGenerator.class) ImageInputStream input) {
-        try {
-            // Decode image from input stream
-            ImageReadParam param = reader.getDefaultReadParam();
-            reader.setInput(input, true, true);
-            reader.read(0, param);
-        } catch (IOException e) {
-            // Ignore decode errors
-        }
-
+    public void isRBT(@InRange(minInt=10, maxInt=30)
+                          @From(RedBlackBSTGenerator.class)
+                                  RedBlackBST<Integer, Integer> tree) {
+        Assert.assertFalse(tree.check());
     }
 }

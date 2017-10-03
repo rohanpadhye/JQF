@@ -1,4 +1,4 @@
-package benchmarks;
+package benchmarks.trees;
 
 /**
  * Created by clemieux on 9/18/17.

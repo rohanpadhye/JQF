@@ -26,28 +26,62 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks.generators;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-
-import com.pholser.junit.quickcheck.generator.GenerationStatus;
-import com.pholser.junit.quickcheck.generator.Generator;
-import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+package benchmarks.trees;
 
 /**
  * @author Rohan Padhye
  */
-public class InputStreamGenerator extends Generator<InputStream> {
-    public InputStreamGenerator() {
-        super(InputStream.class);
+public class BinaryTree {
+    int size = 0;
+    private static class Node {
+        Node left;
+        Node right;
+        int value;
+
+        Node(int val) {
+            this.value = val;
+        }
     }
 
+    private Node root;
 
-    @Override
-    public InputStream generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
-        // Generate a byte-array backed input stream from its constructor
-        byte[] bytes = sourceOfRandomness.nextBytes(generationStatus.size());
-        return new ByteArrayInputStream(bytes);
+    public void insert(int x) {
+        root = insertIntoNode(x, root);
+    }
+
+    public int size() {
+        return this.size;
+    }
+
+    private Node insertIntoNode(int x, Node n) {
+        if (n == null) {
+            size++;
+            return new Node(x);
+        } else if (x < n.value) {
+            n.left = insertIntoNode(x, n.left);
+            return n;
+        } else if (x > n.value) {
+            n.right = insertIntoNode(x, n.right);
+            return n;
+        } else {
+            return n;
+        }
+    }
+
+    public boolean contains(int x) {
+        return nodeContains(root, x);
+    }
+
+    private boolean nodeContains(Node n, int x) {
+        if (n == null) {
+            return false;
+        } else if (x < n.value) {
+            return nodeContains(n.left, x);
+        } else if (x > n.value) {
+            return nodeContains(n.right, x);
+        } else {
+            return true;
+        }
     }
 }

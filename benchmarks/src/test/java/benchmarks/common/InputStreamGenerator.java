@@ -1,5 +1,3 @@
-package benchmarks;
-
 /*
  * Copyright (c) 2017, University of California, Berkeley
  *
@@ -28,25 +26,28 @@ package benchmarks;
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package benchmarks.common;
 
-import com.pholser.junit.quickcheck.From;
-import com.pholser.junit.quickcheck.generator.InRange;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.Assert;
-import org.junit.runner.RunWith;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 
+import com.pholser.junit.quickcheck.generator.GenerationStatus;
+import com.pholser.junit.quickcheck.generator.Generator;
+import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 /**
- * Created by clemieux on 9/15/17.
+ * @author Rohan Padhye
  */
-@RunWith(JQF.class)
-public class RedBlackBSTTest {
+public class InputStreamGenerator extends Generator<InputStream> {
+    public InputStreamGenerator() {
+        super(InputStream.class);
+    }
 
 
-    @Fuzz
-    public void isRBT(@InRange(minInt=10, maxInt=30) @From(RedBlackBSTGenerator.class) RedBlackBST<Integer, Integer> tree) {
-       // System.out.println("Checking...");
-        Assert.assertFalse(tree.check());
+    @Override
+    public InputStream generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
+        // Generate a byte-array backed input stream from its constructor
+        byte[] bytes = sourceOfRandomness.nextBytes(generationStatus.size());
+        return new ByteArrayInputStream(bytes);
     }
 }

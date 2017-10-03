@@ -1,4 +1,4 @@
-package benchmarks;
+package benchmarks.trees;
 
 import java.util.HashSet;
 import java.util.LinkedList;

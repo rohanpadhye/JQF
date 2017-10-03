@@ -26,7 +26,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package benchmarks;
+package benchmarks.jdk;
 
 import java.util.Arrays;
 
@@ -46,7 +46,7 @@ public class SortTest {
 
     @BeforeClass
     public static void ensureTimSortEnabled() {
-        Assert.assertFalse(Boolean.getBoolean("java.util.Arrays.useLegacyMergeSort"));
+        Assert.assertFalse(Boolean.getBoolean("java.jdk.Arrays.useLegacyMergeSort"));
     }
 
     @Fuzz

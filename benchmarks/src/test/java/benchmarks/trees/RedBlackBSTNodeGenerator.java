@@ -1,10 +1,10 @@
-package benchmarks;
+package benchmarks.trees;
+
+import java.util.Optional;
 
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-
-import java.util.Optional;
 
 /**
  * Created by clemieux on 9/15/17.
