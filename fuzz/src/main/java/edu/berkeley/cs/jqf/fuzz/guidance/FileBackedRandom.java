@@ -51,6 +51,8 @@ public class FileBackedRandom extends Random implements AutoCloseable {
     private final File source;
     private final InputStream inputStream;
     private final ByteBuffer byteBuffer = ByteBuffer.allocate(4);
+    private int totalBytesRead = 0;
+
     /**
      * Constructs a file-backed random generator.
      *
@@ -113,6 +115,7 @@ public class FileBackedRandom extends Random implements AutoCloseable {
             if (actualBytesRead != maxBytesToRead) {
                 throw new IllegalStateException("Random bits requested but end-of-file reached");
             }
+            totalBytesRead += actualBytesRead;
 
         } catch (IOException e) {
             throw new GuidanceException(e);
@@ -130,6 +133,10 @@ public class FileBackedRandom extends Random implements AutoCloseable {
     @Override
     public void close() throws IOException {
         inputStream.close();
+    }
+
+    public int getTotalBytesRead() {
+        return this.totalBytesRead;
     }
 
 }
