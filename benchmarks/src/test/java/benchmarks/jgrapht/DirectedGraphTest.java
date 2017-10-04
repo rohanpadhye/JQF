@@ -28,36 +28,23 @@
  */
 package benchmarks.jgrapht;
 
-import com.pholser.junit.quickcheck.generator.GenerationStatus;
-import com.pholser.junit.quickcheck.generator.Generator;
-import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleGraph;
+import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import org.jgrapht.DirectedGraph;
+import org.jgrapht.GraphTests;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.runner.RunWith;
 
 /**
  * @author Rohan Padhye
  */
-public class SimpleGraphGenerator extends Generator<SimpleGraph> {
+@RunWith(JQF.class)
+public class DirectedGraphTest {
 
-    GraphModel model;
-
-    public SimpleGraphGenerator() {
-        super(SimpleGraph.class);
-    }
-
-    public void configure(GraphModel model) {
-        this.model = model;
-    }
-
-    @Override
-    public SimpleGraph<Integer, DefaultEdge> generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
-        // Create graph instance
-        SimpleGraph<Integer, DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
-
-        // Populate nodes and edges based on configured model
-        GraphModelBasedGenerator.generateGraph(graph, model, sourceOfRandomness, false, false);
-
-        // Return handle to this graph
-        return graph;
+    @Fuzz
+    public void connected(@GraphModel(nodes=5, p=0.95) DirectedGraph graph) {
+        Assume.assumeTrue(GraphTests.isStronglyConnected(graph));
+        Assert.assertTrue(GraphTests.isWeaklyConnected(graph));
     }
 }

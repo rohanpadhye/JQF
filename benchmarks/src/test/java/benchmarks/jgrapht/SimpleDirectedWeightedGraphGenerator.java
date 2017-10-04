@@ -31,18 +31,18 @@ package benchmarks.jgrapht;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 
 /**
  * @author Rohan Padhye
  */
-public class SimpleGraphGenerator extends Generator<SimpleGraph> {
+public class SimpleDirectedWeightedGraphGenerator extends Generator<SimpleDirectedWeightedGraph> {
 
     GraphModel model;
 
-    public SimpleGraphGenerator() {
-        super(SimpleGraph.class);
+    public SimpleDirectedWeightedGraphGenerator() {
+        super(SimpleDirectedWeightedGraph.class);
     }
 
     public void configure(GraphModel model) {
@@ -50,12 +50,17 @@ public class SimpleGraphGenerator extends Generator<SimpleGraph> {
     }
 
     @Override
-    public SimpleGraph<Integer, DefaultEdge> generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
+    public SimpleDirectedWeightedGraph<Integer, DefaultWeightedEdge> generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
         // Create graph instance
-        SimpleGraph<Integer, DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
+        SimpleDirectedWeightedGraph<Integer, DefaultWeightedEdge> graph = new SimpleDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 
         // Populate nodes and edges based on configured model
         GraphModelBasedGenerator.generateGraph(graph, model, sourceOfRandomness, false, false);
+
+        // Set edges
+        for (DefaultWeightedEdge e : graph.edgeSet()) {
+            graph.setEdgeWeight(e, sourceOfRandomness.nextFloat());
+        }
 
         // Return handle to this graph
         return graph;

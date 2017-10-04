@@ -28,36 +28,20 @@
  */
 package benchmarks.jgrapht;
 
-import com.pholser.junit.quickcheck.generator.GenerationStatus;
-import com.pholser.junit.quickcheck.generator.Generator;
-import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleGraph;
+import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import org.jgrapht.WeightedGraph;
+import org.junit.Assert;
+import org.junit.runner.RunWith;
 
 /**
  * @author Rohan Padhye
  */
-public class SimpleGraphGenerator extends Generator<SimpleGraph> {
+@RunWith(JQF.class)
+public class WeightedGraphTest {
 
-    GraphModel model;
-
-    public SimpleGraphGenerator() {
-        super(SimpleGraph.class);
-    }
-
-    public void configure(GraphModel model) {
-        this.model = model;
-    }
-
-    @Override
-    public SimpleGraph<Integer, DefaultEdge> generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
-        // Create graph instance
-        SimpleGraph<Integer, DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
-
-        // Populate nodes and edges based on configured model
-        GraphModelBasedGenerator.generateGraph(graph, model, sourceOfRandomness, false, false);
-
-        // Return handle to this graph
-        return graph;
+    @Fuzz
+    public void checkWeights(@GraphModel(nodes=4, p=1.0) WeightedGraph graph) {
+        graph.edgeSet().forEach((e) -> Assert.assertTrue(graph.getEdgeWeight(e) >= 0));
     }
 }

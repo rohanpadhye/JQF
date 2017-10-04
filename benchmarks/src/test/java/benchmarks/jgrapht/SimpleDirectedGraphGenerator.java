@@ -32,17 +32,17 @@ import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.graph.SimpleDirectedGraph;
 
 /**
  * @author Rohan Padhye
  */
-public class SimpleGraphGenerator extends Generator<SimpleGraph> {
+public class SimpleDirectedGraphGenerator extends Generator<SimpleDirectedGraph> {
 
     GraphModel model;
 
-    public SimpleGraphGenerator() {
-        super(SimpleGraph.class);
+    public SimpleDirectedGraphGenerator() {
+        super(SimpleDirectedGraph.class);
     }
 
     public void configure(GraphModel model) {
@@ -50,9 +50,9 @@ public class SimpleGraphGenerator extends Generator<SimpleGraph> {
     }
 
     @Override
-    public SimpleGraph<Integer, DefaultEdge> generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
+    public SimpleDirectedGraph<Integer, DefaultEdge> generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
         // Create graph instance
-        SimpleGraph<Integer, DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
+        SimpleDirectedGraph<Integer, DefaultEdge> graph = new SimpleDirectedGraph<>(DefaultEdge.class);
 
         // Populate nodes and edges based on configured model
         GraphModelBasedGenerator.generateGraph(graph, model, sourceOfRandomness, false, false);
