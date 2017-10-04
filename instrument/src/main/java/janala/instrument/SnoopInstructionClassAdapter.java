@@ -7,11 +7,24 @@ import org.objectweb.asm.Opcodes;
 
 
 public class SnoopInstructionClassAdapter extends ClassVisitor {
-  private final String cname;
+  private final String className;
+  private String superName;
 
-  public SnoopInstructionClassAdapter(ClassVisitor cv, String cname) {
+  public SnoopInstructionClassAdapter(ClassVisitor cv, String className) {
     super(Opcodes.ASM5, cv);
-    this.cname = cname;
+    this.className = className;
+  }
+
+  @Override
+  public void visit(int version,
+                    int access,
+                    String name,
+                    String signature,
+                    String superName,
+                    String[] interfaces) {
+    assert (name == this.className);
+    this.superName = superName;
+    cv.visit(version, access, name, signature, superName, interfaces);
   }
 
   @Override
@@ -19,7 +32,7 @@ public class SnoopInstructionClassAdapter extends ClassVisitor {
       String signature, String[] exceptions) {
     MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
     if (mv != null) {
-      return new SnoopInstructionMethodAdapter(mv, cname, name, desc, 
+      return new SnoopInstructionMethodAdapter(mv, className, name, desc, superName,
           GlobalStateForInstrumentation.instance);
     }
     return null;

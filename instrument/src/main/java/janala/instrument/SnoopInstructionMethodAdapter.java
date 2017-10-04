@@ -18,11 +18,12 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
   private final String className;
   private final String methodName;
   private final String descriptor;
+  private final String superName;
 
   private final GlobalStateForInstrumentation instrumentationState;
 
   public SnoopInstructionMethodAdapter(MethodVisitor mv, String className,
-      String methodName, String descriptor,
+      String methodName, String descriptor, String superName,
       GlobalStateForInstrumentation instrumentationState) {
     super(ASM5, mv);
     this.isInit = methodName.equals("<init>");
@@ -30,6 +31,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     this.className = className;
     this.methodName = methodName;
     this.descriptor = descriptor;
+    this.superName = superName;
     tryCatchBlocks = new LinkedList<>();
 
     this.instrumentationState = instrumentationState;
@@ -701,11 +703,18 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
 
 
 
-      if (isInit && isSuperInitCalled == false) {
-        // This code is already inside an init method.
+      if (isInit && isSuperInitCalled == false &&
+              (owner.equals(className) || owner.equals(superName))) {
+        // Constructor calls to <init> method of the same or super class.
         //
-        // Constructor calls to <init> method of the super class. If this is the
-        // case, there is no need to wrap the method call in try catch block as
+        // XXX: This is a hack. We assume that if we see an <init> to same or
+        // super class, then it must be a super() or this() call. However,
+        // there are counter-examples such as `public Foo() { super(new Foo()); }`,
+        // which will cause broken class files. This comment is here as a forewarning
+        // for when this situation is eventually encountered due to a bytecode
+        // verification error due to stack-map frames not matching up.
+        //
+        // In this case, we do not wrap the method call in try catch block as
         // it uses uninitialized this object.
         isSuperInitCalled = true;
 
