@@ -9,6 +9,24 @@ else
   trace_file="$1"
 fi
 
-grep "^BRANCH" "$trace_file" | wc -l
+awk '
+BEGIN {
+  k = 0;
+}
+
+/^BRANCH/ {
+  counters[k]++;
+}
+
+/^# End/ {
+  files[k] = $3
+  k++;
+}
+
+END {
+  for (k in counters)
+    print counters[k], files[k];
+}' "$trace_file"
+
 
 

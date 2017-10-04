@@ -41,15 +41,18 @@ import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 public class ReproDriver {
 
     public static void main(String[] args) {
-        if (args.length != 3){
-            System.err.println("Usage: java " + ReproDriver.class + " TEST_CLASS TEST_METHOD TEST_INPUT_FILE");
+        if (args.length < 3){
+            System.err.println("Usage: java " + ReproDriver.class + " TEST_CLASS TEST_METHOD TEST_INPUT_FILE...");
             System.exit(1);
         }
 
 
         String testClassName  = args[0];
         String testMethodName = args[1];
-        String testInputFile  = args[2];
+        File[] testInputFiles = new File[args.length - 2];
+        for (int i = 0; i < testInputFiles.length; i++) {
+            testInputFiles[i] = new File(args[i+2]);
+        }
 
         try {
             // Maybe log the trace
@@ -57,7 +60,7 @@ public class ReproDriver {
             File traceDir = traceDirName != null ? new File(traceDirName) : null;
 
             // Load the guidance
-            Guidance guidance = new ReproGuidance(testInputFile, traceDir);
+            Guidance guidance = new ReproGuidance(testInputFiles, traceDir);
 
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);

@@ -47,37 +47,41 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  * @author Rohan Padhye
  */
 public class ReproGuidance implements Guidance {
-    protected boolean reproduced = false;
-    protected final File inputFile;
+    protected final File[] inputFiles;
     protected final File traceDir;
+    protected int nextFileIdx = 0;
     private List<PrintStream> traceStreams = new ArrayList<>();
 
-    public ReproGuidance(File inputFile, File traceDir) {
-        this.inputFile = inputFile;
+    public ReproGuidance(File[] inputFiles, File traceDir) {
+        this.inputFiles = inputFiles;
         this.traceDir = traceDir;
-    }
-
-    public ReproGuidance(String inputFileName, File traceDir) {
-        this(new File(inputFileName), traceDir);
     }
 
     @Override
     public File getInputFile() {
-        return inputFile;
+        return inputFiles[nextFileIdx];
     }
 
     @Override
     public boolean hasInput() {
-        return !reproduced;
+        return nextFileIdx < inputFiles.length;
     }
 
     @Override
     public void handleResult(Result result, Throwable error) {
-        reproduced = true;
+        // Print footer in log files
+        String footer = String.format("# End %s", inputFiles[nextFileIdx].toString());
+        traceStreams.forEach((out) -> out.println(footer));
 
+        // Increment file
+        nextFileIdx++;
+
+        // Show errors if any
         if (error != null) {
             error.printStackTrace();
         }
+
+
     }
 
     @Override

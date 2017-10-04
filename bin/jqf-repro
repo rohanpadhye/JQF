@@ -9,7 +9,7 @@ ROOT_DIR=`dirname $SCRIPT_DIR`
 
 # Check arguments
 if [ $# -lt 3 ]; then
-  echo "Usage: $0 [-i] TEST_CLASS TEST_METHOD INPUT_FILE" >&2
+  echo "Usage: $0 [-i] TEST_CLASS TEST_METHOD INPUT_FILE..." >&2
   exit 1
 fi
 
