@@ -12,14 +12,30 @@ if [ -z "$AFL_DIR" ]; then
   exit 2
 fi
 
-if [ "$1" = "-r" ]; then
-  afl_options="-p"
-  jqf_options="-r"
-  shift 1
-fi
+afl_options="-d -t 6000 -m 8192"
+jqf_options=""
+while getopts ":avr" opt; do
+  case $opt in
+    r)
+      afl_options="$afl_options -p"
+      jqf_options="$jqf_options -r"
+      ;;
+    v)
+      jqf_options="$jqf_options -v"
+      ;;
+    a)
+      jqf_options="$jqf_options -a"
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+  esac
+done
+shift $((OPTIND-1))
 
 if [ "$#" -lt 3 ]; then
-  echo "Usage: $0 [-r] BENCHMARK_CLASS_SUFFIX TEST_METHOD OUTPUT_DIR" >&2
+  echo "Usage: $0 [-r] [-v] BENCHMARK_CLASS_SUFFIX TEST_METHOD OUTPUT_DIR" >&2
   exit 1
 fi
 
@@ -33,5 +49,5 @@ export CLASSPATH="examples/target/classes/:examples/target/test-classes/:example
 
 echo "Fuzzing method $class#$method..."
   
-"$AFL_DIR"/afl-fuzz $afl_options -i examples/target/seeds/zeros -o "$output" -t 6000 -m 8192 -d \
+"$AFL_DIR"/afl-fuzz $afl_options -i examples/target/seeds/zeros -o "$output" \
   "$ROOT_DIR/bin/jqf-afl" $jqf_options edu.berkeley.cs.jqf.examples."$class" "$method" @@
