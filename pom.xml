@@ -16,7 +16,7 @@
     <modules>
         <module>fuzz</module>
         <module>instrument</module>
-        <module>benchmarks</module>
+        <module>examples</module>
     </modules>
 
     <dependencyManagement>
