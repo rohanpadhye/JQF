@@ -70,7 +70,7 @@ public @interface GraphModel {
      * The probability of generating an edge
      * between a pair of nodes.
      *
-     * This value is ignored of <tt>edges</tt> is provided.
+     * This value is ignored if <tt>edges</tt> is provided.
      *
      * If this value is considered, a GNP model is used
      * for generation.
@@ -79,6 +79,6 @@ public @interface GraphModel {
      * @see <a href="https://en.wikipedia.org/wiki/Erdős–Rényi_model">
      *     GNP model</a>
      */
-    double p() default 0.5;
+    double p() default 1.0;
 
 }

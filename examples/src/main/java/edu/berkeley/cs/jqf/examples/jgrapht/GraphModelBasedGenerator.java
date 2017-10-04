@@ -33,6 +33,8 @@ import java.util.Random;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import org.jgrapht.Graph;
 import org.jgrapht.VertexFactory;
+import org.jgrapht.generate.CompleteGraphGenerator;
+import org.jgrapht.generate.EmptyGraphGenerator;
 import org.jgrapht.generate.GnmRandomGraphGenerator;
 import org.jgrapht.generate.GnpRandomGraphGenerator;
 import org.jgrapht.generate.GraphGenerator;
@@ -69,14 +71,20 @@ public class GraphModelBasedGenerator {
         }
 
         if (multipleEdges) {
-            throw new IllegalArgumentException("Graphs with multiple edges must specify edges and use GNM model");
+            throw new IllegalArgumentException("Multi-graphs must specify edges and use GNM model");
         }
 
-        if (size.p() < 0 || size.p() > 1) {
+        if (size.p() < 0.0 || size.p() > 1.0) {
             throw new IllegalArgumentException("p must be in [0, 1]");
         }
 
-        return new GnpRandomGraphGenerator<>(size.nodes(), size.p(), random, loops);
+        if (size.p() == 0.0) {
+            return new EmptyGraphGenerator<>(size.nodes());
+        } else if (size.p() == 1.0) {
+            return new CompleteGraphGenerator<>(size.nodes());
+        } else {
+            return new GnpRandomGraphGenerator<>(size.nodes(), size.p(), random, loops);
+        }
     }
 
     private static VertexFactory<Integer> createNodeFactory() {
