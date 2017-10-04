@@ -17,7 +17,7 @@ jqf_options=""
 while getopts ":avr" opt; do
   case $opt in
     r)
-      afl_options="$afl_options -p"
+      afl_options="$afl_options -p -h"
       jqf_options="$jqf_options -r"
       ;;
     v)
@@ -49,5 +49,5 @@ export CLASSPATH="examples/target/classes/:examples/target/test-classes/:example
 
 echo "Fuzzing method $class#$method..."
   
-"$AFL_DIR"/afl-fuzz $afl_options -i examples/target/seeds/zeros -o "$output" \
+"$AFL_DIR"/afl-fuzz $afl_options -i examples/target/seeds/zeros -o "$output" -T "$class#$method" \
   "$ROOT_DIR/bin/jqf-afl" $jqf_options edu.berkeley.cs.jqf.examples."$class" "$method" @@
