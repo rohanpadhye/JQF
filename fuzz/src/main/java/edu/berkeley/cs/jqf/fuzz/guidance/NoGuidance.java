@@ -45,7 +45,9 @@ public class NoGuidance implements Guidance {
 
     protected boolean keepGoing = true;
     protected long numTrials = 0;
+    protected long numDiscards = 0;
     protected final long maxTrials;
+    protected final float maxDiscardRatio = 0.9f;
     protected final PrintStream out;
 
     public NoGuidance(long maxTrials, PrintStream out) {
@@ -69,15 +71,27 @@ public class NoGuidance implements Guidance {
     @Override
     public void handleResult(Result result, Throwable error) {
         numTrials++;
-        if (error != null) {
+
+        // Display error stack trace in case of failure
+        if (result == Result.FAILURE) {
             if (out != null) {
                 error.printStackTrace(out);
             }
             this.keepGoing = false;
         }
 
+        // Keep track of discards
+        if (result == Result.INVALID) {
+            numDiscards++;
+        }
+
+        // Stopping criteria
         if (numTrials >= maxTrials) {
             this.keepGoing = false;
+        }
+
+        if (numTrials > 10 && ((float) numDiscards)/((float) (numTrials)) > maxDiscardRatio) {
+            throw new GuidanceException("Assumption is too strong; too many inputs discarded");
         }
     }
 

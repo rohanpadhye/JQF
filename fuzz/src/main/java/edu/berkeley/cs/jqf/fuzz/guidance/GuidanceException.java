@@ -25,6 +25,11 @@
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
 public class GuidanceException extends RuntimeException {
+
+    public GuidanceException(String msg) {
+        super(msg);
+    }
+
     public GuidanceException(Throwable e) {
         super(e);
     }
