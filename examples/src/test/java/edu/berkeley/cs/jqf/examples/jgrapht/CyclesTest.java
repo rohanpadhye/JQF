@@ -28,19 +28,16 @@
  */
 package edu.berkeley.cs.jqf.examples.jgrapht;
 
-import java.io.IOException;
 import java.util.List;
 
-import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import org.jgrapht.DirectedGraph;
 import org.jgrapht.alg.cycle.JohnsonSimpleCycles;
 import org.jgrapht.alg.cycle.SzwarcfiterLauerSimpleCycles;
 import org.jgrapht.alg.cycle.TarjanSimpleCycles;
 import org.jgrapht.alg.cycle.TiernanSimpleCycles;
-import org.jgrapht.graph.SimpleDirectedGraph;
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.runner.RunWith;
 
 /**
@@ -50,32 +47,27 @@ import org.junit.runner.RunWith;
 public class CyclesTest {
 
     private static final int V = 5;
+    private static final int E = 10;
 
     private List<?> cycles;
 
     @Fuzz
-    public void johnson(@From(SimpleDirectedGraphGenerator.class)
-                            @GraphModel(nodes=V, p=0.5) SimpleDirectedGraph graph) {
-        Assume.assumeTrue(graph.edgeSet().size() < 2 * V);
+    public void johnson(@GraphModel(nodes=V, edges=E) DirectedGraph graph) {
         this.cycles = new JohnsonSimpleCycles<>(graph).findSimpleCycles();
     }
 
     @Fuzz
-    public void tarjan(@From(SimpleDirectedGraphGenerator.class)
-                           @GraphModel(nodes=V, p=0.5) SimpleDirectedGraph graph) throws IOException {
-        Assume.assumeTrue(graph.edgeSet().size() < 2 * V);
+    public void tarjan(@GraphModel(nodes=V, edges=E) DirectedGraph graph) {
         this.cycles = new TarjanSimpleCycles<>(graph).findSimpleCycles();
     }
 
     @Fuzz
-    public void tiernan(@From(SimpleDirectedGraphGenerator.class)
-                            @GraphModel(nodes=V, p=0.5) SimpleDirectedGraph graph) {
-        Assume.assumeTrue(graph.edgeSet().size() < 2 * V);
+    public void tiernan(@GraphModel(nodes=V, edges=E) DirectedGraph graph) {
         this.cycles = new TiernanSimpleCycles<>(graph).findSimpleCycles();
     }
 
     @Fuzz
-    public void sl(@GraphModel(nodes=V, p=0.5) SimpleDirectedGraph graph) {
+    public void sl(@GraphModel(nodes=V, edges=E) DirectedGraph graph) {
         this.cycles = new SzwarcfiterLauerSimpleCycles<>(graph).findSimpleCycles();
     }
 

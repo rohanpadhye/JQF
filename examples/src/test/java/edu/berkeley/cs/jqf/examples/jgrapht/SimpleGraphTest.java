@@ -32,7 +32,6 @@ import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.jgrapht.Graph;
 import org.jgrapht.GraphTests;
-import org.jgrapht.graph.SimpleGraph;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.runner.RunWith;
@@ -44,7 +43,7 @@ import org.junit.runner.RunWith;
 public class SimpleGraphTest {
 
     @Fuzz
-    public void simple(@GraphModel(nodes=20) SimpleGraph<?, ?> graph) {
+    public void simple(@GraphModel(nodes=20) Graph<?, ?> graph) {
         Assume.assumeFalse(GraphTests.isEmpty(graph));
         Assert.assertTrue(GraphTests.isSimple(graph));
     }

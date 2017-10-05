@@ -31,18 +31,20 @@ package edu.berkeley.cs.jqf.examples.jgrapht;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import org.jgrapht.graph.DefaultEdge;
-import org.jgrapht.graph.SimpleGraph;
+import org.jgrapht.DirectedGraph;
 
 /**
+ * Quick-check generator for JGraphT graphs using the
+ * <tt>@GraphModel</tt> annotation.
+ *
  * @author Rohan Padhye
  */
-public class SimpleGraphGenerator extends Generator<SimpleGraph> {
+public class ModelBasedDirectedGraphGenerator extends Generator<DirectedGraph> {
 
-    GraphModel model;
+    private GraphModel model;
 
-    public SimpleGraphGenerator() {
-        super(SimpleGraph.class);
+    public ModelBasedDirectedGraphGenerator() {
+        super(DirectedGraph.class);
     }
 
     public void configure(GraphModel model) {
@@ -50,14 +52,10 @@ public class SimpleGraphGenerator extends Generator<SimpleGraph> {
     }
 
     @Override
-    public SimpleGraph<Integer, DefaultEdge> generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
-        // Create graph instance
-        SimpleGraph<Integer, DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
-
-        // Populate nodes and edges based on configured model
-        GraphModelBasedGenerator.generateGraph(graph, model, sourceOfRandomness, false, false);
-
-        // Return handle to this graph
-        return graph;
+    public DirectedGraph generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
+        ModelBasedGraphGenerator graphGenerator = new ModelBasedGraphGenerator();
+        graphGenerator.configure(model);
+        graphGenerator.setDirected(true);
+        return (DirectedGraph) graphGenerator.generate(sourceOfRandomness, generationStatus);
     }
 }

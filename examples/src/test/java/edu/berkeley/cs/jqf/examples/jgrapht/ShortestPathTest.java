@@ -30,9 +30,9 @@ package edu.berkeley.cs.jqf.examples.jgrapht;
 
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import org.jgrapht.Graph;
 import org.jgrapht.alg.shortestpath.BellmanFordShortestPath;
 import org.jgrapht.alg.shortestpath.DijkstraShortestPath;
-import org.jgrapht.graph.SimpleDirectedWeightedGraph;
 import org.junit.runner.RunWith;
 
 /**
@@ -42,12 +42,12 @@ import org.junit.runner.RunWith;
 public class ShortestPathTest {
 
     @Fuzz
-    public void bellmanFord(@GraphModel(nodes=10) SimpleDirectedWeightedGraph graph) {
+    public void bellmanFord(@GraphModel(nodes=10, weighted=true) Graph graph) {
         new BellmanFordShortestPath<>(graph).getPaths(1);
     }
 
     @Fuzz
-    public void dijkstra(@GraphModel(nodes=10) SimpleDirectedWeightedGraph graph) {
+    public void dijkstra(@GraphModel(nodes=10, weighted=true) Graph graph) {
         new DijkstraShortestPath<>(graph).getPaths(1);
     }
 }

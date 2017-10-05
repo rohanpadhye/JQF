@@ -30,7 +30,7 @@ package edu.berkeley.cs.jqf.examples.jgrapht;
 
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.jgrapht.WeightedGraph;
+import org.jgrapht.Graph;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 
@@ -41,7 +41,9 @@ import org.junit.runner.RunWith;
 public class WeightedGraphTest {
 
     @Fuzz
-    public void checkWeights(@GraphModel(nodes=4, p=1.0) WeightedGraph graph) {
-        graph.edgeSet().forEach((e) -> Assert.assertTrue(graph.getEdgeWeight(e) >= 0));
+    public void checkWeights(@GraphModel(nodes=4, weighted=true) Graph graph) {
+        graph.edgeSet().forEach((e) ->
+                Assert.assertTrue(graph.getEdgeWeight(e) >= 0 &&
+                        graph.getEdgeWeight(e) < 1.0));
     }
 }

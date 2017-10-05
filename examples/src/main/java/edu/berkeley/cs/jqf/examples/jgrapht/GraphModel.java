@@ -81,4 +81,29 @@ public @interface GraphModel {
      */
     double p() default 1.0;
 
+
+    /**
+     * Whether to generate random weights for the graph's edges.
+     *
+     * If <tt>false</tt>, all edges will have a default edge-weight
+     * of 1.0.
+     *
+     * @return whether random edge weights should be generated
+     */
+    boolean weighted() default false;
+
+    /**
+     * Whether self-loops are allowed.
+     *
+     * @return whether self-loops are allowed
+     */
+    boolean loops() default false;
+
+    /**
+     * Whether multiple edges are allowed.
+     *
+     * @return whether multiple edges are allowed
+     */
+    boolean multiGraph() default false;
+
 }
