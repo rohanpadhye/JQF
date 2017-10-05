@@ -135,6 +135,13 @@ public class FileBackedRandom extends Random implements AutoCloseable {
     }
 
     @Override
+    public int nextInt(int bound) {
+        if (bound <= 0)
+            throw new IllegalArgumentException("bound must be positive");
+        return next(31) % bound;
+    }
+
+    @Override
     public void close() throws IOException {
         inputStream.close();
     }
