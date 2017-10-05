@@ -47,4 +47,9 @@ public class DirectedGraphTest {
         Assume.assumeTrue(GraphTests.isStronglyConnected(graph));
         Assert.assertTrue(GraphTests.isWeaklyConnected(graph));
     }
+
+    @Fuzz
+    public void edgeCount(@GraphModel(nodes=20, edges=100) DirectedGraph<?, ?> graph) {
+        Assert.assertTrue(graph.edgeSet().size() == 100);
+    }
 }

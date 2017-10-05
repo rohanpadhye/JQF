@@ -67,7 +67,7 @@ public class GraphModelBasedGenerator {
         }
 
         if (model.edges() > 0) {
-            return new GnmRandomGraphGenerator<>(model.nodes(), model.edges(), random, loops, multipleEdges);
+            return new FastGnmRandomGraphGenerator<>(model.nodes(), model.edges(), random, loops);
         }
 
         if (multipleEdges) {

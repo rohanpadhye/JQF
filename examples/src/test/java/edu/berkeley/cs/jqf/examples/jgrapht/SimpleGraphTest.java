@@ -58,4 +58,10 @@ public class SimpleGraphTest {
     public void nonEmpty(@GraphModel(nodes=20, edges=100) Graph<?, ?> graph) {
         Assert.assertFalse(GraphTests.isEmpty(graph));
     }
+
+    @Fuzz
+    public void edgeCount(@GraphModel(nodes=20, edges=100) Graph<?, ?> graph) {
+        Assert.assertTrue(graph.edgeSet().size() == 100);
+    }
+
 }
