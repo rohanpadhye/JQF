@@ -53,37 +53,39 @@ public class GraphModelBasedGenerator {
     }
 
     private static<E extends DefaultEdge> GraphGenerator<Integer, E, Integer>
-        getModel(GraphModel size, SourceOfRandomness randomSource,
+        getModel(GraphModel model, SourceOfRandomness randomSource,
                  boolean loops, boolean multipleEdges) {
 
-        if (size == null) {
+        if (model == null) {
             throw new IllegalArgumentException("Graph generators MUST be configured with @GraphModel");
         }
 
         Random random = randomSource.toJDKRandom();
 
-        if (size.nodes() <= 0) {
+        if (model.nodes() <= 0) {
             throw new IllegalArgumentException("nodes must be > 0");
         }
 
-        if (size.edges() > 0) {
-            return new GnmRandomGraphGenerator<>(size.nodes(), size.edges(), random, loops, multipleEdges);
+        if (model.edges() > 0) {
+            return new GnmRandomGraphGenerator<>(model.nodes(), model.edges(), random, loops, multipleEdges);
         }
 
         if (multipleEdges) {
             throw new IllegalArgumentException("Multi-graphs must specify edges and use GNM model");
         }
 
-        if (size.p() < 0.0 || size.p() > 1.0) {
+        if (model.p() < 0.0 || model.p() > 1.0) {
             throw new IllegalArgumentException("p must be in [0, 1]");
         }
 
-        if (size.p() == 0.0) {
-            return new EmptyGraphGenerator<>(size.nodes());
-        } else if (size.p() == 1.0) {
-            return new CompleteGraphGenerator<>(size.nodes());
+        if (model.p() == 0.0) {
+            return new EmptyGraphGenerator<>(model.nodes());
+        } else if (model.p() == 1.0) {
+            return new CompleteGraphGenerator<>(model.nodes());
+        } else if (loops == false && model.p() == 0.5) {
+            return new BitSetBasedSimpleGraphGenerator<>(model.nodes(), random);
         } else {
-            return new GnpRandomGraphGenerator<>(size.nodes(), size.p(), random, loops);
+            return new GnpRandomGraphGenerator<>(model.nodes(), model.p(), random, loops);
         }
     }
 

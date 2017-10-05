@@ -42,12 +42,12 @@ import org.junit.runner.RunWith;
 public class ShortestPathTest {
 
     @Fuzz
-    public void bellmanFord(@GraphModel(nodes=100, edges=200) SimpleDirectedWeightedGraph graph) {
+    public void bellmanFord(@GraphModel(nodes=10) SimpleDirectedWeightedGraph graph) {
         new BellmanFordShortestPath<>(graph).getPaths(1);
     }
 
     @Fuzz
-    public void dijkstra(@GraphModel(nodes=100, edges=100) SimpleDirectedWeightedGraph graph) {
+    public void dijkstra(@GraphModel(nodes=10) SimpleDirectedWeightedGraph graph) {
         new DijkstraShortestPath<>(graph).getPaths(1);
     }
 }
