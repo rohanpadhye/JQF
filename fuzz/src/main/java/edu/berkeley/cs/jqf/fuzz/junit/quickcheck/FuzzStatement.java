@@ -124,6 +124,8 @@ public class FuzzStatement extends Statement {
                     } catch (Throwable e) {
                         // Throw the guidance exception outside to stop fuzzing
                         throw new GuidanceException(e);
+                    } finally {
+                        // System.out.println(randomFile.getTotalBytesRead() + " random bytes read");
                     }
 
                     // Attempt to run the trial

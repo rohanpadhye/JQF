@@ -110,12 +110,16 @@ public class FileBackedRandom extends Random implements AutoCloseable {
             // If fewer bytes are read (because EOF is reached), the buffer
             // just keeps containing zeros
             int actualBytesRead = inputStream.read(byteBuffer.array(), 0, maxBytesToRead);
+            totalBytesRead += actualBytesRead;
 
             // If EOF was reached, throw an exception
             if (actualBytesRead != maxBytesToRead) {
-                throw new IllegalStateException("Random bits requested but end-of-file reached");
+                String message = String.format("EOF reached; total bytes read = %d, " +
+                                "last read got %d of %d bytes",
+                        totalBytesRead, actualBytesRead, maxBytesToRead);
+                throw new IllegalStateException(message);
+
             }
-            totalBytesRead += actualBytesRead;
 
         } catch (IOException e) {
             throw new GuidanceException(e);
