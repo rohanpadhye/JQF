@@ -17,7 +17,7 @@ jqf_options=""
 while getopts ":avr" opt; do
   case $opt in
     r)
-      afl_options="$afl_options -p -h"
+      afl_options="$afl_options -p -h -s"
       jqf_options="$jqf_options -r"
       ;;
     v)
