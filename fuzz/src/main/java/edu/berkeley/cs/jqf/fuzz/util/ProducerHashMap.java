@@ -34,7 +34,7 @@ import java.util.function.Supplier;
 /**
  * @author Rohan Padhye
  */
-public class ProducerHashMap<K, V> extends HashMap {
+public class ProducerHashMap<K, V> extends HashMap<K, V> {
 
     protected final Supplier<V> producer;
     public ProducerHashMap(Supplier<V> producer) {
@@ -46,9 +46,9 @@ public class ProducerHashMap<K, V> extends HashMap {
     public V get(Object key) {
         // Create if not exists
         if (!containsKey(key)) {
-            this.put(key, producer.get());
+            this.put((K) key, producer.get());
         }
 
-        return (V) super.get(key);
+        return super.get(key);
     }
 }

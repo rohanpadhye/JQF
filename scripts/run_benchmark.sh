@@ -14,7 +14,7 @@ fi
 
 afl_options="-d -t 6000 -m 8192"
 jqf_options=""
-while getopts ":avr" opt; do
+while getopts ":abcvr" opt; do
   case $opt in
     r)
       afl_options="$afl_options -p -h -s"
@@ -26,6 +26,12 @@ while getopts ":avr" opt; do
     a)
       jqf_options="$jqf_options -a"
       ;;
+    b)
+      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=TOTAL_BRANCH_COUNT"
+      ;;
+    c)
+      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=BRANCH_COUNTS"
+      ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
       exit 1
@@ -35,7 +41,7 @@ done
 shift $((OPTIND-1))
 
 if [ "$#" -lt 3 ]; then
-  echo "Usage: $0 [-r] [-v] BENCHMARK_CLASS_SUFFIX TEST_METHOD OUTPUT_DIR" >&2
+  echo "Usage: $0 [-abcrv] BENCHMARK_CLASS_SUFFIX TEST_METHOD OUTPUT_DIR" >&2
   exit 1
 fi
 

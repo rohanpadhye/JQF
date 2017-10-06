@@ -65,20 +65,37 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     /** Maintains a dynamic calling context (i.e. call stack) */
     protected CallingContext callingContext = new CallingContext();
 
+    /** Maps branches to counts */
+    protected Counter<Integer> branchCounts;
+
+    /** Count of total number of branches */
+    protected int totalBranchCount;
+
+    /** Configuration of what feedback to send AFL in second-half of map. */
+    private enum Feedback {
+        REDUNDANCY_SCORES,
+        BRANCH_COUNTS,
+        TOTAL_BRANCH_COUNT,
+    };
+    private final Feedback feedback;
+
     public AFLRedundancyGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
         super(inputFile, inPipe, outPipe);
+        this.feedback = Feedback.valueOf(System.getProperty("jqf.afl.feedback", "REDUNDANCY_SCORES"));
     }
 
     public AFLRedundancyGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
         super(inputFileName, inPipeName, outPipeName);
-
+        this.feedback = Feedback.valueOf(System.getProperty("jqf.afl.feedback", "REDUNDANCY_SCORES"));
     }
 
     @Override
     public boolean hasInput() {
-        // Reset memory accesses
+        // Reset state
         // For unmapped AECs, return a counter (map with 0 as default)
         memoryAccesses = new ProducerHashMap<>(() -> new Counter<>());
+        branchCounts = new Counter<>();
+        totalBranchCount = 0;
 
         // Ensure that calling context is empty
         assert(callingContext.isEmpty());
@@ -101,6 +118,13 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
             // Increment the 8-bit branch counter
             incrementTraceBits(edgeIdx);
+
+            // Increment the fine-grained branch counter
+            branchCounts.increment(iid);
+
+            // Increment the total branch count (holds max 16 bits)
+            totalBranchCount++;
+
         } else if (e instanceof ReadEvent) {
             ReadEvent read = (ReadEvent) e;
             // Get memory location that was accessed
@@ -129,36 +153,72 @@ public class AFLRedundancyGuidance extends AFLGuidance {
         // (i.e. all AECs are processed)
         while (!callingContext.isEmpty());
 
+        switch (this.feedback) {
+            case REDUNDANCY_SCORES: {
+                // Compute redundancy scores for all memory accesses and add
+                // 8-bit quantized values to "coverage" map
+                for (int aec : memoryAccesses.keySet()) {
+                    double redundancyScore =
+                            computeRedundancyScore(memoryAccesses.get(aec).values());
 
-        // Compute redundancy scores for all memory accesses and add
-        // 8-bit quantized values to "coverage" map
-        for (int aec : memoryAccesses.keySet()) {
-            double redundancyScore =
-                    computeRedundancyScore(memoryAccesses.get(aec).values());
+                    if (redundancyScore > 0.0) {
+                        // Discretize the score to a 16-bit value
+                        int discreteScore = discretizeScore(redundancyScore);
+                        assert (discreteScore > 0 && discreteScore < (1 << 16));
 
-            if (redundancyScore > 0.0) {
-                // Discretize the score to a 16-bit value
-                int discreteScore = discretizeScore(redundancyScore);
-                assert (discreteScore > 0 && discreteScore < (1 << 16));
+                        // Get an index in the upper half of the tracebits map
+                        int idx = COVERAGE_MAP_SIZE / 2 +
+                                2 * iidToEdgeIdx(aec, COVERAGE_MAP_SIZE / 4);
+                        assert(idx >= COVERAGE_MAP_SIZE / 2 && idx < COVERAGE_MAP_SIZE);
+                        assert(idx % 2 == 0);
 
-                // Get an index in the upper half of the tracebits map
-                int idx = COVERAGE_MAP_SIZE / 2 +
-                        2 * iidToEdgeIdx(aec, COVERAGE_MAP_SIZE / 4);
-                assert(idx > COVERAGE_MAP_SIZE / 2 && idx < COVERAGE_MAP_SIZE);
-                assert(idx % 2 == 0);
+                        // Add mapping to trace bits (little-endian 16-bit value)
+                        traceBits[idx] = (byte) discreteScore;
+                        traceBits[idx + 1] = (byte) (discreteScore >> 8);
+                        //scores.println(String.format("idx = %d, score = %f, value = %d (0x%04x = 0x%02x%02x)", idx, redundancyScore, discreteScore,
+                        //        discreteScore, traceBits[idx+1], traceBits[idx]));
+                    }
+
+                }
+            }
+            break;
+            case BRANCH_COUNTS: {
+                for (int iid : branchCounts.keySet()) {
+                    int count = branchCounts.get(iid);
+                    // Max branch count can be 2^16 - 1
+                    if (count >= (1 << 16)) {
+                        count = (1 << 16) - 1;
+                    }
+                    // Get an index in the second half that's aligned on an even number
+                    int idx = COVERAGE_MAP_SIZE/2 + 2 * iidToEdgeIdx(iid, COVERAGE_MAP_SIZE/4);
+                    assert(idx >= COVERAGE_MAP_SIZE / 2 && idx < COVERAGE_MAP_SIZE);
+                    assert(idx % 2 == 0);
+
+                    // Add mapping to trace bits (little-endian 16-bit value)
+                    traceBits[idx] = (byte) count;
+                    traceBits[idx + 1] = (byte) (count >> 8);
+                }
+            }
+            break;
+            case TOTAL_BRANCH_COUNT: {
+                // Max branch count can be 2^16 - 1
+                if (totalBranchCount >= (1 << 16)) {
+                    totalBranchCount = (1 << 16) - 1;
+                }
+
+                // Get an index in the second half
+                int idx = COVERAGE_MAP_SIZE / 2;
 
                 // Add mapping to trace bits (little-endian 16-bit value)
-                traceBits[idx] = (byte) discreteScore;
-                traceBits[idx + 1] = (byte) (discreteScore >> 8);
-                //scores.println(String.format("idx = %d, score = %f, value = %d (0x%04x = 0x%02x%02x)", idx, redundancyScore, discreteScore,
-                //        discreteScore, traceBits[idx+1], traceBits[idx]));
+                traceBits[idx] = (byte) totalBranchCount;
+                traceBits[idx + 1] = (byte) (totalBranchCount >> 8);
             }
-
+            break;
         }
+
 
         // Delegate feedback-sending to parent
         super.handleResult(result, error);
-        //scores.println("----");
     }
 
     protected int hashMemorylocation(int objectId, String field) {
