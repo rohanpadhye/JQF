@@ -46,8 +46,8 @@ import org.junit.runner.RunWith;
 @RunWith(JQF.class)
 public class CyclesTest {
 
-    private static final int V = 5;
-    private static final int E = 10;
+    private static final int V = 10;
+    private static final int E = 20;
 
     private List<?> cycles;
 

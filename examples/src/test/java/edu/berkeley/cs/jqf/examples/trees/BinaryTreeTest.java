@@ -1,10 +1,8 @@
 package edu.berkeley.cs.jqf.examples.trees;
 
-import java.util.HashSet;
-import java.util.LinkedList;
+import java.util.Arrays;
 import java.util.Set;
 
-import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.generator.Size;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
@@ -16,15 +14,12 @@ import org.junit.runner.RunWith;
 public class BinaryTreeTest {
 
 
-    @Property
-    public void insert(LinkedList<Integer> elements) {
+    @Fuzz
+    public void insert(int @Size(min=100, max=100)[] elements) {
         BinaryTree b = new BinaryTree();
-        for (Integer e : elements) {
+        for (int e : elements) {
             b.insert(e);
         }
-
-        int uniqueElements = new HashSet<>(elements).size();
-        Assert.assertEquals(uniqueElements, b.size());
 
     }
 
@@ -41,4 +36,9 @@ public class BinaryTreeTest {
         }
     }
 
+
+    @Fuzz
+    public void print(int @Size(min=100, max=100)[] elements) {
+        System.out.println(Arrays.toString(elements));
+    }
 }
