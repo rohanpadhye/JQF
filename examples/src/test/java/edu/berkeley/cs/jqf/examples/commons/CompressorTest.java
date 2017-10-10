@@ -28,20 +28,18 @@
  */
 package edu.berkeley.cs.jqf.examples.commons;
 
-import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-o@RunWith(JQF.class)
+import com.pholser.junit.quickcheck.generator.Size;
+import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import org.junit.Assume;
+import org.junit.runner.RunWith;
+
+@RunWith(JQF.class)
 public class CompressorTest {
 
 
