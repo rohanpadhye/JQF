@@ -26,34 +26,27 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.examples.commons;
+package edu.berkeley.cs.jqf.examples.algs4;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-
+import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.generator.Size;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
-import org.junit.Assume;
 import org.junit.runner.RunWith;
 
+/**
+ * @author Rohan Padhye
+ */
 @RunWith(JQF.class)
-public class CompressorTest {
-
+public class StringSearchTest {
 
     @Fuzz
-    public void compress(byte @Size(min=1000, max=1000)[] bytes){
-        OutputStream o = new ByteArrayOutputStream();
-        try {
-            BZip2CompressorOutputStream bo = new BZip2CompressorOutputStream(o);
-            bo.write(bytes);
-            bo.finish();
-        } catch (IOException e){
-            Assume.assumeNoException(e);
-        }
-
+    public void boyerMoore(@InRange(minByte = 48, maxByte = 126)byte @Size(min=32, max=32)[] textBytes,
+                           @InRange(minByte = 48, maxByte = 126)byte @Size(min=10, max=10)[] patternBytes) {
+        String text = new String(textBytes);
+        String pattern = new String(patternBytes);
+        BoyerMoore boyerMoore = new BoyerMoore(pattern);
+        boyerMoore.search(text);
     }
 
 }

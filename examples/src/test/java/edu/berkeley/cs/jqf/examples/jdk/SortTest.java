@@ -129,7 +129,7 @@ public class SortTest {
     }
 
     @Fuzz
-    public void mergeSortTest(int @Size(min=200, max=200)[] items){
+    public void mergeSort(int @Size(min=200, max=200)[] items){
         mergeSort(items, 0, items.length-1);
     }
 
@@ -171,7 +171,7 @@ public class SortTest {
     }
 
     @Fuzz
-    public void quickSortTest(int @Size(min=200, max=200)[] items){
+    public void quickSort(int @Size(min=200, max=200)[] items){
         quickSort(items, 0, items.length-1);
     }
 
@@ -220,7 +220,7 @@ public class SortTest {
             items[j+1] = key;
         }
 
-         System.out.println("comps: " + comps);
+        //System.out.println("comps: " + comps);
         Assert.assertTrue(comps != 20*19/2);
 
         for (int i=1; i < items.length; i++){
@@ -230,8 +230,15 @@ public class SortTest {
 
     @Fuzz
     public void insertionSort(int @Size(min=20, max=20)[] items) {
-        // Sort using InsertionSort (because size = 20)
-        Arrays.sort(items);
+        for (int i = 1; i < items.length; i ++){
+            int key = items[i];
+            int j = i-1;
+            while (j >=0 && (items[j] > key)){
+                items[j+1]= items[j];
+                j--;
+            }
+            items[j+1] = key;
+        }
 
         // Assert sorted
         for (int i = 1; i < items.length; i++) {
@@ -242,6 +249,18 @@ public class SortTest {
     @Fuzz
     public void allSorts(int @Size(min=20, max= 400)[] items){
         Arrays.sort(items);
+    }
+
+
+    @Fuzz
+    public void conditionalSort(boolean useInsertion, int @Size(min=100, max=100)[] items) {
+        if (useInsertion) {
+            insertionSort(items);
+        } else {
+            for (int i = 0; i < 8000; i++) {
+                items[0] = items[0];
+            }
+        }
     }
 
 
