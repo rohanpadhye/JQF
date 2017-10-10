@@ -28,10 +28,10 @@ while getopts ":abcevr" opt; do
       jqf_options="$jqf_options -a"
       ;;
     b)
-      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=TOTAL_BRANCH_COUNT"
+      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=BRANCH_COUNTS"
       ;;
     c)
-      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=BRANCH_COUNTS"
+      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=TOTAL_BRANCH_COUNT"
       ;;
     e)
       input_dir="-"
