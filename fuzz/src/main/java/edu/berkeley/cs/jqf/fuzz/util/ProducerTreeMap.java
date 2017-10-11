@@ -28,16 +28,27 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import java.util.TreeMap;
+import java.util.function.Supplier;
+
 /**
  * @author Rohan Padhye
  */
-public class Counter<K> extends ProducerTreeMap<K, Integer> {
-    public Counter() {
-        // Returns zero by default
-        super(() -> 0);
+public class ProducerTreeMap<K, V> extends TreeMap<K, V> {
+
+    protected final Supplier<V> producer;
+    public ProducerTreeMap(Supplier<V> producer) {
+        super();
+        this.producer = producer;
     }
 
-    public void increment(K key) {
-        this.put(key, this.get(key) + 1);
+    @Override
+    public V get(Object key) {
+        // Create if not exists
+        if (!containsKey(key)) {
+            this.put((K) key, producer.get());
+        }
+
+        return super.get(key);
     }
 }
