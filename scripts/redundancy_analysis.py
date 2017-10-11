@@ -132,8 +132,6 @@ class DynamicAnalysis(object):
 		self.call_stack[-1] = (self.call_stack[-1][0], iid)
 		# Remember line number
 		self.line_numbers[iid] = line
-		# Compute AEC and add to cycle count
-		self.compute_aec_and_count(tuple(self.call_stack))	
 
 	def handle_call(self, iid, line, method):
 		# Set PC of top-of-stack
@@ -156,10 +154,6 @@ class DynamicAnalysis(object):
 		self.line_numbers[iid] = line
 		# Compute AEC and collect info for redundancy metrics
 		self.compute_aec_and_collect(tuple(self.call_stack), (objectId, field))	
-
-	def compute_aec_and_count(self, ec_seq):
-		aec_seq = travioli.compute_aec(ec_seq)
-		self.aec_counts[aec_seq] += 1
 
 	def compute_aec_and_collect(self, ec_seq, mem):
 		aec_seq = travioli.compute_aec(ec_seq)
