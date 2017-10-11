@@ -51,7 +51,14 @@ fi
 
 class="$1"
 method="$2"
-output="$3"
+output_dir="$3"
+
+
+if [ -n "$4" ]; then
+  input_file="$4"
+else
+  input_file="@@"
+fi
 
 export AFL_SKIP_BIN_CHECK=1
 export AFL_NO_AFFINITY=1
@@ -59,5 +66,5 @@ export CLASSPATH="examples/target/classes/:examples/target/test-classes/:example
 
 echo "Fuzzing method $class#$method..."
   
-"$AFL_DIR"/afl-fuzz $afl_options -i $input_dir -o "$output" -T "$class#$method" \
-  "$ROOT_DIR/bin/jqf-afl" $jqf_options edu.berkeley.cs.jqf.examples."$class" "$method" @@
+"$AFL_DIR"/afl-fuzz $afl_options -i $input_dir -o "$output_dir" -T "$class#$method" \
+  "$ROOT_DIR/bin/jqf-afl" $jqf_options edu.berkeley.cs.jqf.examples."$class" "$method" "$input_file"
