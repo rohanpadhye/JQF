@@ -181,6 +181,19 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
                 }
             }
+            case TOTAL_BRANCH_COUNT: {
+                // Max branch count can be 2^16 - 1
+                if (totalBranchCount >= (1 << 16)) {
+                    totalBranchCount = (1 << 16) - 1;
+                }
+
+                // Get an index in the second half
+                int idx = COVERAGE_MAP_SIZE / 2;
+
+                // Add mapping to trace bits (little-endian 16-bit value)
+                traceBits[idx] = (byte) totalBranchCount;
+                traceBits[idx + 1] = (byte) (totalBranchCount >> 8);
+            }
             break;
             case BRANCH_COUNTS: {
                 for (int iid : branchCounts.keySet()) {
@@ -198,20 +211,6 @@ public class AFLRedundancyGuidance extends AFLGuidance {
                     traceBits[idx] = (byte) count;
                     traceBits[idx + 1] = (byte) (count >> 8);
                 }
-            }
-            break;
-            case TOTAL_BRANCH_COUNT: {
-                // Max branch count can be 2^16 - 1
-                if (totalBranchCount >= (1 << 16)) {
-                    totalBranchCount = (1 << 16) - 1;
-                }
-
-                // Get an index in the second half
-                int idx = COVERAGE_MAP_SIZE / 2;
-
-                // Add mapping to trace bits (little-endian 16-bit value)
-                traceBits[idx] = (byte) totalBranchCount;
-                traceBits[idx + 1] = (byte) (totalBranchCount >> 8);
             }
             break;
         }
