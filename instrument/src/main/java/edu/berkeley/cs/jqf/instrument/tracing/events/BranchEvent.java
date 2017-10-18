@@ -28,14 +28,16 @@
  */
 package edu.berkeley.cs.jqf.instrument.tracing.events;
 
+import janala.logger.inst.MemberRef;
+
 /**
  * @author Rohan Padhye
  */
 public class BranchEvent extends TraceEvent {
     protected final boolean taken;
 
-    public BranchEvent(int iid, String fileName, int lineNumber, boolean taken) {
-        super(iid, fileName, lineNumber);
+    public BranchEvent(int iid, MemberRef containingMethod, int lineNumber, boolean taken) {
+        super(iid, containingMethod, lineNumber);
         this.taken = taken;
     }
 

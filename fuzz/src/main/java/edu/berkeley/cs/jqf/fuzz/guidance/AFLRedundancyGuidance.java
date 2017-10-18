@@ -29,7 +29,9 @@
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
@@ -37,7 +39,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import edu.berkeley.cs.jqf.fuzz.util.Counter;
-import edu.berkeley.cs.jqf.fuzz.util.ProducerHashMap;
+import edu.berkeley.cs.jqf.fuzz.util.Hashing;
+import edu.berkeley.cs.jqf.fuzz.util.MapOfCounters;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
@@ -60,13 +63,13 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 public class AFLRedundancyGuidance extends AFLGuidance {
 
     /** Maps acyclic execution contexts to accessed memory locations. */
-    protected Map<Integer, Counter<Integer>> memoryAccesses;
+    protected MapOfCounters memoryAccesses = new MapOfCounters();
 
     /** Maintains a dynamic calling context (i.e. call stack) */
     protected CallingContext callingContext = new CallingContext();
 
     /** Maps branches to counts */
-    protected Counter<Integer> branchCounts;
+    protected Counter branchCounts = new Counter();
 
     /** Count of total number of branches */
     protected int totalBranchCount;
@@ -93,8 +96,8 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     public boolean hasInput() {
         // Reset state
         // For unmapped AECs, return a counter (map with 0 as default)
-        memoryAccesses = new ProducerHashMap<>(() -> new Counter<>());
-        branchCounts = new Counter<>();
+        memoryAccesses.clear();
+        branchCounts.clear();
         totalBranchCount = 0;
 
         // Ensure that calling context is empty
@@ -105,7 +108,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     }
 
     //private PrintWriter trace = new PrintWriter(new FileOutputStream("trace.log"), true);
-    //private PrintWriter scores = new PrintWriter(new FileOutputStream("scores.log"), true);
+    private PrintWriter scores = new PrintWriter(new FileOutputStream("scores.log"), true);
 
     @Override
     protected void handleEvent(TraceEvent e) {
@@ -114,7 +117,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             BranchEvent b = (BranchEvent) e;
             // Map branch IID to first half of the tracebits map
             int iid = b.isTaken() ? b.getIid() : -b.getIid();
-            int edgeIdx = iidToEdgeIdx(iid, COVERAGE_MAP_SIZE/2);
+            int edgeIdx = Hashing.hash(iid, COVERAGE_MAP_SIZE/2);
 
             // Increment the 8-bit branch counter
             incrementTraceBits(edgeIdx);
@@ -134,7 +137,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             int aec = getAyclicExecutionContextForEvent(read);
 
             // Map memory access to AEC
-            memoryAccesses.get(aec).increment(memoryLocation);
+            memoryAccesses.increment(aec, memoryLocation);
 
 
         } else if (e instanceof CallEvent) {
@@ -157,9 +160,9 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             case REDUNDANCY_SCORES: {
                 // Compute redundancy scores for all memory accesses and add
                 // 8-bit quantized values to "coverage" map
-                for (int aec : memoryAccesses.keySet()) {
+                for (int aec : memoryAccesses.keys()) {
                     double redundancyScore =
-                            computeRedundancyScore(memoryAccesses.get(aec).values());
+                            computeRedundancyScore(memoryAccesses.nonZeroValues(aec));
 
                     if (redundancyScore > 0.0) {
                         // Discretize the score to a 16-bit value
@@ -168,15 +171,15 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
                         // Get an index in the upper half of the tracebits map
                         int idx = COVERAGE_MAP_SIZE / 2 +
-                                2 * iidToEdgeIdx(aec, COVERAGE_MAP_SIZE / 4);
+                                2 * Hashing.hash(aec, COVERAGE_MAP_SIZE / 4);
                         assert(idx >= COVERAGE_MAP_SIZE / 2 && idx < COVERAGE_MAP_SIZE);
                         assert(idx % 2 == 0);
 
                         // Add mapping to trace bits (little-endian 16-bit value)
                         traceBits[idx] = (byte) discreteScore;
                         traceBits[idx + 1] = (byte) (discreteScore >> 8);
-                        //scores.println(String.format("idx = %d, score = %f, value = %d (0x%04x = 0x%02x%02x)", idx, redundancyScore, discreteScore,
-                        //        discreteScore, traceBits[idx+1], traceBits[idx]));
+                        scores.println(String.format("idx = %d, score = %f, value = %d (0x%04x = 0x%02x%02x)", idx, redundancyScore, discreteScore,
+                                discreteScore, traceBits[idx+1], traceBits[idx]));
                     }
 
                 }
@@ -196,14 +199,15 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             }
             break;
             case BRANCH_COUNTS: {
-                for (int iid : branchCounts.keySet()) {
-                    int count = branchCounts.get(iid);
+                int[] counts = branchCounts.getCounts();
+                for (int k = 0; k < counts.length; k++) {
+                    int count = counts[k];
                     // Max branch count can be 2^16 - 1
                     if (count >= (1 << 16)) {
                         count = (1 << 16) - 1;
                     }
                     // Get an index in the second half that's aligned on an even number
-                    int idx = COVERAGE_MAP_SIZE/2 + 2 * iidToEdgeIdx(iid, COVERAGE_MAP_SIZE/4);
+                    int idx = COVERAGE_MAP_SIZE/2 + 2 * Hashing.hash(k, COVERAGE_MAP_SIZE/4);
                     assert(idx >= COVERAGE_MAP_SIZE / 2 && idx < COVERAGE_MAP_SIZE);
                     assert(idx % 2 == 0);
 
@@ -297,19 +301,20 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
         private volatile boolean empty = true;
 
+
         public void push(CallEvent callEvent) {
             // Create a new stack frame for this call
             Frame frame = new Frame(callEvent, callStack.peek());
 
             // If this is the first invocation of a method,
             // then remember this frame (and mark it as a first)
-            String methodName = callEvent.getInvokedMethod();
+            String methodName = callEvent.getInvokedMethodName();
             if (!firstInvocations.containsKey(methodName)) {
                 firstInvocations.put(methodName, frame);
                 frame.firstInvocation = true;
                 // Pre-compute AEC hash
                 if (frame.parent != null) {
-                    String callingMethod = frame.parent.call.getInvokedMethod();
+                    String callingMethod = frame.parent.call.getInvokedMethodName();
                     frame.precomputeAecHash(firstInvocations.get(callingMethod));
                 }
             }
@@ -330,7 +335,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             // If this was the first invocation of the method, remove
             // the entry from the `firstInvoker` map too
             if (frame.firstInvocation) {
-                firstInvocations.remove(frame.call.getInvokedMethod());
+                firstInvocations.remove(frame.call.getInvokedMethodName());
             }
 
             // Sanity check: We can't have more first invokers than actual frames
@@ -354,7 +359,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             String str = "";
             for (Frame frame : callStack) {
                 str += String.format("%s(%s:%d)\n",
-                        trimMethodNameOfDesc(frame.call.getInvokedMethod()), e.getFileName(), e.getLineNumber());
+                        trimMethodNameOfDesc(frame.call.getInvokedMethodName()), e.getFileName(), e.getLineNumber());
                 e = frame.call;
             }
 
@@ -371,8 +376,8 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             Frame frame = callStack.peek();
             while (frame != null) {
                 str += String.format("%s(%s:%d)\n",
-                        trimMethodNameOfDesc(frame.call.getInvokedMethod()), e.getFileName(), e.getLineNumber());
-                Frame firstInvocationFrame = firstInvocations.get(frame.call.getInvokedMethod());
+                        trimMethodNameOfDesc(frame.call.getInvokedMethodName()), e.getFileName(), e.getLineNumber());
+                Frame firstInvocationFrame = firstInvocations.get(frame.call.getInvokedMethodName());
                 e = firstInvocationFrame.call;
                 frame = firstInvocationFrame.parent;
             }
@@ -387,7 +392,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
             // Get the stack frame corresponding to the first call of the current method
             Frame top = callStack.peek();
-            Frame firstInvocationOfTopMethod = firstInvocations.get(top.call.getInvokedMethod());
+            Frame firstInvocationOfTopMethod = firstInvocations.get(top.call.getInvokedMethodName());
 
             // Compute AEC hash of current event
             return firstInvocationOfTopMethod.aecHash * 31 + e.getIid();
@@ -404,7 +409,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             Deque<Integer> iids = new ArrayDeque<>();
             while (frame != null) {
                 iids.addFirst(e.getIid());
-                Frame firstInvocationFrame = firstInvocations.get(frame.call.getInvokedMethod());
+                Frame firstInvocationFrame = firstInvocations.get(frame.call.getInvokedMethodName());
                 e = firstInvocationFrame.call;
                 frame = firstInvocationFrame.parent;
             }

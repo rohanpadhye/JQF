@@ -28,23 +28,27 @@
  */
 package edu.berkeley.cs.jqf.instrument.tracing.events;
 
+import janala.logger.inst.MemberRef;
+
 /**
  * @author Rohan Padhye
  */
 public class CallEvent extends TraceEvent {
-    protected final String invokedMethod;
+    protected final MemberRef invokedMethod;
+    private final String str;
 
-    public CallEvent(int iid, String fileName, int lineNumber, String invokedMethod) {
-        super(iid, fileName, lineNumber);
+    public CallEvent(int iid, MemberRef containingMethod, int lineNumber, MemberRef invokedMethod) {
+        super(iid, containingMethod, lineNumber);
         this.invokedMethod = invokedMethod;
+        this.str = invokedMethod.getOwner() + "#" + invokedMethod.getName() + invokedMethod.getDesc();
     }
 
-    public String getInvokedMethod() {
-        return invokedMethod;
+    public String getInvokedMethodName() {
+        return str;
     }
 
     @Override
     public String toString() {
-        return String.format("CALL(%d,%d,%s)", iid, lineNumber, invokedMethod);
+        return String.format("CALL(%d,%d,%s)", iid, lineNumber, getInvokedMethodName());
     }
 }

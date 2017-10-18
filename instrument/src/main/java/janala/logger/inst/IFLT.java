@@ -1,6 +1,6 @@
 package janala.logger.inst;
 
-public class IFLT extends Instruction {
+public class IFLT extends Instruction implements ConditionalBranch {
   int label;
 
   public IFLT(int iid, int mid, int label) {

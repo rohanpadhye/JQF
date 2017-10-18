@@ -41,6 +41,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.function.Consumer;
 
+import edu.berkeley.cs.jqf.fuzz.util.Hashing;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
@@ -235,7 +236,7 @@ public class AFLGuidance implements Guidance {
         if (e instanceof BranchEvent) {
             BranchEvent b = (BranchEvent) e;
             // Map branch IID to [0, MAP_SIZE)
-            int edgeId = iidToEdgeIdx(b.getIid(), COVERAGE_MAP_SIZE);
+            int edgeId = Hashing.hash(b.getIid(), COVERAGE_MAP_SIZE);
 
             // Take complement for reverse branches
             if (b.isTaken()) {
@@ -258,23 +259,5 @@ public class AFLGuidance implements Guidance {
         traceBits[index]++;
     }
 
-
-    /**
-     * Converts a Janala-generated instruction identifier to
-     * a pseudo-uniformly distributed edge index
-     *
-     * @param iid   the Janala-generated instruction ID
-     * @param bound the upper bound (exclusive) on the edge ID
-     * @return      a value in [0, MAP_SIZE)
-     */
-    protected static int iidToEdgeIdx(int iid, int bound) {
-        int hash = (int)((iid * 0x5DEECE66DL + 0xBL));
-        int edgeId = hash % bound;
-        if (edgeId < 0) {
-            edgeId += bound;
-        }
-        assert(edgeId >= 0 && edgeId < bound);
-        return edgeId;
-    }
 
 }

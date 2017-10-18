@@ -1,6 +1,6 @@
 package janala.logger.inst;
 
-public class IF_ACMPEQ extends Instruction {
+public class IF_ACMPEQ extends Instruction implements ConditionalBranch {
   int label;
 
   public IF_ACMPEQ(int iid, int mid, int label) {

@@ -28,6 +28,8 @@
  */
 package edu.berkeley.cs.jqf.instrument.tracing.events;
 
+import janala.logger.inst.MemberRef;
+
 /**
  * An interface representing by a trace event such as CALL, RETURN or BRANCH.
  *
@@ -37,12 +39,12 @@ package edu.berkeley.cs.jqf.instrument.tracing.events;
 public abstract class TraceEvent {
 
     protected final int iid;
-    protected final String fileName;
+    protected final MemberRef containingMethod;
     protected final int lineNumber;
 
-    public TraceEvent(int iid, String fileName, int lineNumber) {
+    public TraceEvent(int iid, MemberRef method, int lineNumber) {
         this.iid = iid;
-        this.fileName = fileName;
+        this.containingMethod = method;
         this.lineNumber = lineNumber;
     }
 
@@ -51,7 +53,13 @@ public abstract class TraceEvent {
     }
 
     public String getFileName() {
-        return fileName;
+        String owner = containingMethod.getOwner();
+        int idxOfDollar = owner.indexOf('$');
+        if (idxOfDollar >= 0) {
+            return owner.substring(0, idxOfDollar) + ".java";
+        } else {
+            return owner + ".java";
+        }
     }
 
     public int getLineNumber() {

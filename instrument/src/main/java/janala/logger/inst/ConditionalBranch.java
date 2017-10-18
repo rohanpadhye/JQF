@@ -26,20 +26,10 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.instrument.tracing.events;
-
-import janala.logger.inst.MemberRef;
+package janala.logger.inst;
 
 /**
  * @author Rohan Padhye
  */
-public class ReturnEvent extends TraceEvent {
-    public ReturnEvent(int iid, MemberRef containingMethod, int lineNumber) {
-        super(iid, containingMethod, lineNumber);
-    }
-
-    @Override
-    public String toString() {
-        return String.format("RET(%d,%d)", iid, lineNumber);
-    }
+public interface ConditionalBranch {
 }

@@ -1,6 +1,6 @@
 package janala.logger.inst;
 
-public class IFGT extends Instruction {
+public class IFGT extends Instruction implements ConditionalBranch {
   int label;
 
   public IFGT(int iid, int mid, int label) {

@@ -28,16 +28,53 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 /**
+ * Maps integer keys to integer counts using a fixed-size table.
+ *
+ * Hash collisions are completely ignored; therefore, the counts
+ * are unreliable.
+ *
  * @author Rohan Padhye
  */
-public class Counter<K> extends ProducerTreeMap<K, Integer> {
-    public Counter() {
-        // Returns zero by default
-        super(() -> 0);
+public class Counter {
+
+    private static final int TABLE_SIZE = 6151; // Between 2^12 and 2^13
+
+    private int[] counts = new int[TABLE_SIZE];
+
+    public void clear() {
+        for (int i = 0; i < counts.length; i++) {
+            this.counts[i] = 0;
+        }
     }
 
-    public void increment(K key) {
-        this.put(key, this.get(key) + 1);
+    private int idx(int key) {
+        return Hashing.hash(key, TABLE_SIZE);
+    }
+
+    public void increment(int key) {
+        this.counts[idx(key)]++;
+    }
+
+    public Collection<Integer> nonZeroValues() {
+        List<Integer> values = new ArrayList<>(TABLE_SIZE);
+        for (int count : counts) {
+            if (count > 0) {
+                values.add(count);
+            }
+        }
+        return values;
+    }
+
+    public int[] getCounts() {
+        return this.counts;
+    }
+
+    public int get(int key) {
+        return this.counts[idx(key)];
     }
 }

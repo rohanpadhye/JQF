@@ -1,7 +1,7 @@
 package janala.logger.inst;
 
 
-public class INVOKEVIRTUAL extends Instruction implements MemberRef {
+public class INVOKEVIRTUAL extends Instruction implements InvokeInstruction {
   public String owner;
   public String name;
   public String desc;

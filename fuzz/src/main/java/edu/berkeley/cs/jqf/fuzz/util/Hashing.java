@@ -26,20 +26,31 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.instrument.tracing.events;
-
-import janala.logger.inst.MemberRef;
+package edu.berkeley.cs.jqf.fuzz.util;
 
 /**
  * @author Rohan Padhye
  */
-public class ReturnEvent extends TraceEvent {
-    public ReturnEvent(int iid, MemberRef containingMethod, int lineNumber) {
-        super(iid, containingMethod, lineNumber);
+public class Hashing {
+
+    private Hashing() {
+        // Static only
     }
 
-    @Override
-    public String toString() {
-        return String.format("RET(%d,%d)", iid, lineNumber);
+    private static int cap(long x, int bound) {
+        int res = (int) (x % bound);
+        if (res < 0) {
+            res += bound;
+        }
+        return res;
     }
+
+    protected static int knuth(long x, int bound) {
+        return cap(x*2654435761L, bound);
+    }
+
+    public static int hash(long x, int bound) {
+        return knuth(x, bound);
+    }
+
 }

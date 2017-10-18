@@ -45,10 +45,12 @@ public class ProducerHashMap<K, V> extends HashMap<K, V> {
     @Override
     public V get(Object key) {
         // Create if not exists
-        if (!containsKey(key)) {
-            this.put((K) key, producer.get());
+        V val = super.get(key);
+        if (val == null) {
+            val = producer.get();
+            this.put((K) key, val);
         }
 
-        return super.get(key);
+        return val;
     }
 }

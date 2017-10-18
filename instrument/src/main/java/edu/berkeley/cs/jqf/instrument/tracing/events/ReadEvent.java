@@ -28,6 +28,8 @@
  */
 package edu.berkeley.cs.jqf.instrument.tracing.events;
 
+import janala.logger.inst.MemberRef;
+
 /**
  * @author Rohan Padhye
  */
@@ -35,8 +37,8 @@ public class ReadEvent extends TraceEvent {
     protected final int objectId;
     protected final String field;
 
-    public ReadEvent(int iid, String fileName, int lineNumber, int objectId, String field) {
-        super(iid, fileName, lineNumber);
+    public ReadEvent(int iid, MemberRef containingMethod, int lineNumber, int objectId, String field) {
+        super(iid, containingMethod, lineNumber);
         this.objectId = objectId;
         this.field = field;
     }

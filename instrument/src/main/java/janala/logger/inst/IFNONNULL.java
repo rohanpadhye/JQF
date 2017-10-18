@@ -1,6 +1,6 @@
 package janala.logger.inst;
 
-public class IFNONNULL extends Instruction {
+public class IFNONNULL extends Instruction implements ConditionalBranch {
   int label;
 
   public IFNONNULL(int iid, int mid, int label) {

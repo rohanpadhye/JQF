@@ -33,15 +33,15 @@ import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import edu.berkeley.cs.jqf.instrument.util.Stack;
-import janala.logger.inst.*;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
-import edu.berkeley.cs.jqf.instrument.util.FastBlockingQueue;
 import edu.berkeley.cs.jqf.instrument.util.DoublyLinkedList;
+import edu.berkeley.cs.jqf.instrument.util.FastBlockingQueue;
+import edu.berkeley.cs.jqf.instrument.util.Stack;
+import janala.logger.inst.*;
 
 /**
  * This class is responsible for tracing for an instruction stream
@@ -165,62 +165,43 @@ class ThreadTracer extends Thread {
 
     private static boolean isInvoke(Instruction inst) {
         return  inst instanceof INVOKEINTERFACE ||
-                inst instanceof INVOKESPECIAL  ||
-                inst instanceof INVOKESTATIC   ||
-                inst instanceof INVOKEVIRTUAL;
+                        inst instanceof INVOKESPECIAL  ||
+                        inst instanceof INVOKESTATIC   ||
+                        inst instanceof INVOKEVIRTUAL;
     }
 
     private static boolean isIfJmp(Instruction inst) {
         return  inst instanceof IF_ACMPEQ ||
-                inst instanceof IF_ACMPNE ||
-                inst instanceof IF_ICMPEQ ||
-                inst instanceof IF_ICMPNE ||
-                inst instanceof IF_ICMPGT ||
-                inst instanceof IF_ICMPGE ||
-                inst instanceof IF_ICMPLT ||
-                inst instanceof IF_ICMPLE ||
-                inst instanceof IFEQ ||
-                inst instanceof IFNE ||
-                inst instanceof IFGT ||
-                inst instanceof IFGE ||
-                inst instanceof IFLT ||
-                inst instanceof IFLE ||
-                inst instanceof IFNULL ||
-                inst instanceof IFNONNULL;
+                        inst instanceof IF_ACMPNE ||
+                        inst instanceof IF_ICMPEQ ||
+                        inst instanceof IF_ICMPNE ||
+                        inst instanceof IF_ICMPGT ||
+                        inst instanceof IF_ICMPGE ||
+                        inst instanceof IF_ICMPLT ||
+                        inst instanceof IF_ICMPLE ||
+                        inst instanceof IFEQ ||
+                        inst instanceof IFNE ||
+                        inst instanceof IFGT ||
+                        inst instanceof IFGE ||
+                        inst instanceof IFLT ||
+                        inst instanceof IFLE ||
+                        inst instanceof IFNULL ||
+                        inst instanceof IFNONNULL;
 
     }
 
-    private static String getInvocationTarget(Instruction invokeIns) {
-        if (invokeIns instanceof INVOKESPECIAL) {
-            return getNameDesc((INVOKESPECIAL) invokeIns);
-        } else if (invokeIns instanceof INVOKEINTERFACE) {
-            return getNameDesc((INVOKEINTERFACE) invokeIns);
-        } else if (invokeIns instanceof INVOKEVIRTUAL) {
-            return getNameDesc((INVOKEVIRTUAL) invokeIns);
-        } else if (invokeIns instanceof INVOKESTATIC) {
-            return getNameDesc((INVOKESTATIC) invokeIns);
-        } else {
-            throw new IllegalArgumentException("Not an invoke instruction: " + invokeIns);
-        }
-    }
 
-    private static String getOwnerNameDesc(MemberRef mr) {
-        return mr.getOwner() + "#" + mr.getName() + mr.getDesc();
-    }
+
     private static String getOwnerName(MemberRef mr) {
         return mr.getOwner() + "#" + mr.getName();
     }
-    private static String getNameDesc(MemberRef mr) {
-        return mr.getName() + mr.getDesc();
-    }
-    private static String getFileName(MemberRef mr) {
-        String owner = mr.getOwner();
-        int idxOfDollar = owner.indexOf('$');
-        if (idxOfDollar >= 0) {
-            return owner.substring(0, idxOfDollar) + ".java";
-        } else {
-            return owner + ".java";
-        }
+
+
+    private static boolean sameMemberRef(MemberRef m1, MemberRef m2) {
+        return m1 != null && m2 != null &&
+                m1.getOwner().equals(m2.getOwner()) &&
+                m1.getName().equals(m2.getName()) &&
+                m1.getDesc().equals(m2.getDesc());
     }
 
 
@@ -232,7 +213,7 @@ class ThreadTracer extends Thread {
                 METHOD_BEGIN begin = (METHOD_BEGIN) ins;
                 // Try to match the top-level call with the entry point
                 if (getOwnerName(begin).replace("/",".").equals(entryPoint)) {
-                    emit(new CallEvent(0, "<entry>", 0, getOwnerNameDesc(begin)));
+                    emit(new CallEvent(0, null, 0, begin));
                     handlers.push(new TraceEventGeneratingHandler(begin, 0));
                 } else {
                     // Ignore all top-level calls that are not the entry point
@@ -249,12 +230,10 @@ class ThreadTracer extends Thread {
     class TraceEventGeneratingHandler implements Callable<Void> {
 
         private final int depth;
-        private final String methodDesc;
-        private final String fileName;
+        private final MemberRef method;
         TraceEventGeneratingHandler(METHOD_BEGIN begin, int depth) {
             this.depth = depth;
-            this.methodDesc = getNameDesc(begin);
-            this.fileName = getFileName(begin);
+            this.method = begin;
             //logger.log(tabs() + begin);
         }
 
@@ -266,7 +245,7 @@ class ThreadTracer extends Thread {
             return sb.toString();
         }
 
-        private String invokeTarget = null;
+        private MemberRef invokeTarget = null;
         private boolean invokingSuperOrThis = false;
         private int lastIid = 0;
         private int lastMid = 0;
@@ -278,11 +257,9 @@ class ThreadTracer extends Thread {
 
             if (ins instanceof METHOD_BEGIN) {
                 METHOD_BEGIN begin = (METHOD_BEGIN) ins;
-                String beginNameDesc = getNameDesc(begin);
-
-                if (beginNameDesc.equals(this.invokeTarget)) {
+                if (sameMemberRef(begin, this.invokeTarget)) {
                     // Trace continues with callee
-                    emit(new CallEvent(lastIid, fileName, lastMid, getOwnerNameDesc(begin)));
+                    emit(new CallEvent(lastIid, this.method, lastMid, begin));
                     handlers.push(new TraceEventGeneratingHandler(begin, depth+1));
                 } else {
                     // Class loading or static initializer
@@ -317,8 +294,7 @@ class ThreadTracer extends Thread {
                 // Handle setting or un-setting of invokeTarget buffer
                 if (isInvoke(ins)) {
                     // Remember invocation target until METHOD_BEGIN or INVOKEMETHOD_END/INVOKEMETHOD_EXCEPTION
-                    String targetNameDesc = getInvocationTarget(ins);
-                    this.invokeTarget = targetNameDesc;
+                    this.invokeTarget = (MemberRef) ins;
                 } else if (this.invokeTarget != null) {
                     // If we don't step into a method call, we must be stepping over it
                     assert(ins instanceof  INVOKEMETHOD_END || ins instanceof  INVOKEMETHOD_EXCEPTION);
@@ -335,7 +311,7 @@ class ThreadTracer extends Thread {
                             assert(ins instanceof  INVOKEMETHOD_EXCEPTION);
 
                             while (true) { // will break when outer caller of <init> found
-                                emit(new ReturnEvent(-1, fileName, 0));
+                                emit(new ReturnEvent(-1, this.method, 0));
                                 handlers.pop();
                                 Callable<?> handler = handlers.peek();
                                 // We should not reach the BaseHandler without finding
@@ -347,7 +323,7 @@ class ThreadTracer extends Thread {
                                     continue;
                                 } else {
                                     // Found caller of new()
-                                    assert(traceEventGeneratingHandler.invokeTarget.startsWith("<init>"));
+                                    assert(traceEventGeneratingHandler.invokeTarget.getName().startsWith("<init>"));
                                     restore(ins);
                                     return null; // defer handling to new top of stack
                                 }
@@ -373,7 +349,7 @@ class ThreadTracer extends Thread {
                         restore(next); // Remember to put this instruction back on the queue
                         taken = true;
                     }
-                    emit(new BranchEvent(branchId, fileName, lineNum, taken));
+                    emit(new BranchEvent(branchId, this.method, lineNum, taken));
                 }
 
                 // Log memory access instructions
@@ -385,13 +361,13 @@ class ThreadTracer extends Thread {
                     String field = heapload.field;
                     // Log the object access (unless it was a NPE)
                     if (objectId != 0) {
-                        emit(new ReadEvent(iid, fileName, lineNum, objectId, field));
+                        emit(new ReadEvent(iid, this.method, lineNum, objectId, field));
                     }
                 }
 
 
                 if (isReturnOrMethodThrow(ins)) {
-                    emit(new ReturnEvent(ins.iid, fileName, ins.mid));
+                    emit(new ReturnEvent(ins.iid, this.method, ins.mid));
                     handlers.pop();
                 }
 
@@ -405,15 +381,6 @@ class ThreadTracer extends Thread {
             return null;
         }
     }
-
-    class NullHandler implements Callable<Void> {
-        @Override
-        public Void call() throws InterruptedException {
-            next();
-            return null;
-        }
-    }
-
 
     class MatchingNullHandler implements Callable<Void> {
         @Override
