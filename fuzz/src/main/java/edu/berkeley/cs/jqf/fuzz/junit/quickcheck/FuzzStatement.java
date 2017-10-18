@@ -106,7 +106,7 @@ public class FuzzStatement extends Statement {
                 Throwable error = null;
 
                 // Initialize guided fuzzing using a file-backed random number source
-                try (FileBackedRandom randomFile = new FileBackedRandom(guidance.getInputFile())) {
+                try (FileBackedRandom randomFile = new FileBackedRandom(guidance.getInputFile(), Long.BYTES)) {
 
                     // Generate input values
                     Object[] args;

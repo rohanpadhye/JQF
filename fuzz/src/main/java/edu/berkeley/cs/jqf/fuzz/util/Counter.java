@@ -42,7 +42,7 @@ import java.util.List;
  */
 public class Counter {
 
-    private static final int TABLE_SIZE = 6151; // Between 2^12 and 2^13
+    private static final int TABLE_SIZE = 6151;
 
     private int[] counts = new int[TABLE_SIZE];
 

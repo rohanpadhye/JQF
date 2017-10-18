@@ -170,6 +170,8 @@ public class AFLGuidance implements Guidance {
         // Reset the feedback buffer for a new run
         feedback.clear();
 
+        System.out.println(result.toString());
+
 
         // Check result and set status value
         int status;
@@ -207,6 +209,8 @@ public class AFLGuidance implements Guidance {
 
         // Send trace-bits to AFL as a contiguous array
         for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
+            if (traceBits[i] > 0)
+                System.out.println("Branch " + i + " is " + traceBits[i]);
             feedback.put(traceBits[i]);
         }
 

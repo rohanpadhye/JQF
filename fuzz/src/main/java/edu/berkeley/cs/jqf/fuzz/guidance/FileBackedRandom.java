@@ -52,6 +52,7 @@ public class FileBackedRandom extends Random implements AutoCloseable {
     private final InputStream inputStream;
     private final ByteBuffer byteBuffer = ByteBuffer.allocate(4);
     private int totalBytesRead = 0;
+    private int leadingBytesToIgnore = 0;
 
     /**
      * Constructs a file-backed random generator.
@@ -69,6 +70,20 @@ public class FileBackedRandom extends Random implements AutoCloseable {
         // Force encoding to little-endian so that we can read small ints
         // by reading partially into the start of the buffer
         byteBuffer.order(ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * Convenience constructor for use with the junit-quickcheck framework.
+     *
+     * The junit-quickcheck SourceOfRandomness annoyingly reads 8 bytes of
+     * random data as soon as it is instantiated, only to configure its own
+     * seed. As the seed is meaningless here, the 8 bytes get wasted. For
+     * this purpose, this constructor allows specifying how many bytes of
+     * requested random data to skip before starting to read from file.
+     */
+    public FileBackedRandom(File source, int leadinBytesToIgnore) throws IOException {
+        this(source);
+        this.leadingBytesToIgnore = leadinBytesToIgnore;
     }
 
     /**
@@ -93,7 +108,7 @@ public class FileBackedRandom extends Random implements AutoCloseable {
      * @throws IllegalStateException  if EOF has already been reached
      */
     @Override
-    protected synchronized int next(int bits) {
+    public int next(int bits) {
         // Ensure that up to 32 bits are being requested
         if (bits < 0 || bits > 32) {
             throw new IllegalArgumentException("Must read 1-32 bits at a time");
@@ -106,6 +121,12 @@ public class FileBackedRandom extends Random implements AutoCloseable {
             // Read up to 4 bytes from the backing source
             int maxBytesToRead = ((bits + 7) / 8);
             assert(maxBytesToRead*8 >= bits && maxBytesToRead <= 4);
+
+            if (this.leadingBytesToIgnore > 0) {
+                int bytesToIgnore = Math.min(maxBytesToRead, this.leadingBytesToIgnore);
+                this.leadingBytesToIgnore -= bytesToIgnore;
+                maxBytesToRead -= bytesToIgnore;
+            }
 
             // If fewer bytes are read (because EOF is reached), the buffer
             // just keeps containing zeros
@@ -139,6 +160,14 @@ public class FileBackedRandom extends Random implements AutoCloseable {
         if (bound <= 0)
             throw new IllegalArgumentException("bound must be positive");
         return next(31) % bound;
+    }
+
+    public byte nextByte() {
+        return (byte) next(Byte.SIZE);
+    }
+
+    public short nextShort() {
+        return (short) next(Short.SIZE);
     }
 
     @Override

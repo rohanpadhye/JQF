@@ -203,6 +203,13 @@ class ThreadTracer extends Thread {
                 m1.getName().equals(m2.getName()) &&
                 m1.getDesc().equals(m2.getDesc());
     }
+    
+    private static boolean sameNameDesc(MemberRef m1, MemberRef m2) {
+        return m1 != null && m2 != null &&
+                m1.getName().equals(m2.getName()) &&
+                m1.getDesc().equals(m2.getDesc());
+    }
+
 
 
     class BaseHandler implements Callable<Void> {
@@ -257,7 +264,7 @@ class ThreadTracer extends Thread {
 
             if (ins instanceof METHOD_BEGIN) {
                 METHOD_BEGIN begin = (METHOD_BEGIN) ins;
-                if (sameMemberRef(begin, this.invokeTarget)) {
+                if (sameNameDesc(begin, this.invokeTarget)) {
                     // Trace continues with callee
                     emit(new CallEvent(lastIid, this.method, lastMid, begin));
                     handlers.push(new TraceEventGeneratingHandler(begin, depth+1));

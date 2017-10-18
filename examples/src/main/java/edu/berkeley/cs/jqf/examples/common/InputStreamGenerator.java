@@ -28,7 +28,7 @@
  */
 package edu.berkeley.cs.jqf.examples.common;
 
-import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
@@ -43,11 +43,25 @@ public class InputStreamGenerator extends Generator<InputStream> {
         super(InputStream.class);
     }
 
+    private FixedSize size;
+
+    public void configure(FixedSize size) {
+        this.size = size;
+    }
 
     @Override
     public InputStream generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
-        // Generate a byte-array backed input stream from its constructor
-        byte[] bytes = sourceOfRandomness.nextBytes(generationStatus.size());
-        return new ByteArrayInputStream(bytes);
+       return new InputStream() {
+           @Override
+           public int read() throws IOException {
+               try {
+                   byte nextByte = sourceOfRandomness.nextByte(Byte.MIN_VALUE, Byte.MAX_VALUE);
+                   int nextInt = nextByte & 0xFF;
+                   return nextInt;
+               } catch (IllegalStateException e) {
+                   return -1;
+               }
+           }
+       };
     }
 }

@@ -188,7 +188,7 @@ public class SortTest {
 
 
     @Fuzz
-    public void dualPivotQuicksort(int @Size(min=256, max=256)[] items) {
+    public void dualPivotQuicksort(int @Size(min=200, max=200)[] items) {
         // Sort using DualPivotQuicksort
         Arrays.sort(items);
 
@@ -255,9 +255,9 @@ public class SortTest {
     @Fuzz
     public void conditionalSort(boolean useInsertion, int @Size(min=100, max=100)[] items) {
         if (useInsertion) {
-            insertionSort(items);
+            dualPivotQuicksort(items);
         } else {
-            for (int i = 0; i < 8000; i++) {
+            for (int i = 0; i < 2000; i++) {
                 items[0] = items[0];
             }
         }

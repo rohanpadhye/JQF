@@ -26,59 +26,18 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.fuzz.util;
+package edu.berkeley.cs.jqf.examples.common;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-/**
- * Maps integer keys to integer counts using a fixed-size table.
- *
- * Hash collisions are completely ignored; therefore, the counts
- * are unreliable.
- *
- * @author Rohan Padhye
- */
-public class MapOfCounters {
+import com.pholser.junit.quickcheck.generator.GeneratorConfiguration;
 
-    private static final int TABLE_SIZE = 193;
-
-    private int[] counts = new int[TABLE_SIZE*TABLE_SIZE];
-
-    public void clear() {
-        for (int i = 0; i < counts.length; i++) {
-            this.counts[i] = 0;
-        }
-    }
-
-    private int idx(int k1, int k2) {
-        return Hashing.hash(k1, TABLE_SIZE) * TABLE_SIZE + Hashing.hash(k2, TABLE_SIZE);
-    }
-
-    public void increment(int k1, int k2) {
-        this.counts[idx(k1, k2)]++;
-    }
-
-    public Collection<Integer> nonZeroValues(int k1) {
-        List<Integer> values = new ArrayList<>(TABLE_SIZE);
-        int lower = k1 + TABLE_SIZE;
-        int upper = lower + TABLE_SIZE;
-        for (int i = lower; i < upper; i++) {
-            if (counts[i] > 0) {
-                values.add(counts[i]);
-            }
-        }
-        return values;
-    }
-
-    public Collection<Integer> keys() {
-        List<Integer> keys = new ArrayList<>(TABLE_SIZE);
-        for (int i = 0; i < TABLE_SIZE; i++) {
-            keys.add(i);
-        }
-        return keys;
-    }
-
-
+@Target({ElementType.PARAMETER, ElementType.FIELD, ElementType.ANNOTATION_TYPE, ElementType.TYPE_USE})
+@Retention(RetentionPolicy.RUNTIME)
+@GeneratorConfiguration
+public @interface FixedSize {
+    int value();
 }

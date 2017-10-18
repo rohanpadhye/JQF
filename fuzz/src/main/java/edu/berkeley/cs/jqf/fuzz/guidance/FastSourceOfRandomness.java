@@ -49,9 +49,9 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
  */
 public class FastSourceOfRandomness extends SourceOfRandomness {
 
-    private Random delegate;
+    private FileBackedRandom delegate;
 
-    public FastSourceOfRandomness(Random delegate) {
+    public FastSourceOfRandomness(FileBackedRandom delegate) {
         super(delegate);
         // Gotta make a copy of the reference because
         // super-class declares the field as private :-\
@@ -61,6 +61,29 @@ public class FastSourceOfRandomness extends SourceOfRandomness {
     @Override
     public Random toJDKRandom() {
         return this.delegate;
+    }
+
+    @Override
+    public byte nextByte(byte min, byte max) {
+        if (min == Byte.MIN_VALUE && max == Byte.MAX_VALUE) {
+            return delegate.nextByte();
+        }
+        return (byte)(this.fastChooseIntInRange(min, max));
+    }
+
+    @Override
+    public short nextShort(short min, short max) {
+        if (min == Short.MIN_VALUE && max == Short.MAX_VALUE) {
+            return delegate.nextShort();
+        }
+        return (short)(this.fastChooseIntInRange(min, max));
+    }
+
+    @Override
+    public char nextChar(char min, char max) {
+        Ranges.checkRange(Type.CHARACTER, min, max);
+        return (char)(this.fastChooseIntInRange(min, max));
+
     }
 
     @Override
@@ -81,22 +104,6 @@ public class FastSourceOfRandomness extends SourceOfRandomness {
         }
 
         return comparison == 0 ? min : Ranges.choose(this, min, max);
-    }
-
-    @Override
-    public short nextShort(short min, short max) {
-        return (short)(this.fastChooseIntInRange(min, max));
-    }
-
-    @Override
-    public byte nextByte(byte min, byte max) {
-        return (byte)(this.fastChooseIntInRange(min, max));
-    }
-
-    @Override
-    public char nextChar(char min, char max) {
-        Ranges.checkRange(Type.CHARACTER, min, max);
-        return (char)(this.fastChooseIntInRange(min, max));
     }
 
     private int fastChooseIntInRange(int min, int max) {
