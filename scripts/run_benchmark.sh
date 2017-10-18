@@ -12,13 +12,13 @@ if [ -z "$AFL_DIR" ]; then
   exit 2
 fi
 
-afl_options="-d -t 6000 -m 8192"
+afl_options="-t 6000 -m 8192"
 jqf_options=""
 input_dir="examples/target/seeds/zeros"
-while getopts ":abcevr" opt; do
+while getopts ":abcevrs:" opt; do
   case $opt in
     r)
-      afl_options="$afl_options -p -h -s"
+      afl_options="$afl_options -d -p -h -s"
       jqf_options="$jqf_options -r"
       ;;
     v)
@@ -35,6 +35,9 @@ while getopts ":abcevr" opt; do
       ;;
     e)
       input_dir="-"
+      ;;
+    s)
+      input_dir="examples/target/seeds/$OPTARG"
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
