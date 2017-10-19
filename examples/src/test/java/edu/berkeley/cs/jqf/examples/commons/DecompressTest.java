@@ -26,36 +26,45 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.examples.common;
+package edu.berkeley.cs.jqf.examples.commons;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.zip.DeflaterInputStream;
 
-import com.pholser.junit.quickcheck.generator.GenerationStatus;
-import com.pholser.junit.quickcheck.generator.Generator;
-import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.junit.runner.RunWith;
 
-/**
- * @author Rohan Padhye
- */
-public class InputStreamGenerator extends Generator<InputStream> {
-    public InputStreamGenerator() {
-        super(InputStream.class);
+@RunWith(JQF.class)
+public class DecompressTest {
+
+
+
+    @Fuzz
+    public void bzip2(InputStream in){
+        byte[] destBuffer = new byte[1024];
+        try {
+            new BZip2CompressorInputStream(in)
+                .read(destBuffer, 0, destBuffer.length);
+        } catch (IOException e){
+            // Ignore
+        }
+
     }
 
-    @Override
-    public InputStream generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
-        return new InputStream() {
-           @Override
-           public int read() throws IOException {
-               try {
-                   byte nextByte = sourceOfRandomness.nextByte(Byte.MIN_VALUE, Byte.MAX_VALUE);
-                   int nextInt = nextByte & 0xFF;
-                   return nextInt;
-               } catch (IllegalStateException e) {
-                   return -1;
-               }
-           }
-       };
+    @Fuzz
+    public void deflate(InputStream in){
+        byte[] destBuffer = new byte[1024];
+        try {
+            new DeflaterInputStream(in)
+                .read(destBuffer, 0, destBuffer.length);
+        } catch (IOException e){
+            // Ignore
+        }
+
     }
+
+
 }

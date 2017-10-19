@@ -26,36 +26,32 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.examples.common;
+package edu.berkeley.cs.jqf.examples.commons;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
 
-import com.pholser.junit.quickcheck.generator.GenerationStatus;
-import com.pholser.junit.quickcheck.generator.Generator;
-import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import com.pholser.junit.quickcheck.generator.Size;
+import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
+import org.junit.Assume;
+import org.junit.runner.RunWith;
 
-/**
- * @author Rohan Padhye
- */
-public class InputStreamGenerator extends Generator<InputStream> {
-    public InputStreamGenerator() {
-        super(InputStream.class);
-    }
+@RunWith(JQF.class)
+public class CompressTest {
 
-    @Override
-    public InputStream generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
-        return new InputStream() {
-           @Override
-           public int read() throws IOException {
-               try {
-                   byte nextByte = sourceOfRandomness.nextByte(Byte.MIN_VALUE, Byte.MAX_VALUE);
-                   int nextInt = nextByte & 0xFF;
-                   return nextInt;
-               } catch (IllegalStateException e) {
-                   return -1;
-               }
-           }
-       };
+    @Fuzz
+    public void bzip2(byte @Size(min=100, max=100)[] bytes){
+        OutputStream o = new ByteArrayOutputStream();
+        try {
+            BZip2CompressorOutputStream bo = new BZip2CompressorOutputStream(o);
+            bo.write(bytes);
+            bo.finish();
+        } catch (IOException e){
+            Assume.assumeNoException(e);
+        }
+
     }
 }

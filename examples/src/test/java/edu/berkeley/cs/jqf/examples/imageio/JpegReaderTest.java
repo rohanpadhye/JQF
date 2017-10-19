@@ -26,56 +26,54 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.examples.commons;
+package edu.berkeley.cs.jqf.examples.imageio;
 
-import java.io.ByteArrayOutputStream;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 
-import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.examples.common.FixedSize;
+import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
-import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
-import org.junit.Assume;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
 @RunWith(JQF.class)
-public class CompressorTest {
+public class JpegReaderTest {
 
+    @BeforeClass
+    public static void disableCaching() {
+        // Disable disk-caching as it slows down fuzzing
+        // and makes image reads non-idempotent
+        ImageIO.setUseCache(false);
+    }
+
+    private ImageReader reader;
+
+    @Before
+    public void setUp() {
+        this.reader = ImageIO.getImageReadersByFormatName("jpg").next();
+    }
+
+    @After
+    public void tearDown() {
+        this.reader.dispose();
+    }
 
     @Fuzz
-    public void compress(byte @Size(min=100, max=100)[] bytes){
-        OutputStream o = new ByteArrayOutputStream();
+    public void read(@From(ImageInputStreamGenerator.class) ImageInputStream input) {
         try {
-            BZip2CompressorOutputStream bo = new BZip2CompressorOutputStream(o);
-            bo.write(bytes);
-            bo.finish();
-        } catch (IOException e){
-            Assume.assumeNoException(e);
+            // Decode image from input stream
+            ImageReadParam param = reader.getDefaultReadParam();
+            reader.setInput(input, true, true);
+            reader.read(0, param);
+        } catch (IOException e) {
+            // Ignore decode errors
         }
 
     }
-
-    @Fuzz
-    public void decompress(@FixedSize(100) InputStream in){
-        byte[] destBuffer = new byte[1024];
-        try {
-            BZip2CompressorInputStream bi = new BZip2CompressorInputStream(in);
-            in.read(destBuffer, 0, destBuffer.length);
-        } catch (IOException e){
-            // Ignore
-        }
-
-    }
-
-    @Fuzz
-    public void debug(@FixedSize(100) InputStream in) throws IOException {
-        for (int i = 0; i < 100; i++) {
-            System.out.println(i + "\t=\t" + in.read());
-        }
-    }
-
 }
