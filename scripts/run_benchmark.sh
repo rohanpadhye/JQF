@@ -15,7 +15,7 @@ fi
 afl_options="-t 6000 -m 8192"
 jqf_options=""
 input_dir="examples/target/seeds/zeros"
-while getopts ":abcevrs:" opt; do
+while getopts ":abcdevrs:" opt; do
   case $opt in
     r)
       afl_options="$afl_options -d -p -h -s"
@@ -32,6 +32,9 @@ while getopts ":abcevrs:" opt; do
       ;;
     c)
       export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=TOTAL_BRANCH_COUNT"
+      ;;
+    d)
+      afl_options="$afl_options -d"
       ;;
     e)
       input_dir="-"
