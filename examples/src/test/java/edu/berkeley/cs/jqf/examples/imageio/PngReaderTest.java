@@ -32,14 +32,18 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Base64;
 
-import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(JQF.class)
@@ -65,15 +69,80 @@ public class PngReaderTest {
     }
 
     @Fuzz
-    public void read(@From(ImageInputStreamGenerator.class) ImageInputStream input) {
+    public void read(ImageInputStream input) {
         try {
             // Decode image from input stream
             ImageReadParam param = reader.getDefaultReadParam();
-            reader.setInput(input, true, true);
-            reader.read(0, param);
+            reader.setInput(input);
+            reader.read(0);
         } catch (IOException e) {
             // Ignore decode errors
         }
+
+    }
+
+    @Fuzz
+    public void getWidth(ImageInputStream input) {
+        try {
+            // Decode image from input stream
+            reader.setInput(input);
+            int width = reader.getWidth(0);
+            System.out.println(width);
+        } catch (IOException e) {
+            System.err.println("Bad image: " + e.getMessage());
+        }
+    }
+
+    @Fuzz
+    public void getHeight(ImageInputStream input) {
+        try {
+            // Decode image from input stream
+            reader.setInput(input);
+            int height = reader.getHeight(0);
+            System.out.println(height);
+        } catch (IOException e) {
+            System.err.println("Bad image: " + e.getMessage());
+        }
+    }
+
+
+    @Fuzz
+    public void getMetaData(ImageInputStream input) {
+        try {
+            // Decode image from input stream
+            reader.setInput(input);
+            reader.getImageMetadata(0);
+        } catch (IOException e) {
+            // Ignore decode errors
+        }
+    }
+
+    @Fuzz
+    public void readBounded(ImageInputStream input) {
+        try {
+            // Decode image from input stream
+            reader.setInput(input);
+            int width = reader.getWidth(0);
+            int height = reader.getHeight(0);
+            Assume.assumeTrue(width > 0 && width < 100);
+            Assume.assumeTrue(height > 0 && height < 100);
+            reader.read(0);
+        } catch (IOException e) {
+            // Ignore decode errors
+        }
+    }
+
+    @Test
+    public void debug() throws IOException {
+        InputStream in = new ByteArrayInputStream(Base64.getDecoder()
+                .decode("iVBORw0KGgoAAAANSUhEUn////4AAAABCAMAAABEpIrGAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAA9QTFRFZszM////AAAAM5lmmf/MPkyvFQAAAGFJREFUeNrckzEOwCAMA5OY/7+5NBQJ1DphYaA3sPgkCwtEE0TVAm7BCkfMBaHgp4JvFwjPulSoITAabwHwk1a0PBB6TSBM+bcw5ERIlkQiTEPuqTj2ydWbUWzl8yZcAgwA0mYDNbDXy5oAAAo="));
+        ImageInputStream input = ImageIO.createImageInputStream(in);
+        ImageReader reader = ImageIO.getImageReadersByFormatName("png").next();
+        assert reader.getClass().getName().equals("com.sun.imageio.plugins.png.PNGImageReader");
+        ImageReadParam param = reader.getDefaultReadParam();
+        reader.setInput(input, true, true);
+        reader.read(0, param);
+        reader.dispose();
 
     }
 }

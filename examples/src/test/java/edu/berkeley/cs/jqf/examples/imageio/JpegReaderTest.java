@@ -29,15 +29,14 @@
 package edu.berkeley.cs.jqf.examples.imageio;
 
 import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 
-import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -65,15 +64,53 @@ public class JpegReaderTest {
     }
 
     @Fuzz
-    public void read(@From(ImageInputStreamGenerator.class) ImageInputStream input) {
+    public void read(ImageInputStream input) {
         try {
             // Decode image from input stream
-            ImageReadParam param = reader.getDefaultReadParam();
-            reader.setInput(input, true, true);
-            reader.read(0, param);
+            reader.setInput(input);
+            reader.read(0);
         } catch (IOException e) {
             // Ignore decode errors
         }
 
+    }
+
+    @Fuzz
+    public void getWidth(ImageInputStream input) {
+        try {
+            // Decode image from input stream
+            reader.setInput(input);
+            int width = reader.getWidth(0);
+            System.out.println(width);
+        } catch (IOException e) {
+            System.err.println("Bad image: " + e.getMessage());
+        }
+    }
+
+    @Fuzz
+    public void getHeight(ImageInputStream input) {
+        try {
+            // Decode image from input stream
+            reader.setInput(input);
+            int height = reader.getHeight(0);
+            System.out.println(height);
+        } catch (IOException e) {
+            System.err.println("Bad image: " + e.getMessage());
+        }
+    }
+
+    @Fuzz
+    public void readBounded(ImageInputStream input) {
+        try {
+            // Decode image from input stream
+            reader.setInput(input);
+            int width = reader.getWidth(0);
+            int height = reader.getHeight(0);
+            Assume.assumeTrue(width > 0 && width < 100);
+            Assume.assumeTrue(height > 0 && height < 100);
+            reader.read(0);
+        } catch (IOException e) {
+            // Ignore decode errors
+        }
     }
 }
