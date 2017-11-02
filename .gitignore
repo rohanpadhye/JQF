@@ -7,3 +7,5 @@ target/
 .idea/
 .janala/
 *.log
+results-*/
+*_crashes/
