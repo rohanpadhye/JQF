@@ -57,6 +57,8 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
     Class.forName("java.util.LinkedList$ListItr");
     Class.forName("java.util.TreeMap");
     Class.forName("java.util.TreeMap$Entry");
+    Class.forName("java.util.zip.ZipFile");
+    Class.forName("java.util.jar.JarFile");
   }
 
   /** packages that should be exluded from the instrumentation */

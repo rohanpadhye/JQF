@@ -29,6 +29,8 @@
 
 package edu.berkeley.cs.jqf.instrument.tracing;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -38,9 +40,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
-import edu.berkeley.cs.jqf.instrument.util.DoublyLinkedList;
 import edu.berkeley.cs.jqf.instrument.util.FastBlockingQueue;
-import edu.berkeley.cs.jqf.instrument.util.Stack;
 import janala.logger.inst.*;
 
 /**
@@ -62,7 +62,7 @@ class ThreadTracer extends Thread {
     private final Thread tracee;
     private final String entryPoint;
     private final Consumer<TraceEvent> callback;
-    private final Stack<Callable<?>> handlers = new DoublyLinkedList<>();
+    private final Deque<Callable<?>> handlers = new ArrayDeque<>();
 
     /** Creates a new tracer that will print the data-traces of a tracee to a logger. */
     protected ThreadTracer(Thread tracee, String entryPoint, Consumer<TraceEvent> callback) {

@@ -29,10 +29,12 @@
 package janala.instrument;
 
 
-import org.objectweb.asm.*;
-
 import java.io.IOException;
 import java.io.InputStream;
+
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassWriter;
+import org.objectweb.asm.Opcodes;
 
 
 
