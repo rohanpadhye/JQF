@@ -170,6 +170,10 @@ public class AFLGuidance implements Guidance {
         // Reset the feedback buffer for a new run
         feedback.clear();
 
+        // Set at least one tracebit so that AFL doesn't complain about
+        // no instrumentation
+        traceBits[0] = traceBits[0] == 0 ? 1 : traceBits[0];
+
 
         // Check result and set status value
         int status;
