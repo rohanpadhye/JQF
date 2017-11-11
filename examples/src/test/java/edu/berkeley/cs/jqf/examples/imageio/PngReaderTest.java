@@ -43,7 +43,6 @@ import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 
 @RunWith(JQF.class)
@@ -132,10 +131,10 @@ public class PngReaderTest {
         }
     }
 
-    @Test
+
     public void debug() throws IOException {
         InputStream in = new ByteArrayInputStream(Base64.getDecoder()
-                .decode("iVBORw0KGgoAAAANSUhEUn////4AAAABCAMAAABEpIrGAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAA9QTFRFZszM////AAAAM5lmmf/MPkyvFQAAAGFJREFUeNrckzEOwCAMA5OY/7+5NBQJ1DphYaA3sPgkCwtEE0TVAm7BCkfMBaHgp4JvFwjPulSoITAabwHwk1a0PBB6TSBM+bcw5ERIlkQiTEPuqTj2ydWbUWzl8yZcAgwA0mYDNbDXy5oAAAo="));
+                .decode("iVBORw0KGgoAAAANSUhEUk////8AAAABCAAAAAA6fptVAAAACklEQVQYV2P4DwABAQEAWk1v8QAAAABJRU5ErkJgggo="));
         ImageInputStream input = ImageIO.createImageInputStream(in);
         ImageReader reader = ImageIO.getImageReadersByFormatName("png").next();
         assert reader.getClass().getName().equals("com.sun.imageio.plugins.png.PNGImageReader");
