@@ -44,7 +44,7 @@ import org.junit.runner.RunWith;
 @RunWith(JQF.class)
 public class RegexTest {
 
-    private static final int INPUT_SIZE = 10;
+    private static final int INPUT_SIZE = 40;
 
     @Fuzz
     public void patternTest(InputStream in) throws IOException {
