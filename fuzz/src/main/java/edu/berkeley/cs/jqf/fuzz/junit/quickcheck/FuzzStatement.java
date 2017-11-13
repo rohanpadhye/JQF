@@ -121,6 +121,9 @@ public class FuzzStatement extends Statement {
                         // Treat this as an assumption failure, so that the guidance considers the
                         // generated input as INVALID
                         throw new AssumptionViolatedException("FileBackedRandom does not have enough data", e);
+                    } catch (AssumptionViolatedException e) {
+                        // Propagate assumption violations out
+                        throw e;
                     } catch (Throwable e) {
                         // Throw the guidance exception outside to stop fuzzing
                         throw new GuidanceException(e);
