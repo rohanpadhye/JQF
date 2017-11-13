@@ -26,47 +26,45 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.examples.jdk;
+package edu.berkeley.cs.jqf.examples.common;
 
 import java.io.IOException;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
+import java.io.InputStream;
 
-import com.pholser.junit.quickcheck.From;
-import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import com.pholser.junit.quickcheck.generator.GenerationStatus;
+import com.pholser.junit.quickcheck.generator.Generator;
+import com.pholser.junit.quickcheck.generator.Size;
+import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 /**
  * @author Rohan Padhye
  */
-@RunWith(JQF.class)
-public class RegexTest {
+public class AsciiStringGenerator extends Generator<String> {
 
-    private static final int INPUT_SIZE = 40;
+    private int maxSize = 4096;
 
-    @Fuzz
-    public void patternTest(@From(AsciiStringGenerator.class) String pattern) throws IOException {
+    public AsciiStringGenerator() {
+        super(String.class);
+    }
+
+    public void configure(Size size) {
+        maxSize = size.max();
+    }
+
+
+    @Override
+    public String generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
+        InputStream in = gen().make(InputStreamGenerator.class).generate(sourceOfRandomness, generationStatus);
+        byte[] bytes = new byte[maxSize];
         try {
-            Pattern.matches(pattern, "aaaaaa");
-        } catch (PatternSyntaxException e) {
-            Assume.assumeNoException(e);
+            int len = in.read(bytes);
+            for (int i = 0; i < len; i++) {
+                byte b = bytes[i];
+            }
+            return new String(bytes, 0, len);
+        } catch (IOException e) {
+            throw new RuntimeException("Should not get I/O exception when using generated InputStream", e);
         }
-    }
-
-    @Fuzz
-    public void matchTest(@From(AsciiStringGenerator.class) String input) throws IOException {
-        Pattern.matches("^(([a-z])+.)+[A-Z]([a-z])+$", input);
-    }
-
-    @Test
-    public void debug() {
-        String pattern = ".*(P*.*()*(.*.*())*.*())*\\R*.*b$";
-        Assert.assertTrue(Pattern.matches(pattern, "aaaaaaaaaaa"));
 
     }
 }
