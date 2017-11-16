@@ -37,6 +37,7 @@ import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.Assume;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -69,11 +70,18 @@ public class RegexTest {
 
     }
 
+    private static Pattern strutsPattern;
+
+    @BeforeClass
+    public static void initStrutsPattern() {
+        URLValidator validator = new URLValidator();
+        strutsPattern = Pattern.compile(validator.getUrlRegex(), Pattern.CASE_INSENSITIVE);
+    }
+
+
     @Fuzz
     public void strutsTest(@From(AsciiStringGenerator.class) String url) {
-        URLValidator validator = new URLValidator();
-        Pattern pattern = Pattern.compile(validator.getUrlRegex(), Pattern.CASE_INSENSITIVE);
-        pattern.matcher(url).matches();
+        strutsPattern.matcher(url).matches();
     }
 
     @Test
