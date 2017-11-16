@@ -28,15 +28,14 @@
  */
 package edu.berkeley.cs.jqf.examples.jdk;
 
-import java.io.IOException;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import com.opensymphony.xwork2.validator.validators.URLValidator;
 import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,7 +49,7 @@ public class RegexTest {
     private static final int INPUT_SIZE = 40;
 
     @Fuzz
-    public void patternTest(@From(AsciiStringGenerator.class) String pattern) throws IOException {
+    public void patternTest(@From(AsciiStringGenerator.class) String pattern) {
         try {
             Pattern.matches(pattern, "aaaaaa");
         } catch (PatternSyntaxException e) {
@@ -59,14 +58,27 @@ public class RegexTest {
     }
 
     @Fuzz
-    public void matchTest(@From(AsciiStringGenerator.class) String input) throws IOException {
+    public void matchTest(@From(AsciiStringGenerator.class) String input) {
         Pattern.matches("^(([a-z])+.)+[A-Z]([a-z])+$", input);
     }
 
     @Test
-    public void debug() {
+    public void exploitPatternTest() {
         String pattern = ".*(P*.*()*(.*.*())*.*())*\\R*.*b$";
-        Assert.assertTrue(Pattern.matches(pattern, "aaaaaaaaaaa"));
+        patternTest(pattern);
 
+    }
+
+    @Fuzz
+    public void strutsTest(@From(AsciiStringGenerator.class) String url) {
+        URLValidator validator = new URLValidator();
+        Pattern pattern = Pattern.compile(validator.getUrlRegex(), Pattern.CASE_INSENSITIVE);
+        pattern.matcher(url).matches();
+    }
+
+    @Test
+    public void exploitStrutsTest() {
+        String url = "ftp://aaaaaaaaaaaaaaaaaaaa|";
+        strutsTest(url);
     }
 }
