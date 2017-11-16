@@ -33,6 +33,7 @@ import java.util.regex.PatternSyntaxException;
 
 import com.opensymphony.xwork2.validator.validators.URLValidator;
 import com.pholser.junit.quickcheck.From;
+import com.pholser.junit.quickcheck.generator.Size;
 import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
@@ -80,13 +81,13 @@ public class RegexTest {
 
 
     @Fuzz
-    public void strutsTest(@From(AsciiStringGenerator.class) String url) {
+    public void strutsTest(@From(AsciiStringGenerator.class) @Size(max=80) String url) {
         strutsPattern.matcher(url).matches();
     }
 
     @Test
     public void exploitStrutsTest() {
-        String url = "ftp://aaaaaaaaaaaaaaaaaaaa|";
+        String url = "ftp://aaaaaaaaaaaaaaaaaaaaaaaa|";
         strutsTest(url);
     }
 }

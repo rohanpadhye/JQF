@@ -58,9 +58,6 @@ public class AsciiStringGenerator extends Generator<String> {
         byte[] bytes = new byte[maxSize];
         try {
             int len = in.read(bytes);
-            for (int i = 0; i < len; i++) {
-                byte b = bytes[i];
-            }
             return new String(bytes, 0, len);
         } catch (IOException e) {
             throw new RuntimeException("Should not get I/O exception when using generated InputStream", e);
