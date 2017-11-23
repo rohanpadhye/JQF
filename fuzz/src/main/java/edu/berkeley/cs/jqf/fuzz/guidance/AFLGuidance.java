@@ -39,10 +39,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.fuzz.util.Hashing;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 
@@ -59,14 +63,45 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  */
 public class AFLGuidance implements Guidance {
 
+    /** The file in which AFL will write its input. */
     protected File inputFile;
+
+    /** The communication channel from AFL proxy to us. */
     protected InputStream in;
+
+    /** The communication channel from us to the AFL proxy. */
     protected OutputStream out;
+
+    /** THe size of the "coverage" map that will be sent to AFL. */
     protected static final int COVERAGE_MAP_SIZE = 1 << 16;
+
+    /** The "coverage" map that will be sent to AFL. */
     protected byte[] traceBits;
+
+    /** Whether to keep executing more inputs. */
     protected boolean everything_ok = true;
 
+    /** The bits that will be communicated to the AFL proxy. */
     private ByteBuffer feedback;
+
+    /**
+     * A call stack to keep track of which method we are in.
+     *
+     * Note: We assume there is only a single app thread running.
+     * For supporting multiple threads, we would have to store
+     * a map from threads to call stacks.
+     */
+    private Deque<CallEvent> callStack = new ArrayDeque<>();
+
+    /**
+     * Whether the above call stack is empty. We use a separate
+     * volatile field rather than rely on callStack.isEmpty()
+     * returning a synced value, since the stack is manipulated by
+     * the app thread(s).
+     *
+     * Note: Same assumption on single-threaded app applies.
+     */
+    private boolean callStackEmpty = true;
 
     /**
      *
@@ -144,7 +179,7 @@ public class AFLGuidance implements Guidance {
         // Reset trace-bits
         traceBits = new byte[COVERAGE_MAP_SIZE];
 
-        // Always produce new input (AFL can only be stopped abruptly)
+        // Continue unless stopped
         return everything_ok;
     }
 
@@ -161,12 +196,15 @@ public class AFLGuidance implements Guidance {
      * so that AFL does not consider the last input interesting enough to
      * keep in its queue.
      *
-     * @param result    the result of the fuzzing tiral
+     * @param result    the result of the fuzzing trial
      * @param error     the exception thrown by the test, or <tt>null</tt>
      * @throws IOException
      */
     @Override
     public void handleResult(Result result, Throwable error) {
+        // Wait for all events to be handled by the app thread
+        while(!callStackEmpty);
+
         // Reset the feedback buffer for a new run
         feedback.clear();
 
@@ -249,6 +287,28 @@ public class AFLGuidance implements Guidance {
 
             // Increment the 8-bit branch counter
             incrementTraceBits(edgeId);
+        } else if (e instanceof CallEvent) {
+            // Add a call event to the stack
+            callStack.push((CallEvent) e);
+            // Mark the volatile indicator to non-empty
+            if (callStackEmpty) {
+                callStackEmpty = false;
+            }
+
+            // Map IID to [0, MAP_SIZE]
+            int edgeId = Hashing.hash(e.getIid(), COVERAGE_MAP_SIZE);
+
+            // Increment the 8-bit branch counter
+            incrementTraceBits(edgeId);
+
+
+        } else if (e instanceof ReturnEvent) {
+            // Remove call event from the stack
+            callStack.pop();
+            // Mark the volatile indicator to empty if the stack is empty
+            if (callStack.isEmpty()) {
+                callStackEmpty = true;
+            }
         }
     }
 

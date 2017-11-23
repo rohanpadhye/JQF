@@ -65,7 +65,14 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     /** Maps acyclic execution contexts to accessed memory locations. */
     protected MapOfCounters memoryAccesses = new MapOfCounters();
 
-    /** Maintains a dynamic calling context (i.e. call stack) */
+    /**
+     * Maintains a dynamic calling context (i.e. call stack).
+     *
+     * Note: We assume there is only a single app thread running.
+     * For supporting multiple threads, we would have to store
+     * a map from threads to calling contexts.
+     *
+     * */
     protected CallingContext callingContext = new CallingContext();
 
     /** Maps branches to counts */
