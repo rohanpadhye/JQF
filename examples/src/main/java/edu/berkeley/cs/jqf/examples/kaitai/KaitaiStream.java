@@ -40,7 +40,7 @@ import org.junit.AssumptionViolatedException;
  */
 public class KaitaiStream {
 
-    private final ByteBuffer buf;
+    final ByteBuffer buf;
     final SourceOfRandomness random;
 
     public KaitaiStream(ByteBuffer buf, SourceOfRandomness random) {
@@ -90,39 +90,49 @@ public class KaitaiStream {
         return writeU1value(choice);
     }
 
-    private int writeU4value(int val) {
+    private int writeIntvalue(int val) {
         buf.putInt(val);
         return val;
     }
 
-    private int writeU4() {
+    private int writeU4(int min, int max) {
         /* To be called only after endinaness is configured */
-        int val = random.nextInt(0, Integer.MAX_VALUE);
-        return writeU4value(val);
+        int val = random.nextInt(min, max);
+        return writeIntvalue(val);
     }
 
     public int writeU4be() {
         buf.order(ByteOrder.BIG_ENDIAN);
-        return writeU4();
+        return writeU4(0, Integer.MAX_VALUE);
     }
 
     public int writeU4le() {
         buf.order(ByteOrder.LITTLE_ENDIAN);
-        return writeU4();
+        return writeU4(0, Integer.MAX_VALUE);
+    }
+
+    public int writeU4be(int min, int max) {
+        buf.order(ByteOrder.BIG_ENDIAN);
+        return writeU4(min, max);
+    }
+
+    public int writeU4le(int min, int max) {
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        return writeU4(min, max);
     }
 
     public int writeU4beOneOf(long... choices) {
         int idx = random.nextInt(0, choices.length);
         int choice = (int) choices[idx]; // TODO: Verify range of each choice
         buf.order(ByteOrder.BIG_ENDIAN);
-        return writeU4value(choice);
+        return writeIntvalue(choice);
     }
 
-    public int writeU4leOneOf(int... choices) {
+    public int writeU4leOneOf(long... choices) {
         int idx = random.nextInt(0, choices.length);
-        int choice = choices[idx];
+        int choice = (int) choices[idx]; // TODO: Verify range of each choice
         buf.order(ByteOrder.LITTLE_ENDIAN);
-        return writeU4value(choice);
+        return writeIntvalue(choice);
     }
 
     private short writeU2() {

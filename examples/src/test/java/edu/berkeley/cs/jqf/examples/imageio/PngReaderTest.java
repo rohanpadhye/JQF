@@ -32,7 +32,9 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
@@ -75,6 +77,8 @@ public class PngReaderTest {
         try {
             // Decode image from input stream
             reader.setInput(input);
+            Assume.assumeTrue(reader.getHeight(0) < 1024);
+            Assume.assumeTrue(reader.getWidth(0) < 1024);
             reader.read(0);
         } catch (IOException e) {
             // Ignore decode errors
@@ -149,7 +153,7 @@ public class PngReaderTest {
 
 
     @Fuzz
-    public void readUsingKaitai(@From(PngKaitaiGenerator.class) @Size(max=1024) InputStream input) throws IOException {
+    public void readUsingKaitai(@From(PngKaitaiGenerator.class) @Size(max = 1024) InputStream input) throws IOException {
         try {
             // Decode image from input stream
             reader.setInput(ImageIO.createImageInputStream(input));
@@ -161,5 +165,15 @@ public class PngReaderTest {
             // Ignore
         }
 
+    }
+
+    @Fuzz
+    public void debugKaitai(@From(PngKaitaiGenerator.class) @Size(max = 1024) InputStream input) throws IOException {
+        byte[] bytes = new byte[1024];
+        int len = input.read(bytes);
+        Assume.assumeTrue(len >= 0);
+        try(BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream("img.png"))) {
+            out.write(bytes, 0, len);
+        }
     }
 }

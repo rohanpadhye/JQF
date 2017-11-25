@@ -194,7 +194,7 @@ public class PngKaitaiGenerator extends AbstractKaitaiGenerator {
             }
 
             private void _write() {
-                this.len = this._io.writeU4be();
+                this.len = this._io.writeU4be(0, this._io.buf.remaining());
                 byte[][] types = {
                         "IEND".getBytes(),
                         "iTXt".getBytes(),
