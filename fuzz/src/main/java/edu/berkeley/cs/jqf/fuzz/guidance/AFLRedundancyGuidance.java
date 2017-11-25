@@ -123,14 +123,13 @@ public class AFLRedundancyGuidance extends AFLGuidance {
         if (e instanceof BranchEvent) {
             BranchEvent b = (BranchEvent) e;
             // Map branch IID to first half of the tracebits map
-            int iid = b.isTaken() ? b.getIid() : -b.getIid();
-            int edgeIdx = Hashing.hash(iid, COVERAGE_MAP_SIZE/2);
+            int edgeIdx = Hashing.hash1(b.getIid(), b.getArm(), COVERAGE_MAP_SIZE/2);
 
             // Increment the 8-bit branch counter
             incrementTraceBits(edgeIdx);
 
             // Increment the fine-grained branch counter
-            branchCounts.increment(iid);
+            branchCounts.increment(edgeIdx);
 
             // Increment the total branch count (holds max 16 bits)
             totalBranchCount++;

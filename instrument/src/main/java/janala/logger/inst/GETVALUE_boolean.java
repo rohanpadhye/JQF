@@ -1,6 +1,6 @@
 package janala.logger.inst;
 
-public class GETVALUE_boolean extends Instruction {
+public class GETVALUE_boolean extends Instruction implements GETVALUE {
   public boolean v;
 
   public GETVALUE_boolean(boolean v) {

@@ -1,6 +1,6 @@
 package janala.logger.inst;
 
-public class GETVALUE_float extends Instruction {
+public class GETVALUE_float extends Instruction implements GETVALUE {
   public float v;
 
   public GETVALUE_float(float v) {

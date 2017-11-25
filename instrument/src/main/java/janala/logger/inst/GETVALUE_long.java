@@ -1,6 +1,6 @@
 package janala.logger.inst;
 
-public class GETVALUE_long extends Instruction {
+public class GETVALUE_long extends Instruction implements GETVALUE {
   public long v;
 
   public GETVALUE_long(long v) {

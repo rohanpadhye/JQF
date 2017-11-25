@@ -1,6 +1,6 @@
 package janala.logger.inst;
 
-public class GETVALUE_void extends Instruction {
+public class GETVALUE_void extends Instruction implements GETVALUE {
 
   public GETVALUE_void() {
     super(-1, -1);

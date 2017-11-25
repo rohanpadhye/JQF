@@ -165,6 +165,9 @@ public class AFLGuidance implements Guidance {
      */
     @Override
     public boolean hasInput() {
+        // Sanity check
+        assert callStackEmpty;
+
         // Get a 4-byte signal from AFL
         byte[] signal = new byte[4];
         try {
@@ -278,12 +281,7 @@ public class AFLGuidance implements Guidance {
         if (e instanceof BranchEvent) {
             BranchEvent b = (BranchEvent) e;
             // Map branch IID to [0, MAP_SIZE)
-            int edgeId = Hashing.hash(b.getIid(), COVERAGE_MAP_SIZE);
-
-            // Take complement for reverse branches
-            if (b.isTaken()) {
-                edgeId = COVERAGE_MAP_SIZE - edgeId;
-            }
+            int edgeId = Hashing.hash1(b.getIid(), b.getArm(), COVERAGE_MAP_SIZE);
 
             // Increment the 8-bit branch counter
             incrementTraceBits(edgeId);

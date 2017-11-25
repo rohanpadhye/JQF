@@ -64,6 +64,10 @@ class ThreadTracer extends Thread {
     private final Consumer<TraceEvent> callback;
     private final Deque<Callable<?>> handlers = new ArrayDeque<>();
 
+    // Values set by GETVALUE_* instructions inserted by Janala
+    private final Values values = new Values();
+
+
     /** Creates a new tracer that will print the data-traces of a tracee to a logger. */
     protected ThreadTracer(Thread tracee, String entryPoint, Consumer<TraceEvent> callback) {
         super("__JWIG_TRACER__: " + tracee.getName()); // The name is important to block snooping
@@ -191,6 +195,41 @@ class ThreadTracer extends Thread {
     }
 
 
+    private static class Values {
+        private boolean booleanValue;
+        private byte byteValue;
+        private char charValue;
+        private double doubleValue;
+        private float floatValue;
+        private int intValue;
+        private long longValue;
+        private Object objectValue;
+        private short shortValue;
+    }
+    
+    private void saveValue(GETVALUE gv) {
+        if (gv instanceof GETVALUE_boolean) {
+            values.booleanValue = ((GETVALUE_boolean) gv).v;
+        } else if (gv instanceof GETVALUE_byte) {
+            values.byteValue = ((GETVALUE_byte) gv).v;
+        } else if (gv instanceof GETVALUE_char) {
+            values.charValue = ((GETVALUE_char) gv).v;
+        } else if (gv instanceof GETVALUE_double) {
+            values.doubleValue = ((GETVALUE_double) gv).v;
+        } else if (gv instanceof GETVALUE_float) {
+            values.floatValue = ((GETVALUE_float) gv).v;
+        } else if (gv instanceof GETVALUE_int) {
+            values.intValue = ((GETVALUE_int) gv).v;
+        } else if (gv instanceof GETVALUE_long) {
+            values.longValue = ((GETVALUE_long) gv).v;
+        } else if (gv instanceof GETVALUE_short) {
+            values.shortValue = ((GETVALUE_short) gv).v;
+        } else if (gv instanceof GETVALUE_Object) {
+            values.objectValue = ((GETVALUE_Object) gv).v;
+        }
+    }
+
+
 
     private static String getOwnerName(MemberRef mr) {
         return mr.getOwner() + "#" + mr.getName();
@@ -285,7 +324,7 @@ class ThreadTracer extends Thread {
                     throw new RuntimeException("Unexpected INVOKEMETHOD_END");
                 }
 
-                // Do not log SPECIAL instructions if they haven't been consumed by their predecessors
+                // Handle SPECIAL instructions if they haven't been consumed by their predecessors
                 if (ins instanceof SPECIAL) {
                     SPECIAL special = (SPECIAL) ins;
                     // Handle marker that says calling super() or this()
@@ -342,10 +381,10 @@ class ThreadTracer extends Thread {
                 }
 
 
-                // Log conditional branches
+                // Emit conditional branches
                 if (isIfJmp(ins)) {
                     Instruction next = next();
-                    int branchId = ins.iid;
+                    int iid = ins.iid;
                     int lineNum = ins.mid;
                     boolean taken;
                     if ((next instanceof SPECIAL) && ((SPECIAL) next).i == SPECIAL.DID_NOT_BRANCH) {
@@ -356,10 +395,53 @@ class ThreadTracer extends Thread {
                         restore(next); // Remember to put this instruction back on the queue
                         taken = true;
                     }
-                    emit(new BranchEvent(branchId, this.method, lineNum, taken));
+                    emit(new BranchEvent(iid, this.method, lineNum, taken ? 1 : 0));
                 }
 
-                // Log memory access instructions
+                // Save values from GETVALUE_* instructions
+                if (ins instanceof GETVALUE) {
+                    saveValue((GETVALUE) ins);
+                }
+
+
+                // Emit switch instructions
+                if (ins instanceof TABLESWITCH) {
+                    // Get parameters
+                    TABLESWITCH tableSwitch = (TABLESWITCH) ins;
+                    int iid = ins.iid;
+                    int lineNum = ins.mid;
+                    int value = values.intValue;
+                    int numCases = tableSwitch.labels.length;
+                    // Compute arm index or else default
+                    int arm = -1;
+                    if (value >= 0 && value < numCases) {
+                        arm = value;
+                    }
+                    // Emit a branch instruction corresponding to the arm
+                    emit(new BranchEvent(iid, this.method, lineNum, arm));
+                }
+
+                // Emit switch instructions
+                if (ins instanceof LOOKUPSWITCH) {
+                    // Get parameters
+                    LOOKUPSWITCH tableSwitch = (LOOKUPSWITCH) ins;
+                    int iid = ins.iid;
+                    int lineNum = ins.mid;
+                    int value = values.intValue;
+                    int[] cases = tableSwitch.keys;
+                    // Compute arm index or else default
+                    int arm = -1;
+                    for (int i = 0; i < cases.length; i++) {
+                        if (value == cases[i]) {
+                            arm = i;
+                            break;
+                        }
+                    }
+                    // Emit a branch instruction corresponding to the arm
+                    emit(new BranchEvent(iid, this.method, lineNum, arm));
+                }
+
+                // Emit memory access instructions
                 if (ins instanceof HEAPLOAD) {
                     HEAPLOAD heapload = (HEAPLOAD) ins;
                     int iid = heapload.iid;

@@ -26,35 +26,8 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.fuzz.util;
+package janala.logger.inst;
 
-/**
- * @author Rohan Padhye
- */
-public class Hashing {
-
-    private Hashing() {
-        // Static only
-    }
-
-    private static int cap(long x, int bound) {
-        int res = (int) (x % bound);
-        if (res < 0) {
-            res += bound;
-        }
-        return res;
-    }
-
-    protected static int knuth(long x, int bound) {
-        return cap(x*2654435761L, bound);
-    }
-
-    public static int hash(long x, int bound) {
-        return knuth(x, bound);
-    }
-
-    public static int hash1(long x, long y, int bound) {
-        return knuth(x+hash(y, bound), bound);
-    }
-
+public interface GETVALUE {
+    // Implemented by all GETVALUE instructions
 }

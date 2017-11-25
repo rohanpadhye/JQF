@@ -1,6 +1,6 @@
 package janala.logger.inst;
 
-public class GETVALUE_byte extends Instruction {
+public class GETVALUE_byte extends Instruction implements GETVALUE {
   public byte v;
 
   public GETVALUE_byte(byte v) {

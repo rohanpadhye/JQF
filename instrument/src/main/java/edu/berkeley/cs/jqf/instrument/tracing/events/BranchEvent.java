@@ -34,19 +34,27 @@ import janala.logger.inst.MemberRef;
  * @author Rohan Padhye
  */
 public class BranchEvent extends TraceEvent {
-    protected final boolean taken;
+    /**
+     * The branch arm that is taken.
+     *
+     * For simple conditional branches, 0 is the
+     * false branch and 1 is the true branch. For
+     * switch-cases, the arm is the index of the case
+     * statement (default arm = -1)
+     */
+    protected final int arm;
 
-    public BranchEvent(int iid, MemberRef containingMethod, int lineNumber, boolean taken) {
+    public BranchEvent(int iid, MemberRef containingMethod, int lineNumber, int arm) {
         super(iid, containingMethod, lineNumber);
-        this.taken = taken;
+        this.arm = arm;
     }
 
-    public boolean isTaken() {
-        return taken;
+    public int getArm() {
+        return arm;
     }
 
     @Override
     public String toString() {
-        return String.format("BRANCH(%d,%d)", taken ? iid : -iid, lineNumber);
+        return String.format("BRANCH(%d,%d,%d)", iid, arm, lineNumber);
     }
 }

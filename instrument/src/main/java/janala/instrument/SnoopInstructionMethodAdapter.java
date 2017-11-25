@@ -60,7 +60,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
 
   /** Add a GETVALUE call to synchronize the top stack with that of the symbolic stack. */
   private void addValueReadInsn(MethodVisitor mv, String desc, String methodNamePrefix) {
-    //Utils.addValueReadInsn(mv, desc, methodNamePrefix);
+    Utils.addValueReadInsn(mv, desc, methodNamePrefix);
   }
 
   /** Add a special probe instruction. */
@@ -921,7 +921,9 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
 
   @Override
   public void visitTableSwitchInsn(int min, int max, Label dflt, Label... labels) {
-    int iid3;
+    // Save operand value
+    addValueReadInsn(mv, "I", "GETVALUE_");
+    // Log switch instruction
     addBipushInsn(mv, instrumentationState.incAndGetId());
     addBipushInsn(mv, lastLineNumber);
     addBipushInsn(mv, min);
@@ -943,7 +945,9 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
 
   @Override
   public void visitLookupSwitchInsn(Label dflt, int[] keys, Label[] labels) {
-    int iid3;
+    // Save operand value
+    addValueReadInsn(mv, "I", "GETVALUE_");
+    // Log switch instruction
     addBipushInsn(mv, instrumentationState.incAndGetId());
     addBipushInsn(mv, lastLineNumber);
     addBipushInsn(mv, getLabelNum(dflt));
