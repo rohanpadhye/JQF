@@ -11,7 +11,6 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
   boolean isInit;
   boolean isSuperInitCalled;
   LinkedList<TryCatchBlock> tryCatchBlocks;
-  boolean calledNew = false;
   Label methodBeginLabel = new Label();
   Label methodEndLabel = new Label();
 
@@ -562,7 +561,6 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
         mv.visitTypeInsn(opcode, type);
         addSpecialInsn(mv, 0); // for non-exceptional path
 
-        calledNew = true;
         break;
       case ANEWARRAY:
         addTypeInsn(mv, type, opcode, "ANEWARRAY");
@@ -694,7 +692,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     mv.visitLabel(end);
     mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "INVOKEMETHOD_END", "()V", false);
 
-    addValueReadInsn(mv, desc, "GETVALUE_");
+    // addValueReadInsn(mv, desc, "GETVALUE_");
   }
 
   @Override
@@ -735,9 +733,6 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
 
         // Call <init>
         mv.visitMethodInsn(opcode, owner, name, desc, itf);
-        if (calledNew) {
-          calledNew = false;
-        }
 
         // Mark end of <init>
         // Note: If <init> throws an exception, we do not log it, due to JVM restrictions;
@@ -757,15 +752,23 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
         mv.visitLabel(methodBeginLabel);
 
       } else {
+        // Call to <init> but not a super() or this().
         addMethodWithTryCatch(opcode, owner, name, desc, itf);
-        if (calledNew) {
-          calledNew = false;
-          addValueReadInsn(mv, "Ljava/lang/Object;", "GETVALUE_");
-        }
       }
 
 
-    } else {
+    } else { // Call to non-constructor method
+
+      // Specially handle methods like String.charAt for HEAPLOAD
+      // since we do not instrument java.lang.String and friends.
+      if (Config.instance.instrumentHeapLoad &&
+              (name.equals("charAt") || name.equals("codePointAt")) &&
+              (owner.equals("java/lang/String") || owner.equals("java/lang/CharSequence"))) {
+        mv.visitInsn(DUP2); // Duplicate object reference and index
+        addBipushInsn(mv, instrumentationState.incAndGetId());
+        addBipushInsn(mv, lastLineNumber);
+        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "HEAPLOAD2", "(Ljava/lang/Object;III)V", false);
+      }
       addMethodWithTryCatch(opcode, owner, name, desc, itf);
     }
   }
