@@ -36,7 +36,7 @@ import pickle
 import travioli
 
 # Global constants
-REGEXP_BRANCH = re.compile("^\s*BRANCH\((-?\d+),(\d+)\)$")
+REGEXP_BRANCH = re.compile("^\s*BRANCH\((\d+),(\d+),(\d+)\)$")
 REGEXP_CALL   = re.compile("^\s*CALL\((\d+),(\d+),(.*)\)$")
 REGEXP_RET    = re.compile("^\s*RET")
 REGEXP_HEAPLOAD = re.compile("^\s*HEAPLOAD\((-?\d+),(\d+),(\d+),(.*)\)$")
@@ -98,10 +98,10 @@ class DynamicAnalysis(object):
 				if line.startswith("#"):
 					continue
 
-				# Try to match BRANCH(iid, line)
+				# Try to match BRANCH(iid, arm, line)
 				match_branch = REGEXP_BRANCH.match(line)
 				if match_branch:
-					self.handle_branch(int(match_branch.group(1)), int(match_branch.group(2)))
+					self.handle_branch(int(match_branch.group(1)), int(match_branch.group(2)), int(match_branch.group(3)))
 					continue
 
 				# Try to match HEAPLOAD(iid, line, objectId, field)
@@ -127,7 +127,7 @@ class DynamicAnalysis(object):
 				raise Exception("Cannot parse trace line: " + line)
 
 
-	def handle_branch(self, iid, line):
+	def handle_branch(self, iid, arm, line): # XXX: ARM ID is ignored ???
 		# Set PC of top-of-stack
 		self.call_stack[-1] = (self.call_stack[-1][0], iid)
 		# Remember line number
