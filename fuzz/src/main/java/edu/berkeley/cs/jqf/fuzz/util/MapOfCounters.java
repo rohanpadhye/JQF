@@ -30,6 +30,7 @@ package edu.berkeley.cs.jqf.fuzz.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -42,43 +43,45 @@ import java.util.List;
  */
 public class MapOfCounters {
 
-    private static final int TABLE_SIZE = 193;
+    private static final int TABLE_SIZE = 6151;
 
-    private int[] counts = new int[TABLE_SIZE*TABLE_SIZE];
+    private Counter[] counters = new Counter[TABLE_SIZE];
 
     public void clear() {
-        for (int i = 0; i < counts.length; i++) {
-            this.counts[i] = 0;
+        for (int i = 0; i < counters.length; i++) {
+            counters[i] = null;
         }
     }
 
-    private int idx(int k1, int k2) {
-        return Hashing.hash(k1, TABLE_SIZE) * TABLE_SIZE + Hashing.hash(k2, TABLE_SIZE);
+    private int idx(int key) {
+        return Hashing.hash(key, TABLE_SIZE);
     }
 
     public void increment(int k1, int k2) {
-        this.counts[idx(k1, k2)]++;
-    }
-
-    public Collection<Integer> nonZeroValues(int k1) {
-        List<Integer> values = new ArrayList<>(TABLE_SIZE);
-        int lower = k1 + TABLE_SIZE;
-        int upper = lower + TABLE_SIZE;
-        for (int i = lower; i < upper; i++) {
-            if (counts[i] > 0) {
-                values.add(counts[i]);
-            }
+        int idx = idx(k1);
+        if (counters[idx] == null) {
+            counters[idx] = new Counter();
         }
-        return values;
+        counters[idx].increment(k2);
     }
 
-    public Collection<Integer> keys() {
+    public Collection<Integer> nonZeroCountsAtIndex(int idx) {
+        if (counters[idx] != null) {
+            return counters[idx].nonZeroValues();
+        } else {
+            return Collections.EMPTY_LIST;
+        }
+
+    }
+
+    public Collection<Integer> nonEmptyCountersIndices() {
         List<Integer> keys = new ArrayList<>(TABLE_SIZE);
         for (int i = 0; i < TABLE_SIZE; i++) {
-            keys.add(i);
+            if (counters[i] != null) {
+                keys.add(i);
+            }
         }
         return keys;
     }
-
 
 }

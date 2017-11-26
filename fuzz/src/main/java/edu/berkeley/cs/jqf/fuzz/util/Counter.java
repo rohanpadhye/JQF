@@ -61,7 +61,7 @@ public class Counter {
     }
 
     public Collection<Integer> nonZeroValues() {
-        List<Integer> values = new ArrayList<>(TABLE_SIZE);
+        List<Integer> values = new ArrayList<>(TABLE_SIZE/2);
         for (int count : counts) {
             if (count > 0) {
                 values.add(count);

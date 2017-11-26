@@ -166,9 +166,9 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             case REDUNDANCY_SCORES: {
                 // Compute redundancy scores for all memory accesses and add
                 // 8-bit quantized values to "coverage" map
-                for (int aec : memoryAccesses.keys()) {
+                for (int cidx : memoryAccesses.nonEmptyCountersIndices()) {
                     double redundancyScore =
-                            computeRedundancyScore(memoryAccesses.nonZeroValues(aec));
+                            computeRedundancyScore(memoryAccesses.nonZeroCountsAtIndex(cidx));
 
                     if (redundancyScore > 0.0) {
                         // Discretize the score to a 16-bit value
@@ -177,19 +177,20 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
                         // Get an index in the upper half of the tracebits map
                         int idx = COVERAGE_MAP_SIZE / 2 +
-                                2 * Hashing.hash(aec, COVERAGE_MAP_SIZE / 4);
+                                2 * Hashing.hash(cidx, COVERAGE_MAP_SIZE / 4);
                         assert(idx >= COVERAGE_MAP_SIZE / 2 && idx < COVERAGE_MAP_SIZE);
                         assert(idx % 2 == 0);
 
                         // Add mapping to trace bits (little-endian 16-bit value)
                         traceBits[idx] = (byte) discreteScore;
                         traceBits[idx + 1] = (byte) (discreteScore >> 8);
-                        scores.println(String.format("idx = %d, score = %f, value = %d (0x%04x = 0x%02x%02x)", idx, redundancyScore, discreteScore,
-                                discreteScore, traceBits[idx+1], traceBits[idx]));
+                        //scores.println(String.format("idx = %d, score = %f, value = %d (0x%04x = 0x%02x%02x)", idx, redundancyScore, discreteScore,
+                        //        discreteScore, traceBits[idx+1], traceBits[idx]));
                     }
 
                 }
             }
+            break;
             case TOTAL_BRANCH_COUNT: {
                 // Max branch count can be 2^16 - 1
                 if (totalBranchCount >= (1 << 16)) {
@@ -225,6 +226,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             break;
         }
 
+        //scores.println("\n");
 
         // Delegate feedback-sending to parent
         super.handleResult(result, error);
