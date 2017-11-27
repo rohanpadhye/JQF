@@ -46,17 +46,15 @@ import org.junit.runner.RunWith;
 public class HashedMapTest {
 
     @Fuzz
-    public void queryStringTest(@From(AsciiStringGenerator.class) @Size(max=20) String queryString) {
+    public void queryStringTest(@From(AsciiStringGenerator.class) @Size(max=80) String queryString) {
         Assume.assumeTrue(queryString.length() > 0);
         String[] params = queryString.split("&");
         Map<String, String> map = new HashedMap<>();
         for (String param : params) {
             int eqIdx = param.indexOf('=');
-            Assume.assumeTrue(eqIdx != 0);
             String key, value;
-            if (eqIdx == -1) {
-                key = param;
-                value = "";
+            if (eqIdx == -1 || eqIdx == 0) {
+                continue;
             } else {
                 key = param.substring(0, eqIdx);
                 value = eqIdx < param.length()-1 ? param.substring(eqIdx+1) : "";
