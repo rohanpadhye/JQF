@@ -190,7 +190,6 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
                 }
             }
-            break;
             case TOTAL_BRANCH_COUNT: {
                 // Max branch count can be 2^16 - 1
                 if (totalBranchCount >= (1 << 16)) {
