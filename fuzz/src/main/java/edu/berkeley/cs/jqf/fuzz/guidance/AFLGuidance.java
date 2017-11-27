@@ -101,7 +101,7 @@ public class AFLGuidance implements Guidance {
      *
      * Note: Same assumption on single-threaded app applies.
      */
-    private boolean callStackEmpty = true;
+    private volatile boolean callStackEmpty = true;
 
     /**
      *
