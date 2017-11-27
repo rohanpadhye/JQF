@@ -15,23 +15,27 @@ fi
 afl_options="-t 6000 -m 8192"
 jqf_options=""
 input_dir="examples/target/seeds/zeros"
-while getopts ":abcdevrs:" opt; do
+suffix=""
+while getopts ":abcdeihvrs:t:" opt; do
   case $opt in
     r)
       afl_options="$afl_options -d -p -h -s"
       jqf_options="$jqf_options -r"
       ;;
     v)
-      jqf_options="$jqf_options -v"
+      jqf_options="$jqf_options -v -a"
       ;;
     a)
-      jqf_options="$jqf_options -a"
+      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=ALLOCATION_COUNTS"
       ;;
     b)
       export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=BRANCH_COUNTS"
       ;;
     c)
       export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=TOTAL_BRANCH_COUNT"
+      ;;
+    h)
+      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=REDUNDANCY_SCORES"
       ;;
     d)
       afl_options="$afl_options -d"
@@ -41,6 +45,9 @@ while getopts ":abcdevrs:" opt; do
       ;;
     s)
       input_dir="examples/target/seeds/$OPTARG"
+      ;;
+    t)
+      suffix="-$OPTARG"
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -72,5 +79,5 @@ export CLASSPATH="examples/target/classes/:examples/target/test-classes/:example
 
 echo "Fuzzing method $class#$method..."
   
-"$AFL_DIR"/afl-fuzz $afl_options -i $input_dir -o "$output_dir" -T "$class#$method" \
+"$AFL_DIR"/afl-fuzz $afl_options -i $input_dir -o "$output_dir" -T "$class#$method$suffix" \
   "$ROOT_DIR/bin/jqf-afl" $jqf_options edu.berkeley.cs.jqf.examples."$class" "$method" "$input_file"
