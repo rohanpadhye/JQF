@@ -35,6 +35,7 @@ import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import edu.berkeley.cs.jqf.instrument.tracing.events.AllocEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
@@ -452,6 +453,22 @@ class ThreadTracer extends Thread {
                     if (objectId != 0) {
                         emit(new ReadEvent(iid, this.method, lineNum, objectId, field));
                     }
+                }
+
+                // Emit allocation instructions
+                if (ins instanceof NEW) {
+                    NEW newInst = (NEW) ins;
+                    int iid = newInst.iid;
+                    int lineNum = newInst.mid;
+                    emit(new AllocEvent(iid, this.method, lineNum, 1));
+                } else if (ins instanceof NEWARRAY) {
+                    // Note: Array size should be stored in a previous
+                    // GETVALUE instructions
+                    NEWARRAY newArray = (NEWARRAY) ins;
+                    int iid = newArray.iid;
+                    int lineNum = newArray.mid;
+                    int size = values.intValue;
+                    emit(new AllocEvent(iid, this.method, lineNum, size));
                 }
 
 

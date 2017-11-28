@@ -49,12 +49,12 @@ public final class SingleSnoop {
         public Boolean initialValue() {
         String threadName = Thread.currentThread().getName();
             if (threadName.startsWith("__JWIG_TRACER__")) {
-            return true; // Always block snooping on the tracing thread to prevent cycles
-        } else if (threadsToUnblock.synchronizedRemove(Thread.currentThread())){
-            return false; // Snoop on threads that were added to the queue explicitly
-        } else {
-            return true; // Block all other threads (e.g. JVM cleanup threads)
-        }
+                return true; // Always block snooping on the tracing thread to prevent cycles
+            } else if (threadsToUnblock.synchronizedRemove(Thread.currentThread())){
+                return false; // Snoop on threads that were added to the queue explicitly
+            } else {
+                return true; // Block all other threads (e.g. JVM cleanup threads)
+            }
         }
     };
 
@@ -309,9 +309,9 @@ public final class SingleSnoop {
         intp.HEAPLOAD(iid, mid, System.identityHashCode(object), String.valueOf(idx)); block.set(false);
     }
 
-    public static void NEW(int iid, int mid, String type, int cIdx) {
+    public static void NEW(int iid, int mid, String type) {
         if (block.get()) return; else block.set(true);
-        intp.NEW(iid, mid, type, cIdx); block.set(false);
+        intp.NEW(iid, mid, type, 0); block.set(false);
     }
 
     public static void ANEWARRAY(int iid, int mid, String type) {

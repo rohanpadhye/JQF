@@ -16,6 +16,7 @@ class Config {
   public final String[] excludeInst;
   public final String[] includeInst;
   public final boolean instrumentHeapLoad;
+  public final boolean instrumentAlloc;
   public final String instrumentationCacheDir;
 
   private Config() {
@@ -39,6 +40,7 @@ class Config {
 
 
       instrumentHeapLoad = Boolean.parseBoolean(properties.getProperty("janala.instrumentHeapLoad", "false"));
+      instrumentAlloc = Boolean.parseBoolean(properties.getProperty("janala.instrumentAlloc", "false"));
 
       String excludeInstStr = properties.getProperty("janala.excludes", "");
       if (excludeInstStr.length() > 0) {

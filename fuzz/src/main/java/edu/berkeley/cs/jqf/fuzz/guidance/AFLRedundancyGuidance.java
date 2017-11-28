@@ -41,6 +41,7 @@ import java.util.Map;
 import edu.berkeley.cs.jqf.fuzz.util.Counter;
 import edu.berkeley.cs.jqf.fuzz.util.Hashing;
 import edu.berkeley.cs.jqf.fuzz.util.MapOfCounters;
+import edu.berkeley.cs.jqf.instrument.tracing.events.AllocEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
@@ -81,11 +82,15 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     /** Count of total number of branches */
     protected int totalBranchCount;
 
+    /** Maps allocation sites to counts */
+    protected Counter allocCounts = new Counter();
+
     /** Configuration of what feedback to send AFL in second-half of map. */
     private enum Feedback {
         REDUNDANCY_SCORES,
         BRANCH_COUNTS,
         TOTAL_BRANCH_COUNT,
+        ALLOCATION_COUNTS
     };
     private final Feedback feedback;
 
@@ -100,18 +105,19 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     }
 
     @Override
-    public boolean hasInput() {
+    public File getInputFile() {
         // Reset state
         // For unmapped AECs, return a counter (map with 0 as default)
         memoryAccesses.clear();
         branchCounts.clear();
+        allocCounts.clear();
         totalBranchCount = 0;
 
         // Ensure that calling context is empty
         assert(callingContext.isEmpty());
 
         // Delegate input generation to parent
-        return super.hasInput();
+        return super.getInputFile();
     }
 
     //private PrintWriter trace = new PrintWriter(new FileOutputStream("trace.log"), true);
@@ -122,36 +128,53 @@ public class AFLRedundancyGuidance extends AFLGuidance {
         //trace.println(e.toString());
         if (e instanceof BranchEvent) {
             BranchEvent b = (BranchEvent) e;
+
             // Map branch IID to first half of the tracebits map
-            int edgeIdx = Hashing.hash1(b.getIid(), b.getArm(), COVERAGE_MAP_SIZE/2);
+            int edgeId = Hashing.hash1(b.getIid(), b.getArm(), COVERAGE_MAP_SIZE/2);
 
             // Increment the 8-bit branch counter
-            incrementTraceBits(edgeIdx);
+            incrementTraceBits(edgeId);
 
             // Increment the fine-grained branch counter
-            branchCounts.increment(edgeIdx);
+            branchCounts.increment(edgeId);
 
             // Increment the total branch count (holds max 16 bits)
             totalBranchCount++;
 
         } else if (e instanceof ReadEvent) {
             ReadEvent read = (ReadEvent) e;
-            // Get memory location that was accessed
-            int memoryLocation =
-                    hashMemorylocation(read.getObjectId(), read.getField());
-            // Get AEC for read operation
-            int aec = getAyclicExecutionContextForEvent(read);
+            if (feedback == Feedback.REDUNDANCY_SCORES) {
+                // Get memory location that was accessed
+                int memoryLocation =
+                        hashMemorylocation(read.getObjectId(), read.getField());
+                // Get AEC for read operation
+                int aec = getAyclicExecutionContextForEvent(read);
 
-            // Map memory access to AEC
-            memoryAccesses.increment(aec, memoryLocation);
-
+                // Map memory access to AEC
+                memoryAccesses.increment(aec, memoryLocation);
+            }
 
         } else if (e instanceof CallEvent) {
             // Push to calling context
             callingContext.push((CallEvent) e);
+
+            // Map branch IID to first half of the tracebits map
+            int edgeId = Hashing.hash(e.getIid(), COVERAGE_MAP_SIZE/2);
+
+            // Increment the 8-bit counter
+            incrementTraceBits(edgeId);
         } else if (e instanceof ReturnEvent) {
             // Pop from calling context
             callingContext.pop();
+        } else if (e instanceof AllocEvent) {
+            AllocEvent alloc = (AllocEvent) e;
+            if (feedback == Feedback.ALLOCATION_COUNTS) {
+                // Get size of allocation
+                int size = alloc.getSize();
+
+                // Increment the fine-grained alloc counter by `size`
+                allocCounts.increment(alloc.getIid(), size);
+            }
         }
     }
 
@@ -209,6 +232,24 @@ public class AFLRedundancyGuidance extends AFLGuidance {
                 for (int k = 0; k < counts.length; k++) {
                     int count = counts[k];
                     // Max branch count can be 2^16 - 1
+                    if (count >= (1 << 16)) {
+                        count = (1 << 16) - 1;
+                    }
+                    // Get an index in the second half that's aligned on an even number
+                    int idx = COVERAGE_MAP_SIZE/2 + 2 * Hashing.hash(k, COVERAGE_MAP_SIZE/4);
+                    assert(idx >= COVERAGE_MAP_SIZE / 2 && idx < COVERAGE_MAP_SIZE);
+                    assert(idx % 2 == 0);
+
+                    // Add mapping to trace bits (little-endian 16-bit value)
+                    traceBits[idx] = (byte) count;
+                    traceBits[idx + 1] = (byte) (count >> 8);
+                }
+            }
+            case ALLOCATION_COUNTS: {
+                int[] counts = allocCounts.getCounts();
+                for (int k = 0; k < counts.length; k++) {
+                    int count = counts[k];
+                    // Max alloc count can be 2^16 - 1
                     if (count >= (1 << 16)) {
                         count = (1 << 16) - 1;
                     }

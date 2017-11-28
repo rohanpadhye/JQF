@@ -26,59 +26,37 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.fuzz.util;
+package edu.berkeley.cs.jqf.instrument.tracing.events;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import janala.logger.inst.MemberRef;
 
 /**
- * Maps integer keys to integer counts using a fixed-size table.
- *
- * Hash collisions are completely ignored; therefore, the counts
- * are unreliable.
- *
  * @author Rohan Padhye
  */
-public class Counter {
+public class AllocEvent extends TraceEvent {
 
-    private static final int TABLE_SIZE = 6151;
+    /**
+     * The number of elements allocated.
+     *
+     * We do not store type information, therefore this number alone cannot
+     * determine the size in bytes of the total allocation. Allocations of
+     * single objects of the form new T() are considered allocations of
+     * size 1, whereas arrays of the form new T[N] are considered allocations
+     * of size N.
+     */
+    private final int size;
 
-    private int[] counts = new int[TABLE_SIZE];
-
-    public void clear() {
-        for (int i = 0; i < counts.length; i++) {
-            this.counts[i] = 0;
-        }
+    public AllocEvent(int iid, MemberRef containingMethod, int lineNumber, int size) {
+        super(iid, containingMethod, lineNumber);
+        this.size = size;
     }
 
-    private int idx(int key) {
-        return Hashing.hash(key, TABLE_SIZE);
+    public int getSize() {
+        return size;
     }
 
-    public void increment(int key) {
-        this.counts[idx(key)]++;
-    }
-
-    public void increment(int key, int delta) {
-        this.counts[idx(key)] += delta;
-    }
-
-    public Collection<Integer> nonZeroValues() {
-        List<Integer> values = new ArrayList<>(TABLE_SIZE/2);
-        for (int count : counts) {
-            if (count > 0) {
-                values.add(count);
-            }
-        }
-        return values;
-    }
-
-    public int[] getCounts() {
-        return this.counts;
-    }
-
-    public int get(int key) {
-        return this.counts[idx(key)];
+    @Override
+    public String toString() {
+        return String.format("ALLOC(%d,%d,%d)", iid, lineNumber, size);
     }
 }

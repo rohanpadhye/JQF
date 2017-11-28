@@ -523,11 +523,10 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     }
   }*/
 
-  /*@Override
+  @Override
   public void visitIntInsn(int opcode, int operand) {
-    addBipushInsn(mv, instrumentationState.incAndGetId());
-    addBipushInsn(mv, lastLineNumber);
     switch (opcode) {
+      /*
       case BIPUSH:
         addBipushInsn(mv, operand);
         mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "BIPUSH", "(III)V", false);
@@ -536,36 +535,47 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
         addBipushInsn(mv, operand);
         mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "SIPUSH", "(III)V", false);
         break;
+       */
       case NEWARRAY:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "NEWARRAY", "(II)V", false);
-        mv.visitIntInsn(opcode, operand);
-        addSpecialInsn(mv, 0); // for non-exceptional path
-        return;
+        if (Config.instance.instrumentAlloc) {
+          // First, log the array size
+          addValueReadInsn(mv, "I", "GETVALUE_");
+          // Then, log the NEWARRAY instruction
+          addBipushInsn(mv, instrumentationState.incAndGetId());
+          addBipushInsn(mv, lastLineNumber);
+          mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "NEWARRAY", "(II)V", false);
+        }
+        break;
       default:
-        throw new RuntimeException("Unknown int instruction opcode " + opcode);
     }
     mv.visitIntInsn(opcode, operand);
-  }*/
+  }
 
-  /*@Override
+  @Override
   public void visitTypeInsn(int opcode, String type) {
     switch (opcode) {
       case NEW:
-        addBipushInsn(mv, instrumentationState.incAndGetId());
-        addBipushInsn(mv, lastLineNumber);
-        mv.visitLdcInsn(type);
-        int cIdx = classNames.get(type);
-        addBipushInsn(mv, cIdx);
-        mv.visitMethodInsn(
-            INVOKESTATIC, Config.instance.analysisClass, "NEW", "(IILjava/lang/String;I)V", false);
-        mv.visitTypeInsn(opcode, type);
-        addSpecialInsn(mv, 0); // for non-exceptional path
+        if (Config.instance.instrumentAlloc) {
+          // Log the NEW instruction
+          addBipushInsn(mv, instrumentationState.incAndGetId());
+          addBipushInsn(mv, lastLineNumber);
+          mv.visitLdcInsn(type);
+          mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "NEW", "(IILjava/lang/String;)V", false);
+        }
 
         break;
       case ANEWARRAY:
-        addTypeInsn(mv, type, opcode, "ANEWARRAY");
-        addSpecialInsn(mv, 0); // for non-exceptional path
+        if (Config.instance.instrumentAlloc) {
+          // First, log the array size
+          addValueReadInsn(mv, "I", "GETVALUE_");
+          // Then, log the ANEWARRAY instruction
+          addBipushInsn(mv, instrumentationState.incAndGetId());
+          addBipushInsn(mv, lastLineNumber);
+          mv.visitLdcInsn(type);
+          mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "ANEWARRAY", "(IILjava/lang/String;)V", false);
+        }
         break;
+      /*
       case CHECKCAST:
         addTypeInsn(mv, type, opcode, "CHECKCAST");
         addSpecialInsn(mv, 0); // for non-exceptional path
@@ -575,10 +585,11 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
         addSpecialInsn(mv, 0); // for non-exceptional path
         addValueReadInsn(mv, "I", "GETVALUE_");
         break;
+      */
       default:
-        throw new RuntimeException("Unknown type instruction opcode " + opcode);
     }
-  }*/
+    mv.visitTypeInsn(opcode, type);
+  }
 
   @Override
   public void visitFieldInsn(int opcode, String owner, String name, String desc) {
