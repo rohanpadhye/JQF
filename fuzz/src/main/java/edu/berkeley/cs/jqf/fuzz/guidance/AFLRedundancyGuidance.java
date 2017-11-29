@@ -245,6 +245,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
                     traceBits[idx + 1] = (byte) (count >> 8);
                 }
             }
+            break;
             case ALLOCATION_COUNTS: {
                 int[] counts = allocCounts.getCounts();
                 for (int k = 0; k < counts.length; k++) {
