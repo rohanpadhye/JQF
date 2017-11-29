@@ -36,7 +36,7 @@ import pickle
 import travioli
 
 # Global constants
-REGEXP_BRANCH = re.compile("^\s*BRANCH\((\d+),(\d+),(\d+)\)$")
+REGEXP_BRANCH = re.compile("^\s*BRANCH\((\d+),(-?\d+),(\d+)\)$")
 REGEXP_CALL   = re.compile("^\s*CALL\((\d+),(\d+),(.*)\)$")
 REGEXP_RET    = re.compile("^\s*RET")
 REGEXP_HEAPLOAD = re.compile("^\s*HEAPLOAD\((-?\d+),(\d+),(\d+),(.*)\)$")
