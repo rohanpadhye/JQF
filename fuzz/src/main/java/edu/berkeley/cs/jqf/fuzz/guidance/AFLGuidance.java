@@ -72,7 +72,7 @@ public class AFLGuidance implements Guidance {
     /** The communication channel from us to the AFL proxy. */
     protected OutputStream out;
 
-    /** THe size of the "coverage" map that will be sent to AFL. */
+    /** The size of the "coverage" map that will be sent to AFL. */
     protected static final int COVERAGE_MAP_SIZE = 1 << 16;
 
     /** The "coverage" map that will be sent to AFL. */

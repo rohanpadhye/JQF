@@ -63,8 +63,20 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  */
 public class AFLRedundancyGuidance extends AFLGuidance {
 
+    /** The size of the "performance" map that will be sent to AFL. */
+    protected static final int PERF_MAP_SIZE = 1 << 14;
+
+    /** Maps branches to counts */
+    protected Counter branchCounts = new Counter(PERF_MAP_SIZE);
+
+    /** Count of total number of branches */
+    protected int totalBranchCount;
+
+    /** Maps allocation sites to counts */
+    protected Counter allocCounts = new Counter(PERF_MAP_SIZE);
+
     /** Maps acyclic execution contexts to accessed memory locations. */
-    protected MapOfCounters memoryAccesses = new MapOfCounters();
+    protected MapOfCounters memoryAccesses = new MapOfCounters(6151, 6151);
 
     /**
      * Maintains a dynamic calling context (i.e. call stack).
@@ -75,15 +87,6 @@ public class AFLRedundancyGuidance extends AFLGuidance {
      *
      * */
     protected CallingContext callingContext = new CallingContext();
-
-    /** Maps branches to counts */
-    protected Counter branchCounts = new Counter();
-
-    /** Count of total number of branches */
-    protected int totalBranchCount;
-
-    /** Maps allocation sites to counts */
-    protected Counter allocCounts = new Counter();
 
     /** Configuration of what feedback to send AFL in second-half of map. */
     private enum Feedback {

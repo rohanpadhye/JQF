@@ -42,9 +42,16 @@ import java.util.List;
  */
 public class Counter {
 
-    private static final int TABLE_SIZE = 6151;
+    /** The size of the counter map. */
+    private final int size;
 
-    private int[] counts = new int[TABLE_SIZE];
+    /** The counter map as an array of integers. */
+    private final int[] counts;
+
+    public Counter(int size) {
+        this.size = size;
+        this.counts = new int[size];
+    }
 
     public void clear() {
         for (int i = 0; i < counts.length; i++) {
@@ -53,7 +60,7 @@ public class Counter {
     }
 
     private int idx(int key) {
-        return Hashing.hash(key, TABLE_SIZE);
+        return Hashing.hash(key, size);
     }
 
     public void increment(int key) {
@@ -65,7 +72,7 @@ public class Counter {
     }
 
     public Collection<Integer> nonZeroValues() {
-        List<Integer> values = new ArrayList<>(TABLE_SIZE/2);
+        List<Integer> values = new ArrayList<>(size /2);
         for (int count : counts) {
             if (count > 0) {
                 values.add(count);

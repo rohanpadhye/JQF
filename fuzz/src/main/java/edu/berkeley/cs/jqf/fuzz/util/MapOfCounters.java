@@ -43,9 +43,20 @@ import java.util.List;
  */
 public class MapOfCounters {
 
-    private static final int TABLE_SIZE = 6151;
+    /** The number of counters to map. */
+    private final int numCounters;
 
-    private Counter[] counters = new Counter[TABLE_SIZE];
+    /** The size of each counter in the map. */
+    private final int counterSize;
+
+    /** The table of counters. */
+    private final Counter[] counters;
+
+    public MapOfCounters(int numCounters, int counterSize) {
+        this.numCounters = numCounters;
+        this.counterSize = counterSize;
+        this.counters = new Counter[numCounters];
+    }
 
     public void clear() {
         for (int i = 0; i < counters.length; i++) {
@@ -54,13 +65,13 @@ public class MapOfCounters {
     }
 
     private int idx(int key) {
-        return Hashing.hash(key, TABLE_SIZE);
+        return Hashing.hash(key, numCounters);
     }
 
     public void increment(int k1, int k2) {
         int idx = idx(k1);
         if (counters[idx] == null) {
-            counters[idx] = new Counter();
+            counters[idx] = new Counter(counterSize);
         }
         counters[idx].increment(k2);
     }
@@ -75,8 +86,8 @@ public class MapOfCounters {
     }
 
     public Collection<Integer> nonEmptyCountersIndices() {
-        List<Integer> keys = new ArrayList<>(TABLE_SIZE);
-        for (int i = 0; i < TABLE_SIZE; i++) {
+        List<Integer> keys = new ArrayList<>(numCounters);
+        for (int i = 0; i < numCounters; i++) {
             if (counters[i] != null) {
                 keys.add(i);
             }

@@ -26,7 +26,7 @@ while getopts ":abcdeihvrs:t:" opt; do
       jqf_options="$jqf_options -v -a"
       ;;
     a)
-      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=ALLOCATION_COUNTS"
+      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=ALLOCATION_COUNTS -Djanala.instrumentAlloc=true"
       ;;
     b)
       export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=BRANCH_COUNTS"
@@ -35,7 +35,7 @@ while getopts ":abcdeihvrs:t:" opt; do
       export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=TOTAL_BRANCH_COUNT"
       ;;
     h)
-      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=REDUNDANCY_SCORES"
+      export JVM_OPTS="$JVM_OPTS -Djqf.afl.feedback=REDUNDANCY_SCORES -Djanala.instrumentHeapLoad=true"
       ;;
     d)
       afl_options="$afl_options -d"
