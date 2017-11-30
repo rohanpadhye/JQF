@@ -153,6 +153,9 @@ int main(int argc, char** argv) {
   if (trace_bits < 0){
     log_to_file(1, log_file_name, "Error shmat()ing trace_bits from id %d\n", shm_id);
   }
+
+  /* perf map is right after coverage bit map */
+  u32* perf_bits = (u32*) &trace_bits[MAP_SIZE];
   
   /* say the first hello to AFL. use write() because we
      have an int file descriptor */
@@ -198,11 +201,19 @@ int main(int argc, char** argv) {
     }
 
     log_to_file(0, log_file_name, "Got trace bits from java.\n");
+    
+    /* Get perf bits from Java */
+    if ((comm_bytes = fread( perf_bits, 4, PERF_SIZE, from_java_fd)) < PERF_SIZE) {
+      log_to_file(1, log_file_name, 
+        "Something went wrong getting perf_bits from Java: read %d bytes.\n", comm_bytes);
+    }
+
+    log_to_file(0, log_file_name, "Got perf bits from java.\n");
 
     /* Tell AFL we got the return */
     if((comm_bytes = write(FORKSRV_FD + 1, &status, 4)) < 4) {
       log_to_file(1, log_file_name, 
-        "Something went wrong getting trace_bits from Java: read %d bytes.\n", comm_bytes);
+        "Something went wrong sending return status to AFL: wrote %d bytes.\n", comm_bytes);
     }
 
     log_to_file(0, log_file_name, "sent return status to AFL.\n");

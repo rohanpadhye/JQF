@@ -19,7 +19,7 @@ suffix=""
 while getopts ":abcdeihvrs:t:" opt; do
   case $opt in
     r)
-      afl_options="$afl_options -d -p -h -s"
+      afl_options="$afl_options -d -p -s"
       jqf_options="$jqf_options -r"
       ;;
     v)

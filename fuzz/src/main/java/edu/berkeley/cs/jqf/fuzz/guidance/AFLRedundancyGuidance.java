@@ -53,7 +53,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  * of heap-memory access expressions.
  *
  * This class extends {@link AFLGuidance} to additionally provide
- * feedback about memory access redundancy.
+ * perfFeedBackType about memory access redundancy.
  *
  * It overrides {@link #handleEvent} to handle <tt>ReadEvent</tt>s
  * (as well as <tt>CallEvent</tt>s and <tt>ReturnEvent</tt>s for
@@ -76,7 +76,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     protected Counter allocCounts = new Counter(PERF_MAP_SIZE);
 
     /** Maps acyclic execution contexts to accessed memory locations. */
-    protected MapOfCounters memoryAccesses = new MapOfCounters(6151, 6151);
+    protected MapOfCounters memoryAccesses = new MapOfCounters(PERF_MAP_SIZE, 6151);
 
     /**
      * Maintains a dynamic calling context (i.e. call stack).
@@ -88,23 +88,23 @@ public class AFLRedundancyGuidance extends AFLGuidance {
      * */
     protected CallingContext callingContext = new CallingContext();
 
-    /** Configuration of what feedback to send AFL in second-half of map. */
-    private enum Feedback {
+    /** Configuration of what perfFeedBackType to send AFL in second-half of map. */
+    private enum PerfFeedbackType {
         REDUNDANCY_SCORES,
         BRANCH_COUNTS,
         TOTAL_BRANCH_COUNT,
         ALLOCATION_COUNTS
     };
-    private final Feedback feedback;
+    private final PerfFeedbackType perfFeedBackType;
 
     public AFLRedundancyGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
         super(inputFile, inPipe, outPipe);
-        this.feedback = Feedback.valueOf(System.getProperty("jqf.afl.feedback", "REDUNDANCY_SCORES"));
+        this.perfFeedBackType = PerfFeedbackType.valueOf(System.getProperty("jqf.afl.perfFeedBackType", "REDUNDANCY_SCORES"));
     }
 
     public AFLRedundancyGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
         super(inputFileName, inPipeName, outPipeName);
-        this.feedback = Feedback.valueOf(System.getProperty("jqf.afl.feedback", "REDUNDANCY_SCORES"));
+        this.perfFeedBackType = PerfFeedbackType.valueOf(System.getProperty("jqf.afl.feedback", "REDUNDANCY_SCORES"));
     }
 
     @Override
@@ -146,7 +146,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
         } else if (e instanceof ReadEvent) {
             ReadEvent read = (ReadEvent) e;
-            if (feedback == Feedback.REDUNDANCY_SCORES) {
+            if (perfFeedBackType == PerfFeedbackType.REDUNDANCY_SCORES) {
                 // Get memory location that was accessed
                 int memoryLocation =
                         hashMemorylocation(read.getObjectId(), read.getField());
@@ -171,7 +171,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             callingContext.pop();
         } else if (e instanceof AllocEvent) {
             AllocEvent alloc = (AllocEvent) e;
-            if (feedback == Feedback.ALLOCATION_COUNTS) {
+            if (perfFeedBackType == PerfFeedbackType.ALLOCATION_COUNTS) {
                 // Get size of allocation
                 int size = alloc.getSize();
 
@@ -181,100 +181,71 @@ public class AFLRedundancyGuidance extends AFLGuidance {
         }
     }
 
-    private void putTotalBranchCountIntoTraceBits() {
-        // Max branch count can be 2^16 - 1
-        if (totalBranchCount >= (1 << 16)) {
-            totalBranchCount = (1 << 16) - 1;
-        }
-
-        // Get an index in the second half
-        int idx = COVERAGE_MAP_SIZE / 2;
-
-        // Add mapping to trace bits (little-endian 16-bit value)
-        traceBits[idx] = (byte) totalBranchCount;
-        traceBits[idx + 1] = (byte) (totalBranchCount >> 8);
+    private void putTotalBranchCountIntoFeedback() {
+        // Put the total count into the first slot of the perf map
+        feedback.putInt(0, totalBranchCount);
     }
 
 
     @Override
     public void handleResult(Result result, Throwable error) {
+        // First, communicate the coverage information as usual
+        super.handleResult(result, error);
+
         // Wait for calling context to be empty
         // (i.e. all AECs are processed)
         while (!callingContext.isEmpty());
 
-        switch (this.feedback) {
+        // Reset the feedback buffer for the perf info
+        feedback.clear();
+
+        // Now, communicate the performance perfFeedBackType
+        switch (this.perfFeedBackType) {
             case TOTAL_BRANCH_COUNT: {
                 // Add the total instruction count
-                putTotalBranchCountIntoTraceBits();
+                putTotalBranchCountIntoFeedback();
             }
             break;
             case REDUNDANCY_SCORES: {
                 // Compute redundancy scores for all memory accesses and add
                 // 8-bit quantized values to "coverage" map
-                for (int cidx : memoryAccesses.nonEmptyCountersIndices()) {
+                for (int cidx = 0; cidx < PERF_MAP_SIZE; cidx++) {
                     double redundancyScore =
                             computeRedundancyScore(memoryAccesses.nonZeroCountsAtIndex(cidx));
 
-                    if (redundancyScore > 0.0) {
-                        // Discretize the score to a 16-bit value
-                        int discreteScore = discretizeScore(redundancyScore);
-                        assert (discreteScore > 0 && discreteScore < (1 << 16));
+                    int discreteScore = redundancyScore > 0.0 ? discretizeScore(redundancyScore) : 0;
+                    assert (discreteScore >= 0 && discreteScore <= Integer.MAX_VALUE);
 
-                        // Get an index in the upper half of the tracebits map
-                        int idx = COVERAGE_MAP_SIZE / 2 +
-                                2 * Hashing.hash(cidx, COVERAGE_MAP_SIZE / 4);
-                        assert(idx >= COVERAGE_MAP_SIZE / 2 && idx < COVERAGE_MAP_SIZE);
-                        assert(idx % 2 == 0);
-
-                        // Add mapping to trace bits (little-endian 16-bit value)
-                        traceBits[idx] = (byte) discreteScore;
-                        traceBits[idx + 1] = (byte) (discreteScore >> 8);
-                        //scores.println(String.format("idx = %d, score = %f, value = %d (0x%04x = 0x%02x%02x)", idx, redundancyScore, discreteScore,
-                        //        discreteScore, traceBits[idx+1], traceBits[idx]));
-                    }
+                    // Put discrete score into a slot with index `cidx`
+                    feedback.putInt(cidx * 4, discreteScore);
+                    // scores.println(String.format("idx = %d, score = %f, value = %d (0x%08x)", cidx,
+                    //    redundancyScore, discreteScore, discreteScore));
 
                 }
                 // Also add the total instruction count
-                putTotalBranchCountIntoTraceBits();
+                putTotalBranchCountIntoFeedback();
             }
             break;
             case BRANCH_COUNTS: {
                 int[] counts = branchCounts.getCounts();
+                assert (counts.length == PERF_MAP_SIZE);
                 for (int k = 0; k < counts.length; k++) {
-                    int count = counts[k];
-                    // Max branch count can be 2^16 - 1
-                    if (count >= (1 << 16)) {
-                        count = (1 << 16) - 1;
+                    // Put count at offset `k` integers into the bitmap
+                    feedback.putInt(k * 4, counts[k]);
+                    if (counts[k] > 0) {
+                        //scores.println(String.format("counts[%d] = %d", k, counts[k]));
                     }
-                    // Get an index in the second half that's aligned on an even number
-                    int idx = COVERAGE_MAP_SIZE/2 + 2 * Hashing.hash(k, COVERAGE_MAP_SIZE/4);
-                    assert(idx >= COVERAGE_MAP_SIZE / 2 && idx < COVERAGE_MAP_SIZE);
-                    assert(idx % 2 == 0);
-
-                    // Add mapping to trace bits (little-endian 16-bit value)
-                    traceBits[idx] = (byte) count;
-                    traceBits[idx + 1] = (byte) (count >> 8);
                 }
                 // Also add the total instruction count
-                putTotalBranchCountIntoTraceBits();
+                putTotalBranchCountIntoFeedback();
             }
             break;
             case ALLOCATION_COUNTS: {
                 int[] counts = allocCounts.getCounts();
+                assert (counts.length == PERF_MAP_SIZE);
                 for (int k = 0; k < counts.length; k++) {
-                    int count = counts[k];
-                    // Max alloc count can be 2^16 - 1
-                    if (count >= (1 << 16)) {
-                        count = (1 << 16) - 1;
-                    }
-                    // Get an index in the second half that's aligned on an even number
-                    int idx = COVERAGE_MAP_SIZE/2 + 2 * Hashing.hash(k, COVERAGE_MAP_SIZE/4);
-                    assert(idx >= COVERAGE_MAP_SIZE / 2 && idx < COVERAGE_MAP_SIZE);
-                    assert(idx % 2 == 0);
-
-                    // Add mapping to trace bits (little-endian 16-bit value)
-                    traceBits[idx] = (byte) count;
-                    traceBits[idx + 1] = (byte) (count >> 8);
+                    // Put count at offset `k` integers into the bitmap
+                    feedback.putInt(k * 4, counts[k]);
                 }
             }
             break;
@@ -282,8 +253,13 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
         //scores.println("\n");
 
-        // Delegate feedback-sending to parent
-        super.handleResult(result, error);
+        // Send feedback to AFL
+        try {
+            out.write(feedback.array(), 0, PERF_MAP_SIZE * 4);
+            out.flush();
+        } catch (IOException e) {
+            everything_ok = false;
+        }
     }
 
     protected int hashMemorylocation(int objectId, String field) {
@@ -316,6 +292,9 @@ public class AFLRedundancyGuidance extends AFLGuidance {
      */
     public static double computeRedundancyScore(Collection<Integer> accessCounts) {
         double numCounts = accessCounts.size();
+        if (numCounts == 0) {
+            return 0.0;
+        }
         double sumCounts = 0.0;
         for (int count : accessCounts) {
             sumCounts += count;
@@ -327,13 +306,13 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     }
 
     /**
-     * Discretizes a redundancy score to a 16-bit value.
+     * Discretizes a redundancy score to a 32-bit value.
      *
      * @param score a value between 0.0 and 1.0, inclusive
-     * @return      a value between 0 and 2^16-1, inclusive
+     * @return      a value between 0 and 2^31-1, inclusive
      */
     public static int discretizeScore(double score) {
-        return (int) Math.round(((1 << 16) - 1) * (Math.pow(2, score) - 1));
+        return (int) Math.round(Integer.MAX_VALUE * (Math.pow(2, score) - 1));
     }
 
 

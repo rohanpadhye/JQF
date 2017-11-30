@@ -82,7 +82,7 @@ public class AFLGuidance implements Guidance {
     protected boolean everything_ok = true;
 
     /** The bits that will be communicated to the AFL proxy. */
-    private ByteBuffer feedback;
+    protected ByteBuffer feedback;
 
     /**
      * A call stack to keep track of which method we are in.
