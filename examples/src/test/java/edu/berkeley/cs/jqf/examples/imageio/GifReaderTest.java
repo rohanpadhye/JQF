@@ -36,14 +36,16 @@ import java.io.IOException;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.After;
-import org.junit.Assume;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
+/**
+ * @author Rohan Padhye
+ */
 @RunWith(JQF.class)
-public class JpegReaderTest {
-
+public class GifReaderTest {
     @BeforeClass
     public static void disableCaching() {
         // Disable disk-caching as it slows down fuzzing
@@ -55,7 +57,7 @@ public class JpegReaderTest {
 
     @Before
     public void setUp() {
-        this.reader = ImageIO.getImageReadersByFormatName("jpg").next();
+        Assert.assertNotNull(this.reader = ImageIO.getImageReadersByFormatName("gif").next());
     }
 
     @After
@@ -75,42 +77,4 @@ public class JpegReaderTest {
 
     }
 
-    @Fuzz
-    public void getWidth(ImageInputStream input) {
-        try {
-            // Decode image from input stream
-            reader.setInput(input);
-            int width = reader.getWidth(0);
-            System.out.println(width);
-        } catch (IOException e) {
-            System.err.println("Bad image: " + e.getMessage());
-        }
-    }
-
-    @Fuzz
-    public void getHeight(ImageInputStream input) {
-        try {
-            // Decode image from input stream
-            reader.setInput(input);
-            int height = reader.getHeight(0);
-            System.out.println(height);
-        } catch (IOException e) {
-            System.err.println("Bad image: " + e.getMessage());
-        }
-    }
-
-    @Fuzz
-    public void readBounded(ImageInputStream input) {
-        try {
-            // Decode image from input stream
-            reader.setInput(input);
-            int width = reader.getWidth(0);
-            int height = reader.getHeight(0);
-            Assume.assumeTrue(width > 0 && width < 1024);
-            Assume.assumeTrue(height > 0 && height < 1024);
-            reader.read(0);
-        } catch (IOException e) {
-            // Ignore decode errors
-        }
-    }
 }

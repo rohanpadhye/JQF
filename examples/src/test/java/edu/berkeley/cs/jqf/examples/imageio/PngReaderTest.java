@@ -29,15 +29,12 @@
 package edu.berkeley.cs.jqf.examples.imageio;
 
 import javax.imageio.ImageIO;
-import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.BufferedOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Base64;
 
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.generator.Size;
@@ -121,36 +118,6 @@ public class PngReaderTest {
             // Ignore decode errors
         }
     }
-
-    @Fuzz
-    public void readBounded(ImageInputStream input) {
-        try {
-            // Decode image from input stream
-            reader.setInput(input);
-            int width = reader.getWidth(0);
-            int height = reader.getHeight(0);
-            Assume.assumeTrue(width > 0 && width < 100);
-            Assume.assumeTrue(height > 0 && height < 100);
-            reader.read(0);
-        } catch (IOException e) {
-            // Ignore decode errors
-        }
-    }
-
-
-    public void debug() throws IOException {
-        InputStream in = new ByteArrayInputStream(Base64.getDecoder()
-                .decode("iVBORw0KGgoAAAANSUhEUk////8AAAABCAAAAAA6fptVAAAACklEQVQYV2P4DwABAQEAWk1v8QAAAABJRU5ErkJgggo="));
-        ImageInputStream input = ImageIO.createImageInputStream(in);
-        ImageReader reader = ImageIO.getImageReadersByFormatName("png").next();
-        assert reader.getClass().getName().equals("com.sun.imageio.plugins.png.PNGImageReader");
-        ImageReadParam param = reader.getDefaultReadParam();
-        reader.setInput(input, true, true);
-        reader.read(0, param);
-        reader.dispose();
-
-    }
-
 
     @Fuzz
     public void readUsingKaitai(@From(PngKaitaiGenerator.class) @Size(max = 1024) InputStream input) throws IOException {
