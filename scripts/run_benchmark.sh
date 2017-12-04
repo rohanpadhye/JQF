@@ -16,7 +16,7 @@ afl_options="-t 6000 -m 8192"
 jqf_options=""
 input_dir="examples/target/seeds/zeros"
 suffix=""
-while getopts ":abcdeihvrs:t:" opt; do
+while getopts ":abcdeihvrs:t:x:" opt; do
   case $opt in
     r)
       afl_options="$afl_options -d -p -s"
@@ -48,6 +48,9 @@ while getopts ":abcdeihvrs:t:" opt; do
       ;;
     t)
       suffix="-$OPTARG"
+      ;;
+    x)
+      afl_options="$afl_options -x $OPTARG"
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
