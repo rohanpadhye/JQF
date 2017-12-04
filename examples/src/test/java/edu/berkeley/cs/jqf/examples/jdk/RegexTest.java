@@ -31,6 +31,7 @@ package edu.berkeley.cs.jqf.examples.jdk;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import com.opensymphony.xwork2.validator.validators.EmailValidator;
 import com.opensymphony.xwork2.validator.validators.URLValidator;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.generator.Size;
@@ -38,8 +39,6 @@ import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
@@ -48,10 +47,8 @@ import org.junit.runner.RunWith;
 @RunWith(JQF.class)
 public class RegexTest {
 
-    private static final int INPUT_SIZE = 40;
-
     @Fuzz
-    public void patternTest(@From(AsciiStringGenerator.class) String pattern) {
+    public void patternGenerationTest(@From(AsciiStringGenerator.class) String pattern) {
         try {
             Pattern.matches(pattern, "aaaaaa");
         } catch (PatternSyntaxException e) {
@@ -60,34 +57,23 @@ public class RegexTest {
     }
 
     @Fuzz
-    public void matchTest(@From(AsciiStringGenerator.class) String input) {
+    public void exponentialMatchTest(@From(AsciiStringGenerator.class) String input) {
         Pattern.matches("^(([a-z])+.)+[A-Z]([a-z])+$", input);
     }
 
-    @Test
-    public void exploitPatternTest() {
-        String pattern = ".*(P*.*()*(.*.*())*.*())*\\R*.*b$";
-        patternTest(pattern);
+    /* Regexes from Apache Struts */
 
-    }
-
-    private static Pattern strutsPattern;
-
-    @BeforeClass
-    public static void initStrutsPattern() {
-        URLValidator validator = new URLValidator();
-        strutsPattern = Pattern.compile(validator.getUrlRegex(), Pattern.CASE_INSENSITIVE);
-    }
+    private static final Pattern strutsUrlPattern = Pattern.compile(new URLValidator().getUrlRegex(), Pattern.CASE_INSENSITIVE);
+    private static final Pattern strutsEmailPattern = Pattern.compile(new EmailValidator().getRegex(), Pattern.CASE_INSENSITIVE);
 
 
     @Fuzz
-    public void strutsTest(@From(AsciiStringGenerator.class) @Size(max=80) String url) {
-        strutsPattern.matcher(url).matches();
+    public void strutsUrlTest(@From(AsciiStringGenerator.class) @Size(max=80) String url) {
+        strutsUrlPattern.matcher(url).matches();
     }
 
-    @Test
-    public void exploitStrutsTest() {
-        String url = "ftp://aaaaaaaaaaaaaaaaaaaaaaaa|";
-        strutsTest(url);
+    @Fuzz
+    public void strutsEmailTest(@From(AsciiStringGenerator.class) String email) {
+        strutsEmailPattern.matcher(email).matches();
     }
 }
