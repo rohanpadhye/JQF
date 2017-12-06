@@ -53,7 +53,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  * of heap-memory access expressions.
  *
  * This class extends {@link AFLGuidance} to additionally provide
- * perfFeedBackType about memory access redundancy.
+ * perfFeedbackType about memory access redundancy.
  *
  * It overrides {@link #handleEvent} to handle <tt>ReadEvent</tt>s
  * (as well as <tt>CallEvent</tt>s and <tt>ReturnEvent</tt>s for
@@ -88,23 +88,23 @@ public class AFLRedundancyGuidance extends AFLGuidance {
      * */
     protected CallingContext callingContext = new CallingContext();
 
-    /** Configuration of what perfFeedBackType to send AFL in second-half of map. */
+    /** Configuration of what perfFeedbackType to send AFL in second-half of map. */
     private enum PerfFeedbackType {
         REDUNDANCY_SCORES,
         BRANCH_COUNTS,
         TOTAL_BRANCH_COUNT,
         ALLOCATION_COUNTS
     };
-    private final PerfFeedbackType perfFeedBackType;
+    private final PerfFeedbackType perfFeedbackType;
 
     public AFLRedundancyGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
         super(inputFile, inPipe, outPipe);
-        this.perfFeedBackType = PerfFeedbackType.valueOf(System.getProperty("jqf.afl.perfFeedBackType", "REDUNDANCY_SCORES"));
+        this.perfFeedbackType = PerfFeedbackType.valueOf(System.getProperty("jqf.afl.perfFeedbackType", "BRANCH_COUNTS"));
+        System.out.println(this.perfFeedbackType);
     }
 
     public AFLRedundancyGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
-        super(inputFileName, inPipeName, outPipeName);
-        this.perfFeedBackType = PerfFeedbackType.valueOf(System.getProperty("jqf.afl.feedback", "REDUNDANCY_SCORES"));
+        this(new File(inputFileName), new File(inPipeName), new File(outPipeName));
     }
 
     @Override
@@ -146,7 +146,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
         } else if (e instanceof ReadEvent) {
             ReadEvent read = (ReadEvent) e;
-            if (perfFeedBackType == PerfFeedbackType.REDUNDANCY_SCORES) {
+            if (perfFeedbackType == PerfFeedbackType.REDUNDANCY_SCORES) {
                 // Get memory location that was accessed
                 int memoryLocation =
                         hashMemorylocation(read.getObjectId(), read.getField());
@@ -171,7 +171,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
             callingContext.pop();
         } else if (e instanceof AllocEvent) {
             AllocEvent alloc = (AllocEvent) e;
-            if (perfFeedBackType == PerfFeedbackType.ALLOCATION_COUNTS) {
+            if (perfFeedbackType == PerfFeedbackType.ALLOCATION_COUNTS) {
                 // Get size of allocation
                 int size = alloc.getSize();
 
@@ -197,10 +197,10 @@ public class AFLRedundancyGuidance extends AFLGuidance {
         while (!callingContext.isEmpty());
 
         // Reset the feedback buffer for the perf info
-        feedback.clear();
+        clearFeedbackBuffer();
 
-        // Now, communicate the performance perfFeedBackType
-        switch (this.perfFeedBackType) {
+        // Now, communicate the performance perfFeedbackType
+        switch (this.perfFeedbackType) {
             case TOTAL_BRANCH_COUNT: {
                 // Add the total instruction count
                 putTotalBranchCountIntoFeedback();

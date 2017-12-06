@@ -32,6 +32,7 @@ while getopts ":avr" opt; do
       ;;
     r)
       driver="edu.berkeley.cs.jqf.fuzz.drivers.AFLRedundancyDriver"
+      export JQF_PERF_MAP=1
       ;;
   esac
 done

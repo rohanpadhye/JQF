@@ -209,7 +209,7 @@ public class AFLGuidance implements Guidance {
         while(!callStackEmpty);
 
         // Reset the feedback buffer for a new run
-        feedback.clear();
+        clearFeedbackBuffer();
 
         // Set at least one tracebit so that AFL doesn't complain about
         // no instrumentation
@@ -319,6 +319,16 @@ public class AFLGuidance implements Guidance {
      */
     protected void incrementTraceBits(int index) {
         traceBits[index]++;
+    }
+
+
+    /** Clears the feedback buffer by reseting it to zero. */
+    protected void clearFeedbackBuffer() {
+        feedback.clear();
+        while (feedback.hasRemaining()) {
+            feedback.put((byte) 0);
+        }
+        feedback.clear();
     }
 
 

@@ -40,7 +40,7 @@
 #include "config.h"
 
 /* 
-* Proxy between AFL and some JavaQuickCheck. Communicates to 
+* Proxy between AFL and JQF. Communicates to 
 * both via pipes -- those launched by AFL and two whose names
 * are given as command line args and must be created before 
 * launching the proxy. 
@@ -49,12 +49,16 @@
 * from any external utility writing in the command-line pipes.
 *
 * author: Caroline Lemieux
+* author: Rohan Padhye
 */
+
+// whether to share an extra map of PERF_SIZE after the trace bits
+// (this is unused when compiling with stock AFL)
+int use_perf_map = 0;
 
 // whether to log non-fatal (exit(1) causing messages)
 // set to != 0 for debugging
 int log_non_fatal = 1;
-
 
 /* 
 * Log proxy's progress for debugging. 
@@ -127,6 +131,13 @@ int main(int argc, char** argv) {
   /* temp variable to store communicated bytes */
   int comm_bytes;
 
+#ifdef PERF_SIZE
+  /* decide if perf_bits have to be shared */
+  if (getenv("JQF_PERF_MAP") != NULL) {
+    use_perf_map = 1;
+  }
+#endif  
+
   /* set up FIFOs to talk to Java */
   FILE * to_java_fd = fopen(to_java_str, "w");
   if (to_java_fd == NULL){
@@ -154,9 +165,9 @@ int main(int argc, char** argv) {
     log_to_file(1, log_file_name, "Error shmat()ing trace_bits from id %d\n", shm_id);
   }
 
-  /* perf map is right after coverage bit map */
+  /* perf map is right after coverage bit map (unused with stock AFL) */
   u32* perf_bits = (u32*) &trace_bits[MAP_SIZE];
-  
+ 
   /* say the first hello to AFL. use write() because we
      have an int file descriptor */
   if (write(FORKSRV_FD + 1, (void*) &helo, 4) < 4) {
@@ -202,13 +213,17 @@ int main(int argc, char** argv) {
 
     log_to_file(0, log_file_name, "Got trace bits from java.\n");
     
-    /* Get perf bits from Java */
-    if ((comm_bytes = fread( perf_bits, 4, PERF_SIZE, from_java_fd)) < PERF_SIZE) {
-      log_to_file(1, log_file_name, 
-        "Something went wrong getting perf_bits from Java: read %d bytes.\n", comm_bytes);
-    }
+#ifdef PERF_SIZE
+    if (use_perf_map) {
+      /* Get perf bits from Java */
+      if ((comm_bytes = fread( perf_bits, 4, PERF_SIZE, from_java_fd)) < PERF_SIZE) {
+        log_to_file(1, log_file_name, 
+          "Something went wrong getting perf_bits from Java: read %d bytes.\n", comm_bytes);
+      }
 
-    log_to_file(0, log_file_name, "Got perf bits from java.\n");
+      log_to_file(0, log_file_name, "Got perf bits from java.\n");
+    }
+#endif
 
     /* Tell AFL we got the return */
     if((comm_bytes = write(FORKSRV_FD + 1, &status, 4)) < 4) {
