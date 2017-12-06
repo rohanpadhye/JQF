@@ -70,17 +70,14 @@ public class PngReaderTest {
     }
 
     @Fuzz
-    public void read(ImageInputStream input) {
-        try {
-            // Decode image from input stream
-            reader.setInput(input);
-            Assume.assumeTrue(reader.getHeight(0) < 1024);
-            Assume.assumeTrue(reader.getWidth(0) < 1024);
-            reader.read(0);
-        } catch (IOException e) {
-            // Ignore decode errors
-        }
-
+    public void read(ImageInputStream input) throws IOException {
+        // Decode image from input stream
+        reader.setInput(input);
+        // Bound dimensions
+        Assume.assumeTrue(reader.getHeight(0) < 1024);
+        Assume.assumeTrue(reader.getWidth(0) < 1024);
+        // Parse PNG
+        reader.read(0);
     }
 
     @Fuzz
@@ -104,18 +101,6 @@ public class PngReaderTest {
             System.out.println(height);
         } catch (IOException e) {
             System.err.println("Bad image: " + e.getMessage());
-        }
-    }
-
-
-    @Fuzz
-    public void getMetaData(ImageInputStream input) {
-        try {
-            // Decode image from input stream
-            reader.setInput(input);
-            reader.getImageMetadata(0);
-        } catch (IOException e) {
-            // Ignore decode errors
         }
     }
 

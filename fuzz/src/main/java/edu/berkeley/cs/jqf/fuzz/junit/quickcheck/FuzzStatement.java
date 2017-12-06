@@ -69,6 +69,7 @@ public class FuzzStatement extends Statement {
     protected final TestClass testClass;
     protected final Map<String, Type> typeVariables;
     protected final GeneratorRepository generatorRepository;
+    protected final List<Class<?>> expectedExceptions;
 
     public FuzzStatement(FrameworkMethod method, TestClass testClass,
                          GeneratorRepository generatorRepository) {
@@ -79,6 +80,7 @@ public class FuzzStatement extends Statement {
                         .method(method.getMethod())
                         .genericsMap();
         this.generatorRepository = generatorRepository;
+        this.expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
 
     }
 
@@ -95,6 +97,7 @@ public class FuzzStatement extends Statement {
                 .map(this::createParameterTypeContext)
                 .map(this::produceGenerator)
                 .collect(Collectors.toList());
+
 
         // Keep fuzzing until no more input or I/O error with guidance
         Guidance guidance = GuidedFuzzing.getGuidance();
@@ -143,8 +146,14 @@ public class FuzzStatement extends Statement {
                     result = INVALID;
                     error = e;
                 } catch (Throwable e) {
-                    result = FAILURE;
-                    error = e;
+
+                    // Check if this exception was expected
+                    if (isExceptionExpected(e.getClass())) {
+                        result = SUCCESS; // Swallow the error
+                    } else {
+                        result = FAILURE;
+                        error = e;
+                    }
                 }
 
                 // Wait for any instrumentation events to finish processing
@@ -159,6 +168,22 @@ public class FuzzStatement extends Statement {
             System.err.println("Fuzzing stopped due to guidance exception: " + e.getMessage());
         }
 
+    }
+
+    /**
+     * Returns whether an exception is expected to be thrown by a trial method
+     *
+     * @param e the class of an exception that is thrown
+     * @return <tt>true</tt> if e is a subclass of any exception specified
+     * in the <tt>throws</tt> clause of the trial method.
+     */
+    private boolean isExceptionExpected(Class<? extends Throwable> e) {
+        for (Class<?> expectedException : expectedExceptions) {
+            if (expectedException.isAssignableFrom(e)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private ParameterTypeContext createParameterTypeContext(Parameter parameter) {

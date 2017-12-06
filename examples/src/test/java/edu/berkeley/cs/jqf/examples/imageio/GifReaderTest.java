@@ -37,6 +37,7 @@ import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -66,17 +67,18 @@ public class GifReaderTest {
     }
 
     @Fuzz
-    public void read(ImageInputStream input) {
-        try {
-            // Decode image from input stream
-            reader.setInput(input);
-            reader.read(0);
-        } catch (IOException e) {
-            // Ignore decode errors
-        }
-
+    public void read(ImageInputStream input) throws IOException {
+        // Decode image from input stream
+        reader.setInput(input);
+        // Bound dimensions
+        int width = reader.getWidth(0);
+        int height = reader.getHeight(0);
+        Assume.assumeTrue(width > 0 && width < 1024);
+        Assume.assumeTrue(height > 0 && height < 1024);
+        // Parse GIF
+        reader.read(0);
     }
-    
+
     @Fuzz
     public void getWidth(ImageInputStream input) {
         try {
@@ -90,7 +92,7 @@ public class GifReaderTest {
     }
 
     @Fuzz
-    public void getHeight(ImageInputStream input) {
+    public void getHeight(ImageInputStream input)  {
         try {
             // Decode image from input stream
             reader.setInput(input);
