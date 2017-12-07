@@ -15,7 +15,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <name>jqf-instrument</name>
-    <description>Feedback-directed junit-quickcheck: Instrumentation and Feedback</description>
+    <description>JQF: Feedback-directed Quickcheck for Java - Instrumentation and event generation module</description>
     <packaging>jar</packaging>
 
     <dependencies>

@@ -12,7 +12,7 @@
     <artifactId>jqf-examples</artifactId>
 
     <name>jqf-examples</name>
-    <description>Feedback-directed junit-quickcheck: Example generators and benchmark tests</description>
+    <description>JQF: Feedback-directed Quickcheck for Java - Sample generators and benchmark tests</description>
 
     <dependencies>
         <dependency>

@@ -9,6 +9,42 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+
+    <name>jqf</name>
+    <description>JQF: Feedback-directed Quickcheck for Java</description>
+    <url>https://github.com/rohanpadhye/jqf</url>
+    <licenses>
+        <license>
+            <name>FreeBSD License</name>
+            <url>https://opensource.org/licenses/BSD-2-Clause</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Rohan Padhye</name>
+            <email>rohanpadhye@cs.berkeley.edu</email>
+            <organization>University of California, Berkeley</organization>
+            <url>https://people.eecs.berkeley.edu/~rohanpadhye/</url>
+        </developer>
+        <developer>
+            <name>Caroline Lemieux</name>
+            <email>clemiux@cs.berkeley.edu</email>
+            <organization>University of California, Berkeley</organization>
+            <url>http://http://www.carolemieux.com//</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:rohanpadhye/jqf.git</connection>
+        <url>https://github.com/rohanpadhye/jqf</url>
+    </scm>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/rohanpadhye/jqf/issues</url>
+    </issueManagement>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -71,7 +107,7 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>3.0.0</version>
                     <configuration>
-                        <outputDirectory>docs/api</outputDirectory>
+                        <reportOutputDirectory>docs</reportOutputDirectory>
                         <links>
                             <link>http://junit.org/junit4/javadoc/latest/</link>
                             <link>https://pholser.github.io/junit-quickcheck/site/0.7/junit-quickcheck-core/apidocs/</link>
@@ -93,5 +129,14 @@
             </plugins>
         </pluginManagement>
     </build>
+
+
+    <distributionManagement>
+        <site>
+            <id>jqf.website</id>
+            <name>JQF Website</name>
+            <url>https://rohanpadhye.github.io/jqf</url>
+        </site>
+    </distributionManagement>
 
 </project>

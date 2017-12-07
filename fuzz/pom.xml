@@ -15,7 +15,7 @@
     <version>1.0-SNAPSHOT</version>
 
     <name>jqf-fuzz</name>
-    <description>Feedback-directed junit-quickcheck: Drivers and Guidance interface</description>
+    <description>JQF: Feedback-directed Quickcheck for Java - Guided fuzzing interface</description>
     <packaging>jar</packaging>
 
     <dependencies>
@@ -83,15 +83,6 @@
 		        </executions> 
 			</plugin> 
         </plugins>
-
     </build>
-
-    <distributionManagement>
-        <site>
-            <id>jqf.website</id>
-            <name>JQF Website</name>
-            <url>https://rohanpadhye.github.io/jqf</url>
-        </site>
-    </distributionManagement>
 
 </project>
