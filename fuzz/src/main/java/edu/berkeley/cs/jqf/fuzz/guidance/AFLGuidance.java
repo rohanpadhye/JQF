@@ -64,13 +64,13 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 public class AFLGuidance implements Guidance {
 
     /** The file in which AFL will write its input. */
-    protected File inputFile;
+    protected final File inputFile;
 
     /** The communication channel from AFL proxy to us. */
-    protected InputStream in;
+    protected final InputStream proxyInput;
 
     /** The communication channel from us to the AFL proxy. */
-    protected OutputStream out;
+    protected final OutputStream proxyOutput;
 
     /** The size of the "coverage" map that will be sent to AFL. */
     protected static final int COVERAGE_MAP_SIZE = 1 << 16;
@@ -83,6 +83,9 @@ public class AFLGuidance implements Guidance {
 
     /** The bits that will be communicated to the AFL proxy. */
     protected ByteBuffer feedback;
+
+    /** A temporary holding the opened input file stream during a run. */
+    private InputStream inputFileStream;
 
     /**
      * A call stack to keep track of which method we are in.
@@ -112,8 +115,8 @@ public class AFLGuidance implements Guidance {
      */
     public AFLGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
         this.inputFile = inputFile;
-        this.in = new BufferedInputStream(new FileInputStream(inPipe));
-        this.out = new BufferedOutputStream(new FileOutputStream(outPipe));
+        this.proxyInput = new BufferedInputStream(new FileInputStream(inPipe));
+        this.proxyOutput = new BufferedOutputStream(new FileOutputStream(outPipe));
         this.feedback = ByteBuffer.allocate(1 << 20);
         this.feedback.order(ByteOrder.LITTLE_ENDIAN);
     }
@@ -127,62 +130,77 @@ public class AFLGuidance implements Guidance {
      */
     @Override
     public void finalize() {
-        if (in != null) {
+        if (proxyInput != null) {
             try {
-                in.close();
+                proxyInput.close();
             } catch (IOException e) {
                 // Ignore
             }
-            in = null;
         }
 
-        if (out != null) {
+        if (proxyOutput != null) {
             try {
-                out.close();
+                proxyOutput.close();
             } catch (IOException e) {
                 // Ignore
             }
-            out = null;
         }
     }
 
 
     /**
-     * Returns a handle to the file that AFL will write inputs to.
+     * Returns an input stream containing the bytes that AFL
+     * has written to.
      *
-     * @return the file handle
+     * @return  a stream of bytes to be used by the input generator(s)
+     * @throws IllegalStateException if the last {@link #hasInput()}
+     *                  returned <tt>false</tt>
+     * @throws GuidanceException if there was an I/O error when opening the file
      */
     @Override
-    public File getInputFile() {
-        return this.inputFile;
+    public InputStream getInput() throws IllegalStateException, GuidanceException {
+        // Sanity check
+        assert(callStackEmpty);
+
+        // Should not be here if hasInput() returned false
+        if (!everything_ok) {
+            throw new IllegalStateException("Fuzzing should have been stopped.");
+        }
+
+        try {
+            this.inputFileStream = new BufferedInputStream(new FileInputStream(this.inputFile));
+            return this.inputFileStream;
+        } catch (IOException e) {
+            throw new GuidanceException(e);
+        }
     }
 
     /**
      * Waits for the AFL proxy to send a ready signal.
      *
-     * @return Always returns <tt>true</tt>.
-     * @throws IOException  if the ready signal cannot be read
+     * @return Returns <tt>true</tt> in the absence of I/O errors
      */
     @Override
     public boolean hasInput() {
-        // Sanity check
-        assert callStackEmpty;
 
-        // Get a 4-byte signal from AFL
-        byte[] signal = new byte[4];
-        try {
-            int received = in.read(signal, 0, 4);
-            if (received != 4) {
-                throw new IOException("Could not read `ready` from AFL");
+        if (everything_ok) {
+            // Get a 4-byte signal from AFL
+            byte[] signal = new byte[4];
+            try {
+                int received = proxyInput.read(signal, 0, 4);
+                if (received != 4) {
+                    throw new IOException("Could not read `ready` from AFL");
+                }
+
+                // Reset trace-bits
+                traceBits = new byte[COVERAGE_MAP_SIZE];
+
+            } catch (IOException e) {
+                everything_ok = false;
             }
-        } catch (IOException e) {
-            everything_ok = false;
         }
 
-        // Reset trace-bits
-        traceBits = new byte[COVERAGE_MAP_SIZE];
-
-        // Continue unless stopped
+        // Continue unless stopped (which would cause I/O errors)
         return everything_ok;
     }
 
@@ -201,7 +219,6 @@ public class AFLGuidance implements Guidance {
      *
      * @param result    the result of the fuzzing trial
      * @param error     the exception thrown by the test, or <tt>null</tt>
-     * @throws IOException
      */
     @Override
     public void handleResult(Result result, Throwable error) {
@@ -258,14 +275,20 @@ public class AFLGuidance implements Guidance {
 
         // Send feedback to AFL
         try {
-            out.write(feedback.array(), 0, feedback.position());
-            out.flush();
+            proxyOutput.write(feedback.array(), 0, feedback.position());
+            proxyOutput.flush();
         } catch (IOException e) {
             everything_ok = false;
         }
 
     }
 
+    /**
+     * Returns a reference to {@link #handleEvent}.
+     *
+     * @param threadName  the name of the thread whose events to handle
+     * @return
+     */
     public Consumer<TraceEvent> generateCallBack(String threadName) {
         return this::handleEvent;
     }
@@ -313,7 +336,7 @@ public class AFLGuidance implements Guidance {
     /**
      * Increments the 8-bit counter at given index.
      *
-     * Overflows possible.
+     * Overflows are possible but ignored (as in AFL).
      *
      * @param index the key in the trace bits map
      */
@@ -322,7 +345,7 @@ public class AFLGuidance implements Guidance {
     }
 
 
-    /** Clears the feedback buffer by reseting it to zero. */
+    /** Clears the feedback buffer by resetting it to zero. */
     protected void clearFeedbackBuffer() {
         feedback.clear();
         while (feedback.hasRemaining()) {

@@ -28,8 +28,9 @@
  */
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
-import java.io.File;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.Random;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
@@ -38,18 +39,26 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  * A front-end that only generates random inputs.
  *
  * This class provides no guidance to quickcheck. It seeds random values from
- * <tt>/dev/urandom</tt>, making it effectively an unguided random test input
+ * {@link Random}, making it effectively an unguided random test input
  * generator.
  */
 public class NoGuidance implements Guidance {
 
-    protected boolean keepGoing = true;
-    protected long numTrials = 0;
-    protected long numDiscards = 0;
-    protected final long maxTrials;
-    protected final float maxDiscardRatio = 0.9f;
-    protected final PrintStream out;
+    private boolean keepGoing = true;
+    private long numTrials = 0;
+    private long numDiscards = 0;
+    private final long maxTrials;
+    private final float maxDiscardRatio = 0.9f;
+    private final PrintStream out;
+    private Random random = new Random();
 
+    /**
+     * Creates a NoGuidance instance that will run a maximum number
+     * of trials.
+     *
+     * @param maxTrials the maximum number of runs to execute
+     * @param out an optional stream for logging error traces
+     */
     public NoGuidance(long maxTrials, PrintStream out) {
         if (maxTrials <= 0) {
             throw new IllegalArgumentException("maxTrials must be greater than 0");
@@ -58,16 +67,31 @@ public class NoGuidance implements Guidance {
         this.out = out;
     }
 
+    /**
+     * Returns a stream of random numbers
+     *
+     * @return An infinitely long input stream that generates random numbers
+     */
     @Override
-    public File getInputFile() {
-        return new File("/dev/urandom");
+    public InputStream getInput() {
+        return Guidance.createInputStream(() -> random.nextInt(256));
     }
 
+    /**
+     * Returns <tt>true</tt> as long as <tt>maxTrials</tt> has not been reached.
+     * @return <tt>true</tt> as long as <tt>maxTrials</tt> has not been reached
+     */
     @Override
     public boolean hasInput() {
         return keepGoing;
     }
 
+    /**
+     * Handles the result of a fuzz run.
+     *
+     * @param result   the result of the fuzzing trial
+     * @param error    the error thrown during the trial, or <tt>null</tt>
+     */
     @Override
     public void handleResult(Result result, Throwable error) {
         numTrials++;
@@ -95,6 +119,15 @@ public class NoGuidance implements Guidance {
         }
     }
 
+    /**
+     * Returns a callback that does nothing.
+     *
+     * Since this is unguided random guidance, the trace events are
+     * simply ignored.
+     *
+     * @param threadName  the name of the thread whose events to handle
+     * @return a callback that does nothing.
+     */
     @Override
     public Consumer<TraceEvent> generateCallBack(String threadName) {
         return (e) -> {};

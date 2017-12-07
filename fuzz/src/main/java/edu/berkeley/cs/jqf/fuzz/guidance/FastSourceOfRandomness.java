@@ -39,7 +39,7 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
  * statistical guarantees.
  *
  * This class is meant for use with guided fuzzing, where the
- * {@link Random} delegate is usually a {@link FileBackedRandom}.
+ * {@link Random} delegate is usually a {@link StreamBackedRandom}.
  * In this case, the random source does not have to give any
  * statistical guarantees such as uniformity or independentness,
  * and therefore is amenable to several optimizations, which are
@@ -49,9 +49,9 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
  */
 public class FastSourceOfRandomness extends SourceOfRandomness {
 
-    private FileBackedRandom delegate;
+    private StreamBackedRandom delegate;
 
-    public FastSourceOfRandomness(FileBackedRandom delegate) {
+    public FastSourceOfRandomness(StreamBackedRandom delegate) {
         super(delegate);
         // Gotta make a copy of the reference because
         // super-class declares the field as private :-\

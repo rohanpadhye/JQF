@@ -31,6 +31,7 @@ package edu.berkeley.cs.jqf.fuzz.guidance;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -49,19 +50,28 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
- * A front-end that uses AFL for increasing redundancy score
- * of heap-memory access expressions.
+ * A front-end that uses AFL for increasing performance counters
+ * in addition to code coverage.
  *
  * This class extends {@link AFLGuidance} to additionally provide
- * perfFeedbackType about memory access redundancy.
+ * feedback about performance measures such as branch counts
+ * or allocation sizes.
  *
- * It overrides {@link #handleEvent} to handle <tt>ReadEvent</tt>s
- * (as well as <tt>CallEvent</tt>s and <tt>ReturnEvent</tt>s for
- * computing acyclic execution contexts).
+ * The type of performance metric used is configured by a system
+ * property: <tt>jqf.afl.perfFeedbackType</tt>, which must have
+ * one of the values specified in the enum {@link PerfFeedbackType}.
+ * This guidance must be used in accordance with the right run
+ * scripts that configure the instrumentation to emit trace events
+ * related to events such as heap-memory loads and allocations.
+ *
+ * This guidance class only works with a modified version of AFL
+ * that is designed to maximize performance counters. It will not
+ * work properly with stock AFL since it attempts to send more
+ * data to AFL than it usually expects.
  *
  * @author Rohan Padhye
  */
-public class AFLRedundancyGuidance extends AFLGuidance {
+public class AFLPerformanceGuidance extends AFLGuidance {
 
     /** The size of the "performance" map that will be sent to AFL. */
     protected static final int PERF_MAP_SIZE = 1 << 14;
@@ -97,20 +107,19 @@ public class AFLRedundancyGuidance extends AFLGuidance {
     };
     private final PerfFeedbackType perfFeedbackType;
 
-    public AFLRedundancyGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
+    public AFLPerformanceGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
         super(inputFile, inPipe, outPipe);
         this.perfFeedbackType = PerfFeedbackType.valueOf(System.getProperty("jqf.afl.perfFeedbackType", "BRANCH_COUNTS"));
         System.out.println(this.perfFeedbackType);
     }
 
-    public AFLRedundancyGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
+    public AFLPerformanceGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
         this(new File(inputFileName), new File(inPipeName), new File(outPipeName));
     }
 
     @Override
-    public File getInputFile() {
-        // Reset state
-        // For unmapped AECs, return a counter (map with 0 as default)
+    public InputStream getInput() {
+        // Reset counters
         memoryAccesses.clear();
         branchCounts.clear();
         allocCounts.clear();
@@ -120,7 +129,7 @@ public class AFLRedundancyGuidance extends AFLGuidance {
         assert(callingContext.isEmpty());
 
         // Delegate input generation to parent
-        return super.getInputFile();
+        return super.getInput();
     }
 
     //private PrintWriter trace = new PrintWriter(new FileOutputStream("trace.log"), true);
@@ -255,8 +264,8 @@ public class AFLRedundancyGuidance extends AFLGuidance {
 
         // Send feedback to AFL
         try {
-            out.write(feedback.array(), 0, PERF_MAP_SIZE * 4);
-            out.flush();
+            proxyOutput.write(feedback.array(), 0, PERF_MAP_SIZE * 4);
+            proxyOutput.flush();
         } catch (IOException e) {
             everything_ok = false;
         }

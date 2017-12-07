@@ -42,7 +42,7 @@ import com.pholser.junit.quickcheck.internal.ParameterTypeContext;
 import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.fuzz.guidance.FastSourceOfRandomness;
-import edu.berkeley.cs.jqf.fuzz.guidance.FileBackedRandom;
+import edu.berkeley.cs.jqf.fuzz.guidance.StreamBackedRandom;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
@@ -105,11 +105,12 @@ public class FuzzStatement extends Statement {
 
             // Keep fuzzing as long as guidance wants to
             while (guidance.hasInput()) {
-                Result result;
+                Result result = INVALID;
                 Throwable error = null;
 
                 // Initialize guided fuzzing using a file-backed random number source
-                try (FileBackedRandom randomFile = new FileBackedRandom(guidance.getInputFile(), Long.BYTES)) {
+                try {
+                    StreamBackedRandom randomFile = new StreamBackedRandom(guidance.getInput(), Long.BYTES);
 
                     // Generate input values
                     Object[] args;
@@ -123,7 +124,7 @@ public class FuzzStatement extends Statement {
                         // This happens when we reach EOF before reading all the random values.
                         // Treat this as an assumption failure, so that the guidance considers the
                         // generated input as INVALID
-                        throw new AssumptionViolatedException("FileBackedRandom does not have enough data", e);
+                        throw new AssumptionViolatedException("StreamBackedRandom does not have enough data", e);
                     } catch (AssumptionViolatedException e) {
                         // Propagate assumption violations out
                         throw e;
@@ -154,13 +155,13 @@ public class FuzzStatement extends Statement {
                         result = FAILURE;
                         error = e;
                     }
+                } finally {
+                    // Wait for any instrumentation events to finish processing
+                    SingleSnoop.waitForQuiescence();
+
+                    // Inform guidance about the outcome of this trial
+                    guidance.handleResult(result, error);
                 }
-
-                // Wait for any instrumentation events to finish processing
-                SingleSnoop.waitForQuiescence();
-
-                // Inform guidance about the outcome of this trial
-                guidance.handleResult(result, error);
 
 
             }

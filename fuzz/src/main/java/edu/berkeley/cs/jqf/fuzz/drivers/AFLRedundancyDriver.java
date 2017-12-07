@@ -31,7 +31,7 @@ package edu.berkeley.cs.jqf.fuzz.drivers;
 
 import java.io.IOException;
 
-import edu.berkeley.cs.jqf.fuzz.guidance.AFLRedundancyGuidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.AFLPerformanceGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
@@ -55,7 +55,7 @@ public class AFLRedundancyDriver {
 
         try {
             // Load the guidance
-            Guidance guidance = new AFLRedundancyGuidance(testInputFile, a2jPipe, j2aPipe);
+            Guidance guidance = new AFLPerformanceGuidance(testInputFile, a2jPipe, j2aPipe);
 
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);

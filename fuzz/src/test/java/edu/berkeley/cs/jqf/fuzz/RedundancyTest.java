@@ -37,7 +37,7 @@ import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import edu.berkeley.cs.jqf.fuzz.guidance.AFLRedundancyGuidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.AFLPerformanceGuidance;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 
@@ -47,7 +47,7 @@ public class RedundancyTest {
     @Property
     public void testDiscretization(@InRange(minDouble=0.0, maxDouble=1.0) Double score) {
         // Discretize a redundancy score
-        int discrete = AFLRedundancyGuidance.discretizeScore(score);
+        int discrete = AFLPerformanceGuidance.discretizeScore(score);
 
         // Ensure that the discretization is within the byte range
         Assert.assertTrue(discrete >= 0 && discrete <= Integer.MAX_VALUE);
@@ -76,13 +76,13 @@ public class RedundancyTest {
         Assert.assertTrue(sum(redundantCounts) == squareSum);
 
         // Compute redundancy score for some memory accesses
-        double score = AFLRedundancyGuidance.computeRedundancyScore(counts);
+        double score = AFLPerformanceGuidance.computeRedundancyScore(counts);
 
         // Ensure that scores are in [0, 1)
         Assert.assertTrue(score >= 0 && score < 1);
 
         // Ensure that it is not more than the max possible
-        double maxScore = AFLRedundancyGuidance.computeRedundancyScore(redundantCounts);
+        double maxScore = AFLPerformanceGuidance.computeRedundancyScore(redundantCounts);
         Assert.assertTrue(maxScore >= score);
 
 
