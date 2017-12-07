@@ -2,10 +2,10 @@
 
 # Figure out script absolute path
 pushd `dirname $0` > /dev/null
-SCRIPT_DIR=`pwd`
+BIN_DIR=`pwd`
 popd > /dev/null
 
-ROOT_DIR=`dirname $SCRIPT_DIR`
+ROOT_DIR=`dirname $BIN_DIR`
 
 # Ensure that proxy is built
 if [ ! -f "$ROOT_DIR/bin/afl-proxy" ]; then
@@ -15,7 +15,7 @@ fi
 
 # Set defaults and parse options to override
 driver="edu.berkeley.cs.jqf.fuzz.drivers.AFLDriver"
-java_log="/dev/null"
+java_log="/dev/stdout"
 afl_log="/dev/null"
 
 while getopts ":avr" opt; do
@@ -63,6 +63,6 @@ mkfifo "$j2a"
   1> $java_log 2>&1 &
 
 # Run the proxy
-"$ROOT_DIR/bin/afl-proxy" $a2j $j2a $afl_log
+exec "$ROOT_DIR/bin/afl-proxy" $a2j $j2a $afl_log
 
 

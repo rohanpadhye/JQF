@@ -83,4 +83,4 @@ export CLASSPATH="examples/target/classes/:examples/target/test-classes/:example
 echo "Fuzzing method $class#$method..."
   
 "$AFL_DIR"/afl-fuzz $afl_options -i $input_dir -o "$output_dir" -T "$class#$method$suffix" \
-  "$ROOT_DIR/bin/jqf-afl" $jqf_options edu.berkeley.cs.jqf.examples."$class" "$method" "$input_file"
+  "$ROOT_DIR/bin/jqf-afl-target" $jqf_options edu.berkeley.cs.jqf.examples."$class" "$method" "$input_file"

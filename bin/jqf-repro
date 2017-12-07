@@ -2,10 +2,10 @@
 
 # Figure out script absolute path
 pushd `dirname $0` > /dev/null
-SCRIPT_DIR=`pwd`
+BIN_DIR=`pwd`
 popd > /dev/null
 
-ROOT_DIR=`dirname $SCRIPT_DIR`
+ROOT_DIR=`dirname $BIN_DIR`
 
 # Check arguments
 if [ $# -lt 3 ]; then

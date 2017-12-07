@@ -1,0 +1,133 @@
+#!/bin/bash
+
+# Figure out script absolute path
+pushd `dirname $0` > /dev/null
+BIN_DIR=`pwd`
+popd > /dev/null
+
+ROOT_DIR=`dirname $BIN_DIR`
+
+print_usage() {
+  echo "Usage: $0 -i AFL_INPUT_DIR -o AFL_OUTPUT_DIR [-c JAVA_CLASSPATH] [options] TEST_CLASS TEST_METHOD"
+  echo "Options: "
+  echo "  -x AFL_DICT    Provide a dictionary to AFL"
+  echo "  -T AFL_TITLE   Customize title banner (default is TEST_CLASS#TEST_METHOD)"
+  echo "  -m MEM_LIMIT   Set a memory limit in MB (default 8192)"
+  echo "  -d             Run AFL in fidgety mode (i.e. skip deterministic mutations)"
+}
+
+# Ensure that AFL_DIR is set and afl-fuzz can be found
+if [ -z "$AFL_DIR" -o ! -x "$AFL_DIR/afl-fuzz" ]; then
+  echo "Either AFL_DIR is not set or it does not contain the program 'afl-fuzz'" >&2
+  echo "Fix this in one of two ways:" >&2
+  echo "   1. Set the env var AFL_DIR to point to where AFL is installed" >&2
+  echo "   2. Ensure that you run 'make' in that directory to compile the program 'afl-fuzz'" >&2
+  exit 2
+fi
+
+
+# Ensure that AFL proxy is built
+if [ ! -f "$ROOT_DIR/bin/afl-proxy" ]; then
+  echo "The JQF-AFL proxy has not been built! Make sure to run scripts/setup.sh or run 'make'" >&2
+  exit 3
+fi
+
+
+# Build AFL command-line
+afl_options=""
+classpath="."
+mem_limit="8192"
+target_options=""
+
+while getopts ":c:i:o:x:m:dpsrvT:" opt; do
+  case $opt in
+    /?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    c)
+      classpath="$OPTARG"
+      ;;
+    i)
+      input_dir="$OPTARG"
+      ;;
+    o)
+      output_dir="$OPTARG"
+      ;;
+    x)
+      afl_options="$afl_options -x $OPTARG"
+      ;;
+    m)
+      mem_limit="$OPTARG"
+      ;;
+    d)
+      afl_options="$afl_options -d"
+      ;;
+    p)
+      afl_options="$afl_options -p"
+      ;;
+    s)
+      afl_options="$afl_options -s"
+      ;;
+    r)
+      target_options="$target_options -r"
+      ;;
+    v)
+      target_options="$target_options -v"
+      ;;
+    T)
+      title="$OPTARG"
+      ;;
+  esac
+done
+shift $((OPTIND-1))
+
+
+# Check positional arguments
+if [ $# -lt 2 ]; then
+  print_usage >&2
+  exit 1
+fi
+
+# Check mandatory options
+if [ -z "$input_dir" -o -z "$output_dir" ]; then
+  print_usage >&2
+  exit 1
+fi
+
+class="$1"
+method="$2"
+target="$BIN_DIR/jqf-afl-target"
+
+# Set title banner
+if [ -z "$title" ]; then
+  title="$class#$method"
+fi
+
+# Set AFL options
+afl_options="$afl_options -i $input_dir"
+afl_options="$afl_options -o $output_dir"
+afl_options="$afl_options -T $title"
+afl_options="$afl_options -m $mem_limit"
+
+# Set classpath for JQF
+export CLASSPATH="$classpath"
+
+# Set environment variables for AFL
+export AFL_SKIP_BIN_CHECK=1
+export AFL_NO_AFFINITY=1
+
+# Do a test run to make sure that the class/method are JQF fuzz targets
+echo -n "Performing test run...."
+tmp_out=$(mktemp /tmp/jqf-test.XXX)
+"$BIN_DIR/jqf-random" "$class" "$method" 1 1> $tmp_out 2>&1
+if [ "$?" -ne 0 ]; then
+  echo "  ERROR: Test run failed!!!"
+  cat "$tmp_out"
+  exit 3
+fi
+echo "  Test run success! Launching AFL now..."
+
+# Ready to go
+exec "$AFL_DIR/afl-fuzz" $afl_options "$target" $target_options -a "$class" "$method" @@
+
