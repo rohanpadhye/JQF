@@ -29,8 +29,6 @@
 
 package edu.berkeley.cs.jqf.fuzz.drivers;
 
-import java.io.IOException;
-
 import edu.berkeley.cs.jqf.fuzz.guidance.AFLGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
@@ -60,13 +58,9 @@ public class AFLDriver {
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
 
-        } catch (ClassNotFoundException e) {
-            System.err.println(String.format("Cannot load class %s", testClassName));
+        } catch (Exception e) {
             e.printStackTrace();
             System.exit(2);
-        } catch (IOException e) {
-            e.printStackTrace();
-            System.exit(3);
         }
 
     }

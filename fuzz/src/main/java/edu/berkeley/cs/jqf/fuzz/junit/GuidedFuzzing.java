@@ -31,9 +31,11 @@ import edu.berkeley.cs.jqf.fuzz.guidance.NoGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import org.junit.internal.TextListener;
+import org.junit.internal.runners.ErrorReportingRunner;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Request;
 import org.junit.runner.RunWith;
+import org.junit.runner.Runner;
 
 public class GuidedFuzzing {
 
@@ -88,6 +90,9 @@ public class GuidedFuzzing {
         // Create a JUnit Request
         Request testRequest = Request.method(testClass, testMethod);
 
+        // Instantiate a runner (throws exception if testMethod is not a proper test method)
+        Runner testRunner = testRequest.getRunner();
+
         // Start tracing for the test method
         SingleSnoop.startSnooping(testClass.getName() + "#" + testMethod);
 
@@ -97,9 +102,14 @@ public class GuidedFuzzing {
             if (out != null) {
                 junit.addListener(new TextListener(out));
             }
-            junit.run(testRequest);
+            junit.run(testRunner);
         } finally {
             unsetGuidance();
+        }
+
+
+        if (testRunner instanceof ErrorReportingRunner) {
+            throw new IllegalArgumentException(String.format("Could not instantiate a Junit runner for method %s#%s.", testClass, testMethod));
         }
 
     }

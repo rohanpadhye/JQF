@@ -55,8 +55,7 @@ public class RandomDriver {
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
 
-        } catch (ClassNotFoundException e) {
-            System.err.println(String.format("Cannot load class %s", testClassName));
+        } catch (Exception e) {
             e.printStackTrace();
             System.exit(2);
         }
