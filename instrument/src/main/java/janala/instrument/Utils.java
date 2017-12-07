@@ -37,7 +37,7 @@ public class Utils implements Opcodes {
       "SPECIAL", "(I)V", false);
   }
 
-  /** Add a set to code to read the given type from the top of the concrete stack
+  /* Adds a set to code to read the given type from the top of the concrete stack
       and invoke GETVALUE method of the analysis class. */
   public static void addValueReadInsn(MethodVisitor mv, String desc, String methodNamePrefix) {
     Type t;

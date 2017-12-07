@@ -50,6 +50,7 @@ public @interface GraphModel {
      * The number of nodes to generate.
      *
      * Must be provided.
+     * @return the number of nodes to generate
      */
     int nodes();
 
@@ -61,7 +62,7 @@ public @interface GraphModel {
      * and the <tt>p</tt> value is ignored.
      *
      * @return a value greater than or equal to zero.
-     * @see <a href="https://en.wikipedia.org/wiki/Erdős–Rényi_model">
+     * @see <a href="https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FErd%C5%91s%E2%80%93R%C3%A9nyi_model">
      *     GNM model</a>
      */
     int edges() default 0;
@@ -76,7 +77,7 @@ public @interface GraphModel {
      * for generation.
      *
      * @return a value between 0.0 and 1.0.
-     * @see <a href="https://en.wikipedia.org/wiki/Erdős–Rényi_model">
+     * @see <a href="https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FErd%C5%91s%E2%80%93R%C3%A9nyi_model">
      *     GNP model</a>
      */
     double p() default 1.0;

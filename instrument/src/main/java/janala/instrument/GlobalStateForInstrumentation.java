@@ -14,7 +14,6 @@ public class GlobalStateForInstrumentation {
   private final static int MBITS = 8;  // MID occupies the next 8 bits
   private final static int IBITS = 32 - CBITS - MBITS;  // MID occupies the next 8 bits
 
-  /** Increment iid and get the complete id */
   public int incAndGetId() {
     iid++;
     validate(iid, (32 - CBITS - MBITS));

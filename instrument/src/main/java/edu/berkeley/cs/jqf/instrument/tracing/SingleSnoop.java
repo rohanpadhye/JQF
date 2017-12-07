@@ -74,7 +74,7 @@ public final class SingleSnoop {
      * Register a supplier of callbacks for each named thread, which will consume
      * {@link TraceEvent}s.
      *
-     * @param callbackGenerator
+     * @param callbackGenerator a supplier of thread-specific callbacks
      */
     public static void setCallbackGenerator(Function<String, Consumer<TraceEvent>> callbackGenerator) {
         SingleSnoop.callbackGenerator = callbackGenerator;

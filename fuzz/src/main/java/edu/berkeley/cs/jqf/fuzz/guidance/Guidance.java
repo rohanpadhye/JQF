@@ -35,20 +35,20 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 /**
  * A front-end for guided fuzzing.
  *
- * Before each fuzzing trial, the front-end is
+ * <p>Before each fuzzing trial, the front-end is
  * queried for input to be used as a source
  * of random numbers by junit-quickcheck's generators.
  *
- * During a fuzzing trial, trace events are generated, and the
+ * <p>During a fuzzing trial, trace events are generated, and the
  * front-end provides callbacks to handle these trace events
  * (e.g. to collect branch coverage).
  *
- * At the end of a fuzzing trial, the front-end is notified of
+ * <p>At the end of a fuzzing trial, the front-end is notified of
  * the result of the trial.
  *
- * The standard sequence of method invocations on a Guidance
+ * <p>The standard sequence of method invocations on a Guidance
  * instance is as follows (in pseudo-code):
- * <code>
+ * <pre>
  *     while (guidance.hasInput()) {
  *         Random rng = new StreamBackedRandom(guidance.getInputStream())
  *         Object[] args = generateInput(rng);
@@ -61,7 +61,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  *             guidance.handleResult(FAILURE, e);
  *         }
  *     }
- * </code>
+ * </pre>
  *
  * See the implementation of {@link FuzzStatement} for the real loop.
  */
@@ -71,11 +71,11 @@ public interface Guidance {
      * Returns a reference to a stream of values
      * return from the pseudo-random number generator.
      *
-     * This method is guaranteed to be invoked by JQF at most
+     * <p>This method is guaranteed to be invoked by JQF at most
      * once after each invocation of {@link #hasInput()} that
      * has returned <tt>true</tt>.
      *
-     * If {@link #hasInput()} returns <tt>false</tt> or has not
+     * <p>If {@link #hasInput()} returns <tt>false</tt> or has not
      * been invoked since the last call to {@link #getInput()},
      * then invoking this method may throw an IllegalStateException.
      *
@@ -91,7 +91,7 @@ public interface Guidance {
      * Returns whether an input is ready for a new trial
      * to be executed.
      *
-     * This method may block until a new
+     * <p>This method may block until a new
      * input stream is made ready. If this method returns
      * <tt>false</tt>, then JQF stops fuzzing and this
      * guidance will not be used further.
@@ -103,16 +103,16 @@ public interface Guidance {
     /**
      * Handles the end of a fuzzing trial.
      *
-     * This method is guaranteed to be invoked by JQF
+     * <p>This method is guaranteed to be invoked by JQF
      * exactly once after each invocation of {@link #getInput()}.
      * Therefore, it is safe to open resources such as files
      * in a call to {@link #getInput()} and only close them
      * inside this method.
      *
-     * If <tt>result</tt> is <tt>SUCCESS</tt>, then
+     * <p>If <tt>result</tt> is <tt>SUCCESS</tt>, then
      * <tt>error</tt> MUST be <tt>null</tt>.
      *
-     * If <tt>result</tt> is <tt>INVALID</tt>,
+     * <p>If <tt>result</tt> is <tt>INVALID</tt>,
      * then <tt>error</tt> is either an
      * <tt>AssumptionViolatedException</tt>, if the argument
      * of an <tt>assume()</tt> statement was <tt>false</tt>,
@@ -120,7 +120,7 @@ public interface Guidance {
      * fuzzing was interrupted during the execution of this
      * trial (and will not continue further).
      *
-     * If <tt>result</tt> is <tt>FAILURE</tt>, then
+     * <p>If <tt>result</tt> is <tt>FAILURE</tt>, then
      * <tt>error</tt> is some other throwable that was thrown by
      * the test execution but was not listed in its <tt>throws</tt>
      * clause. This is the only way to detect test errors. Assertion
@@ -137,22 +137,21 @@ public interface Guidance {
     /**
      * Returns a callback generator for a thread's event trace.
      *
-     * The application under test is instrumented such that each
-     * thread generates a trace of events that may be handled by a
-     * separate callback method (though it may also be the same
-     * callback).
+     * <p>The application under test is instrumented such that each
+     * thread generates a sequence of {@link TraceEvent}s
+     * that may be handled by a separate callback method
+     * (though it may also be the same callback).
      *
-     * The callback provided by this method will typlically be used
+     * <p>The callback provided by this method will typlically be used
      * for collection execution information such as branch coverage,
      * which in turn is used for constructing the next input stream.
      *
-     * This method is a supplier of event consumers. It is invoked
+     * <p>This method is a supplier of event consumers. It is invoked
      * once per new application thread spawned during fuzzing.
      *
      * @param threadName  the name of the thread whose events to handle
      * @return            a callback that handles trace events generated by
      *                    that thread
-     * @see {@link TraceEvent}
      */
     Consumer<TraceEvent> generateCallBack(String threadName);
 

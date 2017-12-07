@@ -43,8 +43,7 @@ import org.junit.runners.model.Statement;
 
 /**
  * This class extends JUnit and Quickcheck runners to enable guided
- * fuzz testing. Most users would not use this class directly but
- * instead extend {@GuidedQuickcheckTest}.
+ * fuzz testing. 
  *
  * @author Rohan Padhye
  */

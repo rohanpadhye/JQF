@@ -53,7 +53,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 /**
  * A front-end that uses AFL for guided fuzzing.
  *
- * An instance of this class actually communicates with a proxy that
+ * <p>An instance of this class actually communicates with a proxy that
  * sits between AFL and JQF. The proxy is the target program launched by
  * AFL; it passes messages back and forth between AFL and JQF and
  * helps populate the shared memory coverage buffer that the JVM cannot
@@ -90,23 +90,26 @@ public class AFLGuidance implements Guidance {
     /**
      * A call stack to keep track of which method we are in.
      *
-     * Note: We assume there is only a single app thread running.
+     * <p>Note: We assume there is only a single app thread running.
      * For supporting multiple threads, we would have to store
      * a map from threads to call stacks.
      */
     private Deque<CallEvent> callStack = new ArrayDeque<>();
 
     /**
-     * Whether the above call stack is empty. We use a separate
+     * Whether the above call stack is empty.
+     *
+     * <p>We use a separate
      * volatile field rather than rely on callStack.isEmpty()
      * returning a synced value, since the stack is manipulated by
      * the app thread(s).
      *
-     * Note: Same assumption on single-threaded app applies.
+     * <p>Note: Same assumption on single-threaded app applies.
      */
     private volatile boolean callStackEmpty = true;
 
     /**
+     * Creates an instance of an AFLGuidance given file handles for I/O.
      *
      * @param inputFile  the file that AFL will write inputs to
      * @param inPipe     a FIFO-like pipe for receiving messages from the AFL proxy
@@ -121,6 +124,14 @@ public class AFLGuidance implements Guidance {
         this.feedback.order(ByteOrder.LITTLE_ENDIAN);
     }
 
+    /**
+     * Creates an instance of an AFLGuidance given file names for I/O.
+     *
+     * @param inputFileName  the file that AFL will write inputs to
+     * @param inPipeName     a FIFO-like pipe for receiving messages from the AFL proxy
+     * @param outPipeName    a FIFO-like pipe for sending messages to the AFL proxy
+     * @throws IOException  if any file or pipe could not be opened
+     */
     public AFLGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
         this(new File(inputFileName), new File(inPipeName), new File(outPipeName));
     }
@@ -208,11 +219,11 @@ public class AFLGuidance implements Guidance {
      * Notifies the AFL proxy that a run has completed and whether
      * it was a success.
      *
-     * This method also sends coverage information back to the AFL
+     * <p>This method also sends coverage information back to the AFL
      * proxy, which is responsible for updating the shared memory
      * region used by afl-fuzz.
      *
-     * If the trial resulted in an assumption violation, we do not
+     * <p>If the trial resulted in an assumption violation, we do not
      * mark it is a crash, but we also do not send any coverage feedback
      * so that AFL does not consider the last input interesting enough to
      * keep in its queue.
@@ -336,7 +347,7 @@ public class AFLGuidance implements Guidance {
     /**
      * Increments the 8-bit counter at given index.
      *
-     * Overflows are possible but ignored (as in AFL).
+     * <p>Overflows are possible but ignored (as in AFL).
      *
      * @param index the key in the trace bits map
      */

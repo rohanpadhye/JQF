@@ -66,6 +66,30 @@
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>3.0.2</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-javadoc-plugin</artifactId>
+                    <version>3.0.0</version>
+                    <configuration>
+                        <outputDirectory>docs/api</outputDirectory>
+                        <links>
+                            <link>http://junit.org/junit4/javadoc/latest/</link>
+                            <link>https://pholser.github.io/junit-quickcheck/site/0.7/junit-quickcheck-core/apidocs/</link>
+                            <link>https://pholser.github.io/junit-quickcheck/site/0.7/junit-quickcheck-generators/apidocs/</link>
+                        </links>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <id>aggregate</id>
+                            <goals>
+                                <goal>aggregate</goal>
+                            </goals>
+                            <phase>site</phase>
+                            <configuration>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>

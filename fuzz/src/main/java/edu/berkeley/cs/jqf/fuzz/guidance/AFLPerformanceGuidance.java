@@ -53,18 +53,18 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  * A front-end that uses AFL for increasing performance counters
  * in addition to code coverage.
  *
- * This class extends {@link AFLGuidance} to additionally provide
+ * <p>This class extends {@link AFLGuidance} to additionally provide
  * feedback about performance measures such as branch counts
  * or allocation sizes.
  *
- * The type of performance metric used is configured by a system
+ * <p>The type of performance metric used is configured by a system
  * property: <tt>jqf.afl.perfFeedbackType</tt>, which must have
  * one of the values specified in the enum {@link PerfFeedbackType}.
  * This guidance must be used in accordance with the right run
  * scripts that configure the instrumentation to emit trace events
  * related to events such as heap-memory loads and allocations.
  *
- * This guidance class only works with a modified version of AFL
+ * <p>This guidance class only works with a modified version of AFL
  * that is designed to maximize performance counters. It will not
  * work properly with stock AFL since it attempts to send more
  * data to AFL than it usually expects.
@@ -91,7 +91,7 @@ public class AFLPerformanceGuidance extends AFLGuidance {
     /**
      * Maintains a dynamic calling context (i.e. call stack).
      *
-     * Note: We assume there is only a single app thread running.
+     * <p>Note: We assume there is only a single app thread running.
      * For supporting multiple threads, we would have to store
      * a map from threads to calling contexts.
      *
@@ -99,12 +99,14 @@ public class AFLPerformanceGuidance extends AFLGuidance {
     protected CallingContext callingContext = new CallingContext();
 
     /** Configuration of what perfFeedbackType to send AFL in second-half of map. */
-    private enum PerfFeedbackType {
+    public enum PerfFeedbackType {
         REDUNDANCY_SCORES,
         BRANCH_COUNTS,
         TOTAL_BRANCH_COUNT,
         ALLOCATION_COUNTS
-    };
+    }
+
+    /** The feedback to be used by this guidance instance. */
     private final PerfFeedbackType perfFeedbackType;
 
     public AFLPerformanceGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
@@ -289,7 +291,7 @@ public class AFLPerformanceGuidance extends AFLGuidance {
      * Computes a "redundancy score" for memory accesses at some program
      * location or AEC.
      *
-     * The redundancy score formula is chosen such that the value is high
+     * <p>The redundancy score formula is chosen such that the value is high
      * when many memory locations are accessed many times each. For a total
      * of N^2 accesses, the score is maximized when N items are accessed N
      * times each. The score is zero when either all items are accessed just

@@ -86,4 +86,12 @@
 
     </build>
 
+    <distributionManagement>
+        <site>
+            <id>jqf.website</id>
+            <name>JQF Website</name>
+            <url>https://rohanpadhye.github.io/jqf</url>
+        </site>
+    </distributionManagement>
+
 </project>

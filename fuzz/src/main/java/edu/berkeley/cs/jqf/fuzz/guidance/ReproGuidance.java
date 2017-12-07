@@ -123,14 +123,14 @@ public class ReproGuidance implements Guidance {
     /**
      * Returns a callback that can log trace events to a trace file.
      *
-     * If <tt>traceDir</tt> was non-null during the construction of
+     * <p>If <tt>traceDir</tt> was non-null during the construction of
      * this Guidance instance, then one log file per thread of
      * execution is created in this directory. The callbacks generated
      * by this method write trace event descriptions in sequence to
      * their own thread's log files.
      *
      * @param threadName  the name of the thread whose events to handle
-     * @return
+     * @return  callback that can log trace events to a trace file
      */
     @Override
     public Consumer<TraceEvent> generateCallBack(String threadName) {

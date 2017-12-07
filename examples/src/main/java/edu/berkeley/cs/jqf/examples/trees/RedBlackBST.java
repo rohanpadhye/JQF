@@ -31,9 +31,6 @@ import java.util.NoSuchElementException;
  *  <p>
  *  For additional documentation, see <a href="http://algs4.cs.princeton.edu/33balanced">Section 3.3</a> of
  *  <i>Algorithms, 4th Edition</i> by Robert Sedgewick and Kevin Wayne.
- *  For other implementations of the same API, see {@link ST}, {@link BinarySearchST},
- *  {@link SequentialSearchST}, {@link BST},
- *  {@link SeparateChainingHashST}, {@link LinearProbingHashST}, and {@link AVLTreeST}.
  *
  *  @author Robert Sedgewick
  *  @author Kevin Wayne
@@ -56,7 +53,7 @@ public class RedBlackBST<Key extends Comparable<Key>, Value> {
         this.root = root;
     }
 
-   /***************************************************************************
+   /*+**************************************************************************
     *  RedBlackBSTNode<Key,Value> helper methods.
     ***************************************************************************/
     // is RedBlackBSTNode<Key,Value> x red; false if x is null ?
@@ -89,7 +86,7 @@ public class RedBlackBST<Key extends Comparable<Key>, Value> {
     }
 
 
-   /***************************************************************************
+   /*+*************************************************************************
     *  Standard BST search.
     ***************************************************************************/
 
@@ -127,7 +124,7 @@ public class RedBlackBST<Key extends Comparable<Key>, Value> {
         return get(key) != null;
     }
 
-   /***************************************************************************
+   /*+*************************************************************************
     *  Red-black tree insertion.
     ***************************************************************************/
 
@@ -171,7 +168,7 @@ public class RedBlackBST<Key extends Comparable<Key>, Value> {
         return h;
     }
 
-   /***************************************************************************
+   /*+*************************************************************************
     *  Red-black tree deletion.
     ***************************************************************************/
 
@@ -373,7 +370,7 @@ public class RedBlackBST<Key extends Comparable<Key>, Value> {
 
     /**
      * Returns the height of the BST (for debugging).
-     * @return the height of the BST (a 1-RedBlackBSTNode<Key,Value> tree has height 0)
+     * @return the height of the BST (a 1-RedBlackBSTNode tree has height 0)
      */
     public int height() {
         return height(root);

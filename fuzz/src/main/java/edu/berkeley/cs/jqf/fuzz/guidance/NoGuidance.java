@@ -38,7 +38,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 /**
  * A front-end that only generates random inputs.
  *
- * This class provides no guidance to quickcheck. It seeds random values from
+ * <p>This class provides no guidance to quickcheck. It seeds random values from
  * {@link Random}, making it effectively an unguided random test input
  * generator.
  */
@@ -122,7 +122,7 @@ public class NoGuidance implements Guidance {
     /**
      * Returns a callback that does nothing.
      *
-     * Since this is unguided random guidance, the trace events are
+     * <p>Since this is unguided random guidance, the trace events are
      * simply ignored.
      *
      * @param threadName  the name of the thread whose events to handle
