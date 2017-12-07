@@ -31,7 +31,7 @@ while getopts ":avr" opt; do
       afl_log="proxy.log"
       ;;
     r)
-      driver="edu.berkeley.cs.jqf.fuzz.drivers.AFLRedundancyDriver"
+      driver="edu.berkeley.cs.jqf.fuzz.drivers.AFLPerformanceDriver"
       export JQF_PERF_MAP=1
       ;;
   esac
