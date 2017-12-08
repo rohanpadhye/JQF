@@ -8,12 +8,15 @@ popd > /dev/null
 ROOT_DIR=`dirname $BIN_DIR`
 
 print_usage() {
-  echo "Usage: $0 -i AFL_INPUT_DIR -o AFL_OUTPUT_DIR [-c JAVA_CLASSPATH] [options] TEST_CLASS TEST_METHOD"
+  echo "Usage: $0 [options] TEST_CLASS TEST_METHOD"
   echo "Options: "
-  echo "  -x AFL_DICT    Provide a dictionary to AFL"
-  echo "  -T AFL_TITLE   Customize title banner (default is TEST_CLASS#TEST_METHOD)"
-  echo "  -m MEM_LIMIT   Set a memory limit in MB (default 8192)"
-  echo "  -d             Run AFL in fidgety mode (i.e. skip deterministic mutations)"
+  echo "  -c JAVA_CLASSPATH  Classpath used to find your test classes (default is '.')"
+  echo "  -i AFL_INPUT_DIR   Seed inputs for AFL (default is one seed of 1024 zeros)"
+  echo "  -o AFL_OUTPUT_DIR  Where AFL should save fuzz results (default is './fuzz-results')"
+  echo "  -x AFL_DICT        Provide a dictionary to AFL (default is no dictionary)"
+  echo "  -T AFL_TITLE       Customize title banner (default is TEST_CLASS#TEST_METHOD)"
+  echo "  -m MEM_LIMIT       Set a memory limit in MB (default is 8192)"
+  echo "  -d                 Run AFL in fidgety mode (i.e. skip deterministic mutations)"
 }
 
 # Ensure that AFL_DIR is set and afl-fuzz can be found
@@ -38,6 +41,8 @@ afl_options=""
 classpath="."
 mem_limit="8192"
 target_options=""
+input_dir="$ROOT_DIR/examples/src/test/seeds/zeros"
+output_dir="fuzz-results"
 
 while getopts ":c:i:o:x:m:dpsrvT:" opt; do
   case $opt in
