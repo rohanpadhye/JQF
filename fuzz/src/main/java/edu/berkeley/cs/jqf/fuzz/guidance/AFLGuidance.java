@@ -236,6 +236,13 @@ public class AFLGuidance implements Guidance {
         // Wait for all events to be handled by the app thread
         while(!callStackEmpty);
 
+        // Close the open input file
+        try {
+            inputFileStream.close();
+        } catch (IOException e) {
+            throw new GuidanceException(e);
+        }
+
         // Reset the feedback buffer for a new run
         clearFeedbackBuffer();
 
