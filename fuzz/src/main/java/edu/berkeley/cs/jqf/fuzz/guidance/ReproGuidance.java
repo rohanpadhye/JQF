@@ -109,6 +109,13 @@ public class ReproGuidance implements Guidance {
         String footer = String.format("# End %s", inputFiles[nextFileIdx].toString());
         traceStreams.forEach((out) -> out.println(footer));
 
+        // Close the open input file
+        try {
+            inputStream.close();
+        } catch (IOException e) {
+            throw new GuidanceException(e);
+        }
+
         // Increment file
         nextFileIdx++;
 
