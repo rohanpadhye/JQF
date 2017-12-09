@@ -108,6 +108,9 @@ public class AFLGuidance implements Guidance {
      */
     private volatile boolean callStackEmpty = true;
 
+    private static final int FEEDBACK_BUFFER_SIZE = 1 << 17;
+    private static final byte[] FEEDBACK_ZEROS = new byte[FEEDBACK_BUFFER_SIZE];
+
     /**
      * Creates an instance of an AFLGuidance given file handles for I/O.
      *
@@ -120,7 +123,7 @@ public class AFLGuidance implements Guidance {
         this.inputFile = inputFile;
         this.proxyInput = new BufferedInputStream(new FileInputStream(inPipe));
         this.proxyOutput = new BufferedOutputStream(new FileOutputStream(outPipe));
-        this.feedback = ByteBuffer.allocate(1 << 20);
+        this.feedback = ByteBuffer.allocate(FEEDBACK_BUFFER_SIZE);
         this.feedback.order(ByteOrder.LITTLE_ENDIAN);
     }
 
@@ -366,9 +369,7 @@ public class AFLGuidance implements Guidance {
     /** Clears the feedback buffer by resetting it to zero. */
     protected void clearFeedbackBuffer() {
         feedback.clear();
-        while (feedback.hasRemaining()) {
-            feedback.put((byte) 0);
-        }
+        feedback.put(FEEDBACK_ZEROS);
         feedback.clear();
     }
 
