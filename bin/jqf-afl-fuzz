@@ -11,7 +11,7 @@ print_usage() {
   echo "Usage: $0 [options] TEST_CLASS TEST_METHOD"
   echo "Options: "
   echo "  -c JAVA_CLASSPATH  Classpath used to find your test classes (default is '.')"
-  echo "  -i AFL_INPUT_DIR   Seed inputs for AFL (default is one seed of 1024 zeros)"
+  echo "  -i AFL_INPUT_DIR   Seed inputs for AFL (default is a few seeds of random data)"
   echo "  -o AFL_OUTPUT_DIR  Where AFL should save fuzz results (default is './fuzz-results')"
   echo "  -x AFL_DICT        Provide a dictionary to AFL (default is no dictionary)"
   echo "  -T AFL_TITLE       Customize title banner (default is TEST_CLASS#TEST_METHOD)"
