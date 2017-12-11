@@ -81,7 +81,7 @@ class ThreadTracer extends Thread {
     /** Spawns a thread tracer for the given thread */
     protected static ThreadTracer spawn(Thread thread) {
         String entryPoint = SingleSnoop.entryPoints.get(thread);
-        Consumer<TraceEvent> callback = SingleSnoop.callbackGenerator.apply(thread.getName());
+        Consumer<TraceEvent> callback = SingleSnoop.callbackGenerator.apply(thread);
         ThreadTracer t =
                 new ThreadTracer(thread, entryPoint, callback);
         t.start();

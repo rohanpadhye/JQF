@@ -62,7 +62,7 @@ public final class SingleSnoop {
 
 
     /** A supplier of callbacks for each thread (does nothing by default). */
-    static Function<String, Consumer<TraceEvent>> callbackGenerator = (s) -> (e) -> {};
+    static Function<Thread, Consumer<TraceEvent>> callbackGenerator = (t) -> (e) -> {};
 
 
     private static TraceLogger intp = new TraceLogger();
@@ -76,7 +76,7 @@ public final class SingleSnoop {
      *
      * @param callbackGenerator a supplier of thread-specific callbacks
      */
-    public static void setCallbackGenerator(Function<String, Consumer<TraceEvent>> callbackGenerator) {
+    public static void setCallbackGenerator(Function<Thread, Consumer<TraceEvent>> callbackGenerator) {
         SingleSnoop.callbackGenerator = callbackGenerator;
     }
 

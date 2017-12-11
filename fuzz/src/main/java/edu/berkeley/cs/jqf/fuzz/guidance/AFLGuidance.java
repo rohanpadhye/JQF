@@ -220,7 +220,7 @@ public class AFLGuidance implements Guidance {
 
     /**
      * Notifies the AFL proxy that a run has completed and whether
-     * it was a success.
+     * it was a success. 1
      *
      * <p>This method also sends coverage information back to the AFL
      * proxy, which is responsible for updating the shared memory
@@ -305,13 +305,22 @@ public class AFLGuidance implements Guidance {
     }
 
     /**
-     * Returns a reference to {@link #handleEvent}.
+     * Returns a callback to handle trace events
      *
-     * @param threadName  the name of the thread whose events to handle
-     * @return
+     * <p>For the main thread, this returns a reference to
+     * {@link #handleEvent(TraceEvent)}. For other threads,
+     * this returns a callback that does nothing, since AFL
+     * is not equipped to handle multi-threaded applications.</p>
+     *
+     * @param thread the thread whose events to handle
+     * @return a callback to handle trace events
      */
-    public Consumer<TraceEvent> generateCallBack(String threadName) {
-        return this::handleEvent;
+    public Consumer<TraceEvent> generateCallBack(Thread thread) {
+        if (thread.getName().equals("main")) {
+            return this::handleEvent;
+        } else {
+            return (e) -> { /* Ignore */ };
+        }
     }
 
     /**

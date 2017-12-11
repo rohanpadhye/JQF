@@ -125,11 +125,11 @@ public class NoGuidance implements Guidance {
      * <p>Since this is unguided random guidance, the trace events are
      * simply ignored.
      *
-     * @param threadName  the name of the thread whose events to handle
+     * @param thread the thread whose events to handle
      * @return a callback that does nothing.
      */
     @Override
-    public Consumer<TraceEvent> generateCallBack(String threadName) {
+    public Consumer<TraceEvent> generateCallBack(Thread thread) {
         return (e) -> {};
     }
 }

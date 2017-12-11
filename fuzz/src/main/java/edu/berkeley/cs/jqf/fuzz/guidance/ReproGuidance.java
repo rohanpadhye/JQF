@@ -136,14 +136,14 @@ public class ReproGuidance implements Guidance {
      * by this method write trace event descriptions in sequence to
      * their own thread's log files.
      *
-     * @param threadName  the name of the thread whose events to handle
+     * @param thread the thread whose events to handle
      * @return  callback that can log trace events to a trace file
      */
     @Override
-    public Consumer<TraceEvent> generateCallBack(String threadName) {
+    public Consumer<TraceEvent> generateCallBack(Thread thread) {
         // Create trace file if available
         if (traceDir != null) {
-            File traceFile = new File(traceDir, threadName + ".log");
+            File traceFile = new File(traceDir, thread.getName() + ".log");
             try {
                 PrintStream out = new PrintStream(traceFile);
                 traceStreams.add(out);
