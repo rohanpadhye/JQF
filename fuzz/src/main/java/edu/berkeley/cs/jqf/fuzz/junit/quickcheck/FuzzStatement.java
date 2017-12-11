@@ -100,7 +100,7 @@ public class FuzzStatement extends Statement {
 
 
         // Keep fuzzing until no more input or I/O error with guidance
-        Guidance guidance = GuidedFuzzing.getGuidance();
+        Guidance guidance = GuidedFuzzing.getCurrentGuidance();
         try {
 
             // Keep fuzzing as long as guidance wants to

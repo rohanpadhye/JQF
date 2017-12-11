@@ -43,14 +43,23 @@ public class GuidedFuzzing {
 
     private static long DEFAULT_MAX_TRIALS = 100;
 
-    public static void setGuidance(Guidance g) {
+    private static void setGuidance(Guidance g) {
         if (guidance != null) {
             throw new IllegalStateException("Can only set guided once.");
         }
         guidance = g;
     }
 
-    public static Guidance getGuidance() {
+    /**
+     * Returns the currently registered Guidance instance.
+     *
+     * <p>If no guidance is set, this method creates a new
+     * instance of {@link NoGuidance}, registers it, and returns
+     * a reference to it.</p>
+     *
+     * @return the currently registered Guidance instance
+     */
+    public static Guidance getCurrentGuidance() {
         if (guidance == null) {
             System.err.println(String.format("Warning: No guidance set. " +
                     " Falling back to default %d trials with no feedback", DEFAULT_MAX_TRIALS));
@@ -64,22 +73,63 @@ public class GuidedFuzzing {
         guidance = null;
     }
 
+
+    /**
+     * Runs the guided fuzzing loop.
+     *
+     * <p>The test class must be annotated with <tt>@RunWith(JQF.class)</tt>
+     * and the test method must be annotated with <tt>@Fuzz</tt>.</p>
+     *
+     * <p>Once this method is invoked, the guided fuzzing loop runs continuously
+     * until the guidance instance decides to stop by returning <tt>false</tt>
+     * for {@link Guidance#hasInput()}. Until the fuzzing stops, this method
+     * cannot be invoked again (i.e. at most one guided fuzzing can be running
+     * at any time in a single JVM instance).</p>
+     *
+     * @param testClassName the test class containing the test method
+     * @param testMethod    the test method to execute in the fuzzing loop
+     * @param guidance      the fuzzing guidance
+     * @param out           an output stream to log Junit messages
+     * @throws ClassNotFoundException if testClassName cannot be loaded
+     * @throws IllegalStateException if a guided fuzzing run is currently executing
+     */
     public synchronized static void run(String testClassName, String testMethod,
-                                        Guidance guidance, PrintStream out) throws ClassNotFoundException {
+                                        Guidance guidance, PrintStream out) throws ClassNotFoundException, IllegalStateException {
         Class<?> testClass =
         java.lang.Class.forName(testClassName, true, ClassLoader.getSystemClassLoader());
-
-        RunWith annotation = testClass.getAnnotation(RunWith.class);
-        if (annotation == null || !annotation.value().equals(JQF.class)) {
-            throw new IllegalArgumentException(testClassName + " is not annotated with @RunWith(JQF.class)");
-        }
 
         run(testClass, testMethod, guidance, out);
 
     }
 
+
+    /**
+     * Runs the guided fuzzing loop.
+     *
+     * <p>The test class must be annotated with <tt>@RunWith(JQF.class)</tt>
+     * and the test method must be annotated with <tt>@Fuzz</tt>.</p>
+     *
+     * <p>Once this method is invoked, the guided fuzzing loop runs continuously
+     * until the guidance instance decides to stop by returning <tt>false</tt>
+     * for {@link Guidance#hasInput()}. Until the fuzzing stops, this method
+     * cannot be invoked again (i.e. at most one guided fuzzing can be running
+     * at any time in a single JVM instance).</p>
+     *
+     * @param testClass     the test class containing the test method
+     * @param testMethod    the test method to execute in the fuzzing loop
+     * @param guidance      the fuzzing guidance
+     * @param out           an output stream to log Junit messages
+     * @throws IllegalStateException if a guided fuzzing run is currently executing
+     */
     public synchronized static void run(Class<?> testClass, String testMethod,
-                                        Guidance guidance, PrintStream out) {
+                                        Guidance guidance, PrintStream out) throws IllegalStateException {
+
+        // Ensure that the class uses the right test runner
+        RunWith annotation = testClass.getAnnotation(RunWith.class);
+        if (annotation == null || !annotation.value().equals(JQF.class)) {
+            throw new IllegalArgumentException(testClass.getName() + " is not annotated with @RunWith(JQF.class)");
+        }
+
 
         // Set the static guided instance
         setGuidance(guidance);
