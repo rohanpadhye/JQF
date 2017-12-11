@@ -72,6 +72,11 @@ public class GuidanceTest {
         public void uncaughtException(int x) {
             throw new RuntimeException();
         }
+
+        @Fuzz
+        public void expectedException(int x) throws NullPointerException {
+            throw new NullPointerException();
+        }
     }
 
     @Spy
@@ -110,5 +115,11 @@ public class GuidanceTest {
         Mockito.verify(guidance).handleResult(
                 ArgumentMatchers.eq(Result.FAILURE),
                 ArgumentMatchers.isA(AssertionError.class));
+    }
+
+    @Test
+    public void testExpectedException() {
+        GuidedFuzzing.run(GuidanceTestFuzzer.class, "expectedException", guidance, null);
+        Mockito.verify(guidance).handleResult(Result.SUCCESS, null);
     }
 }
