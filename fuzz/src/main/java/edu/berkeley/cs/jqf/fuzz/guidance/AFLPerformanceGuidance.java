@@ -98,7 +98,7 @@ public class AFLPerformanceGuidance extends AFLGuidance {
      * */
     protected CallingContext callingContext = new CallingContext();
 
-    /** Configuration of what perfFeedbackType to send AFL in second-half of map. */
+    /** Configuration of what feedback to send AFL in second-half of map. */
     public enum PerfFeedbackType {
         REDUNDANCY_SCORES,
         BRANCH_COUNTS,
