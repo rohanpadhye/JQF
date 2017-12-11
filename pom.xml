@@ -107,7 +107,7 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>3.0.0</version>
                     <configuration>
-                        <reportOutputDirectory>docs</reportOutputDirectory>
+                        <reportOutputDirectory>${project.basedir}</reportOutputDirectory>
                         <links>
                             <link>http://junit.org/junit4/javadoc/latest/</link>
                             <link>https://pholser.github.io/junit-quickcheck/site/0.7/junit-quickcheck-core/apidocs/</link>
