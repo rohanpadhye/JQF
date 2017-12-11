@@ -50,15 +50,19 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  * instance is as follows (in pseudo-code):
  * <pre>
  *     while (guidance.hasInput()) {
- *         Random rng = new StreamBackedRandom(guidance.getInputStream())
+ *         Random rng = new StreamBackedRandom(guidance.getInputStream());
  *         Object[] args = generateInput(rng);
  *         try {
- *             runTest(args) // generates many trace events
+ *             runTest(args); // generates many trace events
  *             guidance.handleResult(SUCCESS, null);
  *         } catch (AssumptionViolatedException e) {
  *             guidance.handleResult(INVALID, e);
  *         } catch (Throwable t) {
- *             guidance.handleResult(FAILURE, e);
+ *             if (isExpected(e)) {
+ *                 guidance.handleResult(SUCCESS, e);
+ *             } else {
+ *                 guidance.handleResult(FAILURE, e);
+ *             }
  *         }
  *     }
  * </pre>
@@ -110,7 +114,9 @@ public interface Guidance {
      * inside this method.
      *
      * <p>If <tt>result</tt> is <tt>SUCCESS</tt>, then
-     * <tt>error</tt> MUST be <tt>null</tt>.
+     * <tt>error</tt> is either <tt>null</tt> or it is
+     * an instance of a throwable that is declared by the
+     * test method in its <tt>throws</tt> clause.
      *
      * <p>If <tt>result</tt> is <tt>INVALID</tt>,
      * then <tt>error</tt> is either an
