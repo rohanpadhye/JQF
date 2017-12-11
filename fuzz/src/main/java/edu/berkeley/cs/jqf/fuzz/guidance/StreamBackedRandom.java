@@ -88,17 +88,11 @@ public class StreamBackedRandom extends Random {
      * Generates upto 32 bits of random data for internal use by the Random
      * class.
      *
-     * Attempts to read up to 4 bytes of data from the input file, and
-     * returns the requested lower order bits as a pseudo-random value.
+     * <p>Attempts to read up to 4 bytes of data from the input file, and
+     * returns the requested lower order bits as a pseudo-random value.</p>
      *
-     * If end-of-file is reached before reading 4 bytes,
-     * an {@link IllegalStateException} is thrown.
-     *
-     * If the backing file source has not yet been set, it defaults to
-     * the pseudo-random number generation algorithm from
-     * {@link Random}. This is still deterministic, as the seed
-     * of the pseudo-random number generator is deterministically set in the
-     * constructor.
+     * <p>If end-of-file is reached before reading 4 bytes,
+     * an {@link IllegalStateException} is thrown.</p>
      *
      * @param bits   the number of random bits to retain (1 to 32 inclusive)
      * @return the integer value whose lower <tt>bits</tt> bits contain the
