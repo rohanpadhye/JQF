@@ -126,16 +126,16 @@ export CLASSPATH="$classpath"
 export AFL_SKIP_BIN_CHECK=1
 export AFL_NO_AFFINITY=1
 
-# Do a test run to make sure that the class/method are JQF fuzz targets
-echo -n "Performing test run...."
-tmp_out=$(mktemp /tmp/jqf-test.XXX)
+# Do a pilot run to make sure that the class/method are JQF fuzz targets
+echo -n "Performing pilot run...."
+tmp_out=$(mktemp /tmp/jqf-pilot.XXX)
 "$BIN_DIR/jqf-random" "$class" "$method" 1 1> $tmp_out 2>&1
 if [ "$?" -ne 0 ]; then
-  echo "  ERROR: Test run failed!!!"
+  echo "  ERROR: Pilot run failed!!!"
   cat "$tmp_out"
   exit 3
 fi
-echo "  Test run success! Launching AFL now..."
+echo "  Pilot run success! Launching AFL now..."
 
 # Ready to go
 exec "$AFL_DIR/afl-fuzz" $afl_options "$target" $target_options -a "$class" "$method" @@
