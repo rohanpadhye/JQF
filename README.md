@@ -1,4 +1,4 @@
-# JQF: A feedback-directed fuzz testing platform for Java. 
+# JQF: A feedback-directed fuzz testing platform for Java
 
 JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck), which itself lets you write [Quickcheck](http://www.cse.chalmers.se/~rjmh/QuickCheck/manual.html)-like generators and properties in a [Junit](http://junit.org)-style test class. JQF enables better input generation using state-of-the-art fuzzing tools such as [AFL](http://lcamtuf.coredump.cx/afl). 
 
@@ -61,3 +61,7 @@ export AFL_DIR=/path/to/afl
 git clone https://github.com/rohanpadhye/jqf
 jqf/scripts/setup.sh 
 ```
+
+## Documentation
+
+The [JQF wiki](https://github.com/rohanpadhye/jqf/wiki) contains lots more documentation including how to write a JQF test, how to fuzz JQF with AFL, how to analyze/debug crashes and how to extend JQF to use a different fuzzing front-end.
