@@ -65,3 +65,12 @@ The [JQF wiki](https://github.com/rohanpadhye/jqf/wiki) contains lots more docum
 - [Writing a JQF test](https://github.com/rohanpadhye/jqf/wiki/Writing-a-JQF-test)
 - [Fuzzing with AFL](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-AFL)
 - [Using a custom fuzz guidance](https://github.com/rohanpadhye/jqf/wiki/The-Guidance-interface)
+
+
+## Contact the developers
+
+We want your feedback! (haha, get it? get it?) 
+
+If you've found a bug in JQF or are having trouble getting JQF to work, please open an issue on the [issue tracker](https://github.com/rohanpadhye/jqf/issues). You can also use this platform to post feature requests.
+
+If it's some sort of fuzzing emergency you can always send an email to the main developer: [Rohan Padhye](https://people.eecs.berkeley.edu/~rohanpadhye).
