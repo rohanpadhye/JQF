@@ -241,7 +241,9 @@ public class AFLGuidance implements Guidance {
 
         // Close the open input file
         try {
-            inputFileStream.close();
+            if (inputFileStream != null) {
+                inputFileStream.close();
+            }
         } catch (IOException e) {
             throw new GuidanceException(e);
         }

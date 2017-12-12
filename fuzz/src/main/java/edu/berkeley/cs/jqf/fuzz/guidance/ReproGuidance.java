@@ -111,7 +111,9 @@ public class ReproGuidance implements Guidance {
 
         // Close the open input file
         try {
-            inputStream.close();
+            if (inputStream != null) {
+                inputStream.close();
+            }
         } catch (IOException e) {
             throw new GuidanceException(e);
         }
