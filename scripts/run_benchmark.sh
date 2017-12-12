@@ -7,8 +7,17 @@ popd > /dev/null
 
 ROOT_DIR=`dirname $SCRIPT_DIR`
 
-if [ -z "$AFL_DIR" ]; then
-  echo "Set env variable AFL_DIR to point to where AFL is installed" >&2
+# Ensure that afl-fuzz can be found
+if [ -n "$AFL_DIR" ]; then
+  AFL_FUZZ="$AFL_DIR/afl-fuzz"
+else
+  AFL_FUZZ=$(which afl-fuzz)
+fi
+if [ ! -x "$AFL_FUZZ" ]; then
+  echo "The program 'afl-fuzz' cannot be found" >&2
+  echo "Fix this in one of two ways:" >&2
+  echo "   1. Make sure 'afl-fuzz' is in your PATH" >&2
+  echo "   2. Set the env var AFL_DIR to point to where AFL is installed" >&2
   exit 2
 fi
 
@@ -82,5 +91,5 @@ export CLASSPATH="examples/target/classes/:examples/target/test-classes/:example
 
 echo "Fuzzing method $class#$method..."
   
-"$AFL_DIR"/afl-fuzz $afl_options -i $input_dir -o "$output_dir" -T "$class#$method$suffix" \
+"$AFL_FUZZ" $afl_options -i $input_dir -o "$output_dir" -T "$class#$method$suffix" \
   "$ROOT_DIR/bin/jqf-afl-target" $jqf_options edu.berkeley.cs.jqf.examples."$class" "$method" "$input_file"

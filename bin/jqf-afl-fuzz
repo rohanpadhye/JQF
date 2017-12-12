@@ -19,12 +19,17 @@ print_usage() {
   echo "  -d                 Run AFL in fidgety mode (i.e. skip deterministic mutations)"
 }
 
-# Ensure that AFL_DIR is set and afl-fuzz can be found
-if [ -z "$AFL_DIR" -o ! -x "$AFL_DIR/afl-fuzz" ]; then
-  echo "Either AFL_DIR is not set or it does not contain the program 'afl-fuzz'" >&2
+# Ensure that afl-fuzz can be found
+if [ -n "$AFL_DIR" ]; then
+  AFL_FUZZ="$AFL_DIR/afl-fuzz"
+else
+  AFL_FUZZ=$(which afl-fuzz)
+fi
+if [ ! -x "$AFL_FUZZ" ]; then
+  echo "The program 'afl-fuzz' cannot be found" >&2
   echo "Fix this in one of two ways:" >&2
-  echo "   1. Set the env var AFL_DIR to point to where AFL is installed" >&2
-  echo "   2. Ensure that you run 'make' in that directory to compile the program 'afl-fuzz'" >&2
+  echo "   1. Make sure 'afl-fuzz' is in your PATH" >&2
+  echo "   2. Set the env var AFL_DIR to point to where AFL is installed" >&2
   exit 2
 fi
 
@@ -139,5 +144,5 @@ fi
 echo "  Pilot run success! Launching AFL now..."
 
 # Ready to go
-exec "$AFL_DIR/afl-fuzz" $afl_options "$target" $target_options -a "$class" "$method" @@
+exec "$AFL_FUZZ" $afl_options "$target" $target_options -a "$class" "$method" @@
 

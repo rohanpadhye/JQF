@@ -36,8 +36,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#include "types.h"
-#include "config.h"
+#include "afl-proxy.h"
 
 /* 
 * Proxy between AFL and JQF. Communicates to 
