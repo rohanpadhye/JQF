@@ -52,16 +52,25 @@ This shouldn't happen! `DateFormat.format()` does not specify that it will throw
 
 To build JQF, you need Maven (`mvn`) and GNU Make (`make`) installed and on your path. 
 
-You also need a local copy of [AFL](lcamtuf.coredump.cx/afl) (run `make` to build AFL in its directory). 
-
-Set the environment variable `AFL_DIR` to point to this directory and run `setup.sh` in the JQF directory.
+Clone the JQF repo and run `setup.sh`.
 
 ```bash
-export AFL_DIR=/path/to/afl
 git clone https://github.com/rohanpadhye/jqf
-jqf/scripts/setup.sh 
+jqf/setup.sh 
 ```
 
 ## Documentation
 
-The [JQF wiki](https://github.com/rohanpadhye/jqf/wiki) contains lots more documentation including how to write a JQF test, how to fuzz JQF with AFL, how to analyze/debug crashes and how to extend JQF to use a different fuzzing front-end.
+The [JQF wiki](https://github.com/rohanpadhye/jqf/wiki) contains lots more documentation including:
+- [Writing a JQF test](https://github.com/rohanpadhye/jqf/wiki/Writing-a-JQF-test)
+- [Fuzzing with AFL](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-AFL)
+- [Using a custom fuzz guidance](https://github.com/rohanpadhye/jqf/wiki/The-Guidance-interface)
+
+
+## Contact the developers
+
+We want your feedback! (haha, get it? get it?) 
+
+If you've found a bug in JQF or are having trouble getting JQF to work, please open an issue on the [issue tracker](https://github.com/rohanpadhye/jqf/issues). You can also use this platform to post feature requests.
+
+If it's some sort of fuzzing emergency you can always send an email to the main developer: [Rohan Padhye](https://people.eecs.berkeley.edu/~rohanpadhye).
