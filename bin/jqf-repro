@@ -7,19 +7,40 @@ popd > /dev/null
 
 ROOT_DIR=`dirname $BIN_DIR`
 
-# Check arguments
-if [ $# -lt 3 ]; then
-  echo "Usage: $0 [-i] TEST_CLASS TEST_METHOD INPUT_FILE..." >&2
-  exit 1
-fi
+print_usage() {
+  echo "Usage: $0 [-c CLASSPATH] [-i] TEST_CLASS TEST_METHOD INPUT_FILE.."
+}
 
-if [ "$1" = "-i" ]; then
+while getopts ":c:i" opt; do
+  case $opt in
+    /?)
+      echo "Invalid option: -$OPTARG" >&2
+      print_usage >&1
+      exit 1
+      ;;
+    c)
+      export CLASSPATH="$OPTARG"
+      ;;
+    i)
+      instrument=1
+  esac
+done
+shift $((OPTIND-1))
+
+if [ -n "$instrument" ]; then
   export JVM_OPTS="-Djqf.repro.traceDir=. $JVM_OPTS"
   shift 1
 else
   export JQF_DISABLE_INSTRUMENTATION=1
 fi
 
+# Check arguments
+if [ $# -lt 3 ]; then
+  print_usage >&1
+  exit 1
+fi
+
 
 # Run the repro input driver
+echo $CLASSPATH
 $ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.drivers.ReproDriver $@

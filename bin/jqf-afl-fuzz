@@ -48,6 +48,7 @@ while getopts ":c:i:o:x:m:dpsrvT:" opt; do
   case $opt in
     /?)
       echo "Invalid option: -$OPTARG" >&2
+      print_usage >&1
       exit 1
       ;;
     c)
