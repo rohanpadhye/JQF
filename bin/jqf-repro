@@ -23,13 +23,13 @@ while getopts ":c:i" opt; do
       ;;
     i)
       instrument=1
+      ;;
   esac
 done
 shift $((OPTIND-1))
 
 if [ -n "$instrument" ]; then
   export JVM_OPTS="-Djqf.repro.traceDir=. $JVM_OPTS"
-  shift 1
 else
   export JQF_DISABLE_INSTRUMENTATION=1
 fi
@@ -42,5 +42,4 @@ fi
 
 
 # Run the repro input driver
-echo $CLASSPATH
 $ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.drivers.ReproDriver $@
