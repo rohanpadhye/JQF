@@ -31,14 +31,8 @@ package edu.berkeley.cs.jqf.examples.imageio;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
-import com.pholser.junit.quickcheck.From;
-import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.examples.kaitai.PngKaitaiGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.After;
@@ -104,28 +98,4 @@ public class PngReaderTest {
         }
     }
 
-    @Fuzz
-    public void readUsingKaitai(@From(PngKaitaiGenerator.class) @Size(max = 1024) InputStream input) throws IOException {
-        try {
-            // Decode image from input stream
-            reader.setInput(ImageIO.createImageInputStream(input));
-            Assume.assumeTrue(reader.getHeight(0) < 1024);
-            Assume.assumeTrue(reader.getWidth(0) < 1024);
-            reader.read(0);
-        } catch (IOException e) {
-            e.printStackTrace();
-            // Ignore
-        }
-
-    }
-
-    @Fuzz
-    public void debugKaitai(@From(PngKaitaiGenerator.class) @Size(max = 1024) InputStream input) throws IOException {
-        byte[] bytes = new byte[1024];
-        int len = input.read(bytes);
-        Assume.assumeTrue(len >= 0);
-        try(BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream("img.png"))) {
-            out.write(bytes, 0, len);
-        }
-    }
 }
