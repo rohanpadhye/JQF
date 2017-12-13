@@ -73,6 +73,20 @@ public class ReproGuidance implements Guidance {
     }
 
     /**
+     * Constructs an instance of ReproGuidance with a single
+     * input file to replay and a directory where the trace
+     * events may be logged.
+     *
+     * @param inputFile an input file
+     * @param traceDir an optional directory, which if non-null will
+     *                 be the destination for log files containing event
+     *                 traces
+     */
+    public ReproGuidance(File inputFile, File traceDir) {
+        this(new File[]{inputFile}, traceDir);
+    }
+
+    /**
      * Returns an input stream corresponding to the next input file.
      *
      * @return an input stream corresponding to the next input file
@@ -121,8 +135,9 @@ public class ReproGuidance implements Guidance {
         // Increment file
         nextFileIdx++;
 
-        // Show errors if any
-        if (error != null) {
+        // Show errors for invalid tests
+        if (result == Result.INVALID && error != null) {
+            System.err.println("Test run was invalid");
             error.printStackTrace();
         }
 

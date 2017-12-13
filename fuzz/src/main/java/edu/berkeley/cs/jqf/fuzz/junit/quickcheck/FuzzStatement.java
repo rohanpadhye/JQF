@@ -28,9 +28,11 @@
  */
 package edu.berkeley.cs.jqf.fuzz.junit.quickcheck;
 
+import java.io.File;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -42,15 +44,19 @@ import com.pholser.junit.quickcheck.internal.ParameterTypeContext;
 import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.fuzz.guidance.FastSourceOfRandomness;
-import edu.berkeley.cs.jqf.fuzz.guidance.StreamBackedRandom;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
+import edu.berkeley.cs.jqf.fuzz.guidance.NoGuidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.ReproGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
+import edu.berkeley.cs.jqf.fuzz.guidance.StreamBackedRandom;
+import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
 import ru.vyarus.java.generics.resolver.GenericsResolver;
@@ -65,11 +71,12 @@ import static edu.berkeley.cs.jqf.fuzz.guidance.Result.*;
  * @author Rohan Padhye
  */
 public class FuzzStatement extends Statement {
-    protected final FrameworkMethod method;
-    protected final TestClass testClass;
-    protected final Map<String, Type> typeVariables;
-    protected final GeneratorRepository generatorRepository;
-    protected final List<Class<?>> expectedExceptions;
+    private final FrameworkMethod method;
+    private final TestClass testClass;
+    private final Map<String, Type> typeVariables;
+    private final GeneratorRepository generatorRepository;
+    private final List<Class<?>> expectedExceptions;
+    private final List<Throwable> failures = new ArrayList<>();
 
     public FuzzStatement(FrameworkMethod method, TestClass testClass,
                          GeneratorRepository generatorRepository) {
@@ -88,7 +95,7 @@ public class FuzzStatement extends Statement {
     /**
      * Run the test.
      *
-     * @throws Throwable if something goes wrong
+     * @throws Throwable if the test fails
      */
     @Override
     public void evaluate() throws Throwable {
@@ -98,9 +105,21 @@ public class FuzzStatement extends Statement {
                 .map(this::produceGenerator)
                 .collect(Collectors.toList());
 
+        // Get the currently registered fuzz guidance
+        Guidance guidance = GuidedFuzzing.getCurrentGuidance();
+
+        // If nothing is set, default to random or repro
+        if (guidance == null) {
+            // Check for @Fuzz(repro=)
+            String repro = method.getAnnotation(Fuzz.class).repro();
+            if (repro.isEmpty()) {
+                guidance = new NoGuidance(GuidedFuzzing.DEFAULT_MAX_TRIALS, System.err);
+            } else {
+                guidance = new ReproGuidance(new File(repro), null);
+            }
+        }
 
         // Keep fuzzing until no more input or I/O error with guidance
-        Guidance guidance = GuidedFuzzing.getCurrentGuidance();
         try {
 
             // Keep fuzzing as long as guidance wants to
@@ -154,6 +173,7 @@ public class FuzzStatement extends Statement {
                     } else {
                         result = FAILURE;
                         error = e;
+                        failures.add(e);
                     }
                 } finally {
                     // Wait for any instrumentation events to finish processing
@@ -167,6 +187,14 @@ public class FuzzStatement extends Statement {
             }
         } catch (GuidanceException e) {
             System.err.println("Fuzzing stopped due to guidance exception: " + e.getMessage());
+        }
+
+        if (failures.size() > 0) {
+            if (failures.size() == 1) {
+                throw failures.get(0);
+            } else {
+                throw new MultipleFailureException(failures);
+            }
         }
 
     }

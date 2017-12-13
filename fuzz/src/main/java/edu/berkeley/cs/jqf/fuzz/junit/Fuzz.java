@@ -40,4 +40,20 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Fuzz {
+
+    /**
+     * The path of an input file to replay.
+     *
+     * <p>This element is optional, and is an empty string
+     * by default, indicating that no replay is intended. </p>
+     *
+     * <p>If this element is non-empty, then running a JQF
+     * test using JUnit (e.g. via an IDE or via Maven) will
+     * cause a saved test to be replayed instead of random
+     * inputs being generated.</p>
+     *
+     *
+     * @return the path of the input file to replay
+     */
+    String repro() default "";
 }

@@ -27,7 +27,6 @@ package edu.berkeley.cs.jqf.fuzz.junit;
 import java.io.PrintStream;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
-import edu.berkeley.cs.jqf.fuzz.guidance.NoGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import org.junit.internal.TextListener;
@@ -41,7 +40,7 @@ public class GuidedFuzzing {
 
     private static Guidance guidance;
 
-    private static long DEFAULT_MAX_TRIALS = 100;
+    public static long DEFAULT_MAX_TRIALS = 100;
 
     private static void setGuidance(Guidance g) {
         if (guidance != null) {
@@ -53,19 +52,9 @@ public class GuidedFuzzing {
     /**
      * Returns the currently registered Guidance instance.
      *
-     * <p>If no guidance is set, this method creates a new
-     * instance of {@link NoGuidance}, registers it, and returns
-     * a reference to it.</p>
-     *
      * @return the currently registered Guidance instance
      */
     public static Guidance getCurrentGuidance() {
-        if (guidance == null) {
-            System.err.println(String.format("Warning: No guidance set. " +
-                    " Falling back to default %d trials with no feedback", DEFAULT_MAX_TRIALS));
-            setGuidance(new NoGuidance(DEFAULT_MAX_TRIALS, System.err));
-        }
-
         return guidance;
     }
 
