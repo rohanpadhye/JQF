@@ -2,7 +2,7 @@ edu.berkeley.cs.jqf.examples.algs4
 edu.berkeley.cs.jqf.examples.common
 edu.berkeley.cs.jqf.examples.imageio
 edu.berkeley.cs.jqf.examples.jgrapht
-edu.berkeley.cs.jqf.examples.kaitai
+edu.berkeley.cs.jqf.examples.math
 edu.berkeley.cs.jqf.examples.trees
 edu.berkeley.cs.jqf.fuzz.drivers
 edu.berkeley.cs.jqf.fuzz.guidance
