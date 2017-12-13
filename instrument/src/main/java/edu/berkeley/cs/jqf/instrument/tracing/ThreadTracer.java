@@ -59,17 +59,24 @@ import janala.logger.inst.*;
  * @author Rohan Padhye
  */
 public class ThreadTracer extends Thread {
-    private final FastBlockingQueue<Instruction> queue = new FastBlockingQueue<>(1024*1024);
-    private final Thread tracee;
-    private final String entryPoint;
-    private final Consumer<TraceEvent> callback;
+    protected final FastBlockingQueue<Instruction> queue = new FastBlockingQueue<>(1024*1024);
+    protected final Thread tracee;
+    protected final String entryPoint;
+    protected final Consumer<TraceEvent> callback;
     private final Deque<Callable<?>> handlers = new ArrayDeque<>();
 
     // Values set by GETVALUE_* instructions inserted by Janala
     private final Values values = new Values();
 
 
-    /** Creates a new tracer that will print the data-traces of a tracee to a logger. */
+    /**
+     * Creates a new tracer that will process instructions executed by an application
+     * thread.
+     *
+     * @param tracee the thread to trace
+     * @param entryPoint the outermost method call to trace (formatted as fq-class#method)
+     * @param callback the callback to invoke whenever a trace event is emitted
+     */
     protected ThreadTracer(Thread tracee, String entryPoint, Consumer<TraceEvent> callback) {
         super("__JWIG_TRACER__: " + tracee.getName()); // The name is important to block snooping
         this.tracee = tracee;
@@ -78,7 +85,12 @@ public class ThreadTracer extends Thread {
         this.handlers.push(new BaseHandler());
     }
 
-    /** Spawns a thread tracer for the given thread */
+    /**
+     * Spawns a thread tracer for the given thread.
+     *
+     * @param thread the thread to trace
+     * @return a tracer for the given thread
+     */
     protected static ThreadTracer spawn(Thread thread) {
         String entryPoint = SingleSnoop.entryPoints.get(thread);
         Consumer<TraceEvent> callback = SingleSnoop.callbackGenerator.apply(thread);
@@ -88,31 +100,45 @@ public class ThreadTracer extends Thread {
         return t;
     }
 
-    /** Emits a trace event to be consumed by the registered callback. */
-    private void emit(TraceEvent e) {
+    /**
+     * Emits a trace event to be consumed by the registered callback.
+     *
+     * @param e the event to emit
+     */
+    protected final void emit(TraceEvent e) {
         callback.accept(e);
     }
 
-    /** Returns whether the instruction queue is empty. */
-    protected boolean isQueueEmpty() {
+    /**
+     * Returns whether the instruction queue is empty.
+     *
+     * @return whether the instruction queue is empty
+     */
+    protected final boolean isQueueEmpty() {
         return queue.isEmpty();
     }
 
-    /** Sends an instruction to the tracer for processing. */
-    protected void consume(Instruction ins) {
+    /**
+     * Sends an instruction to the tracer for processing.
+     *
+     * @param ins the instruction to process
+     */
+    protected final void consume(Instruction ins) {
         queue.put(ins);
     }
 
     /**
      * Retrieves the next yet-unprocessed instruction in FIFO sequeuence.
      *
-     * This method blocks for the next instruction up to a fixed timeout.
+     * <p>This method blocks for the next instruction up to a fixed timeout.
      * After the timeout, it checks to see if the tracee is alive and if so
      * repeats the timed-block. If the tracee is dead, the tracer is
-     * interrupted.
+     * interrupted.</p>
      *
-     * */
-    protected Instruction next() throws InterruptedException {
+     * @return the next yet-unprocessed instruction in FIFO sequeuence
+     * @throws InterruptedException  if the tracee appears to be dead
+     */
+    protected final Instruction next() throws InterruptedException {
         // If a restored instruction exists, take that out instead of polling the queue
         if (restored != null) {
             Instruction ins = restored;
@@ -134,8 +160,17 @@ public class ThreadTracer extends Thread {
 
     // Hack on restore() to prevent deadlocks when main thread waits on put() and logger on restore()
     private Instruction restored = null;
-    /** Returns an instruction to the queue for processing (used by lookaheads). */
-    protected void restore(Instruction ins) {
+
+
+    /**
+     * Returns an instruction to the queue for processing.
+     *
+     * <p>This is useful for performing a lookahead in the
+     * instruction stream.</p>
+     *
+     * @param ins the instruction to restore to the queue
+     */
+    protected final void restore(Instruction ins) {
         if (restored != null) {
             throw new IllegalStateException("Cannot restore multiple instructions");
         } else {

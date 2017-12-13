@@ -13,7 +13,7 @@ import static com.pholser.junit.quickcheck.internal.Reflection.defaultValueOf;
 /**
  * Created by clemieux on 9/18/17.
  */
-public class RedBlackBSTGenerator extends Generator<RedBlackBST> {
+class RedBlackBSTGenerator extends Generator<RedBlackBST> {
     private int min = (Integer) defaultValueOf(InRange.class, "minInt");
     private int max = (Integer) defaultValueOf(InRange.class, "maxInt");
 
