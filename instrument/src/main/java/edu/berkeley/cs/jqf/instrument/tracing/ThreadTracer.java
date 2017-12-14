@@ -61,7 +61,8 @@ import janala.logger.inst.*;
 public class ThreadTracer extends Thread {
     protected final FastBlockingQueue<Instruction> queue = new FastBlockingQueue<>(1024*1024);
     protected final Thread tracee;
-    protected final String entryPoint;
+    protected final String entryPointClass;
+    protected final String entryPointMethod;
     protected final Consumer<TraceEvent> callback;
     private final Deque<Callable<?>> handlers = new ArrayDeque<>();
 
@@ -80,7 +81,12 @@ public class ThreadTracer extends Thread {
     protected ThreadTracer(Thread tracee, String entryPoint, Consumer<TraceEvent> callback) {
         super("__JWIG_TRACER__: " + tracee.getName()); // The name is important to block snooping
         this.tracee = tracee;
-        this.entryPoint = entryPoint;
+        int separator = entryPoint.indexOf('#');
+        if (separator <= 0 || separator == entryPoint.length()-1) {
+            throw new IllegalArgumentException("Invalid entry point: " + entryPoint);
+        }
+        this.entryPointClass = entryPoint.substring(0, separator).replace('.','/');
+        this.entryPointMethod = entryPoint.substring(separator+1);
         this.callback = callback;
         this.handlers.push(new BaseHandler());
     }
@@ -204,30 +210,11 @@ public class ThreadTracer extends Thread {
 
 
     private static boolean isInvoke(Instruction inst) {
-        return  inst instanceof INVOKEINTERFACE ||
-                        inst instanceof INVOKESPECIAL  ||
-                        inst instanceof INVOKESTATIC   ||
-                        inst instanceof INVOKEVIRTUAL;
+        return  inst instanceof InvokeInstruction;
     }
 
     private static boolean isIfJmp(Instruction inst) {
-        return  inst instanceof IF_ACMPEQ ||
-                        inst instanceof IF_ACMPNE ||
-                        inst instanceof IF_ICMPEQ ||
-                        inst instanceof IF_ICMPNE ||
-                        inst instanceof IF_ICMPGT ||
-                        inst instanceof IF_ICMPGE ||
-                        inst instanceof IF_ICMPLT ||
-                        inst instanceof IF_ICMPLE ||
-                        inst instanceof IFEQ ||
-                        inst instanceof IFNE ||
-                        inst instanceof IFGT ||
-                        inst instanceof IFGE ||
-                        inst instanceof IFLT ||
-                        inst instanceof IFLE ||
-                        inst instanceof IFNULL ||
-                        inst instanceof IFNONNULL;
-
+        return  inst instanceof ConditionalBranch;
     }
 
 
@@ -244,7 +231,9 @@ public class ThreadTracer extends Thread {
     }
     
     private void saveValue(GETVALUE gv) {
-        if (gv instanceof GETVALUE_boolean) {
+        if (gv instanceof GETVALUE_int) {
+            values.intValue = ((GETVALUE_int) gv).v;
+        } else if (gv instanceof GETVALUE_boolean) {
             values.booleanValue = ((GETVALUE_boolean) gv).v;
         } else if (gv instanceof GETVALUE_byte) {
             values.byteValue = ((GETVALUE_byte) gv).v;
@@ -254,8 +243,6 @@ public class ThreadTracer extends Thread {
             values.doubleValue = ((GETVALUE_double) gv).v;
         } else if (gv instanceof GETVALUE_float) {
             values.floatValue = ((GETVALUE_float) gv).v;
-        } else if (gv instanceof GETVALUE_int) {
-            values.intValue = ((GETVALUE_int) gv).v;
         } else if (gv instanceof GETVALUE_long) {
             values.longValue = ((GETVALUE_long) gv).v;
         } else if (gv instanceof GETVALUE_short) {
@@ -263,20 +250,6 @@ public class ThreadTracer extends Thread {
         } else if (gv instanceof GETVALUE_Object) {
             values.objectValue = ((GETVALUE_Object) gv).v;
         }
-    }
-
-
-
-    private static String getOwnerName(MemberRef mr) {
-        return mr.getOwner() + "#" + mr.getName();
-    }
-
-
-    private static boolean sameMemberRef(MemberRef m1, MemberRef m2) {
-        return m1 != null && m2 != null &&
-                m1.getOwner().equals(m2.getOwner()) &&
-                m1.getName().equals(m2.getName()) &&
-                m1.getDesc().equals(m2.getDesc());
     }
     
     private static boolean sameNameDesc(MemberRef m1, MemberRef m2) {
@@ -294,7 +267,7 @@ public class ThreadTracer extends Thread {
             if (ins instanceof METHOD_BEGIN) {
                 METHOD_BEGIN begin = (METHOD_BEGIN) ins;
                 // Try to match the top-level call with the entry point
-                if (getOwnerName(begin).replace("/",".").equals(entryPoint)) {
+                if (begin.getOwner().equals(entryPointClass) && begin.getName().equals(entryPointMethod)) {
                     emit(new CallEvent(0, null, 0, begin));
                     handlers.push(new TraceEventGeneratingHandler(begin, 0));
                 } else {
