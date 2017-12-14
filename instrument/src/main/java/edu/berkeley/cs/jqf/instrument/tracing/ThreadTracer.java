@@ -81,12 +81,17 @@ public class ThreadTracer extends Thread {
     protected ThreadTracer(Thread tracee, String entryPoint, Consumer<TraceEvent> callback) {
         super("__JWIG_TRACER__: " + tracee.getName()); // The name is important to block snooping
         this.tracee = tracee;
-        int separator = entryPoint.indexOf('#');
-        if (separator <= 0 || separator == entryPoint.length()-1) {
-            throw new IllegalArgumentException("Invalid entry point: " + entryPoint);
+        if (entryPoint != null) {
+            int separator = entryPoint.indexOf('#');
+            if (separator <= 0 || separator == entryPoint.length() - 1) {
+                throw new IllegalArgumentException("Invalid entry point: " + entryPoint);
+            }
+            this.entryPointClass = entryPoint.substring(0, separator).replace('.', '/');
+            this.entryPointMethod = entryPoint.substring(separator + 1);
+        } else {
+            this.entryPointClass = null;
+            this.entryPointMethod = null;
         }
-        this.entryPointClass = entryPoint.substring(0, separator).replace('.','/');
-        this.entryPointMethod = entryPoint.substring(separator+1);
         this.callback = callback;
         this.handlers.push(new BaseHandler());
     }
