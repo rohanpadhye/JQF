@@ -30,6 +30,9 @@ package edu.berkeley.cs.jqf.examples.jdk;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Date;
 
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
@@ -48,5 +51,10 @@ public class DateFormatterTest {
         DateFormat df = new SimpleDateFormat(format);
         // Serialize a Date object to a String
         df.format(date);
+    }
+
+    @Fuzz
+    public void fuzzLocalDateTime(String date, String pattern) throws IllegalArgumentException, DateTimeParseException {
+        LocalDateTime.parse(date, DateTimeFormatter.ofPattern(pattern));
     }
 }
