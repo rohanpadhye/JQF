@@ -35,7 +35,12 @@ else
 fi
 
 # Run Java
-java -ea \
+if [ -n "$JAVA_HOME" ]; then
+    java="$JAVA_HOME"/bin/java
+else
+    java="java"
+fi
+"$java" -ea \
   -Xbootclasspath/a:"$INST_CLASSPATH" \
   ${JAVAAGENT} \
   -Djanala.conf="${SCRIPT_DIR}/janala.conf" \
