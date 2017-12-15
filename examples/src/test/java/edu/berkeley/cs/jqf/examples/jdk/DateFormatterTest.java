@@ -30,13 +30,17 @@ package edu.berkeley.cs.jqf.examples.jdk;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.DateTimeException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Date;
 
+import com.pholser.junit.quickcheck.generator.InRange;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.runner.RunWith;
 
 /**
@@ -50,11 +54,56 @@ public class DateFormatterTest {
         // Create a formatter using the input format
         DateFormat df = new SimpleDateFormat(format);
         // Serialize a Date object to a String
-        df.format(date);
+        try {
+            df.format(date);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            Assume.assumeNoException(e);
+        }
     }
 
     @Fuzz
     public void fuzzLocalDateTime(String date, String pattern) throws IllegalArgumentException, DateTimeParseException {
         LocalDateTime.parse(date, DateTimeFormatter.ofPattern(pattern));
+    }
+
+    @Fuzz
+    public void testLocalDateTimeSerialization(@InRange(minInt=0) int year,
+                                               @InRange(minInt=1, maxInt=12) int month,
+                                               @InRange(minInt=1, maxInt=31) int dayOfMonth,
+                                               @InRange(minInt=0, maxInt=23) int hour,
+                                               @InRange(minInt=0, maxInt=59) int minute,
+                                               @InRange(minInt=0, maxInt=59) int second) {
+        LocalDateTime ldt1 = null, ldt2;
+        String s1, s2;
+        try {
+            ldt1 = LocalDateTime.of(year, month, dayOfMonth, hour, minute, second);
+        } catch (DateTimeException e) {
+            Assume.assumeNoException(e);
+        }
+
+        s1 = ldt1.format(DateTimeFormatter.ISO_DATE_TIME);
+        ldt2 = LocalDateTime.parse(s1);
+        s2 = ldt2.format(DateTimeFormatter.ISO_DATE_TIME);
+
+        Assert.assertEquals(s1, s2);
+
+    }
+
+    @Fuzz
+    public void testLocalDateTimeSerialization2(String s) {
+        LocalDateTime ldt1 = null, ldt2;
+        String s1, s2;
+        try {
+            ldt1 = LocalDateTime.parse(s);
+        } catch (DateTimeException e) {
+            return;
+        }
+
+        s1 = ldt1.format(DateTimeFormatter.ISO_DATE_TIME);
+        ldt2 = LocalDateTime.parse(s1);
+        s2 = ldt2.format(DateTimeFormatter.ISO_DATE_TIME);
+
+        Assert.assertEquals(s1, s2);
+
     }
 }
