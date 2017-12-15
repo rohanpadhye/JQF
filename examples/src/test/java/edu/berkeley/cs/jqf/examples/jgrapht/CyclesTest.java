@@ -51,6 +51,8 @@ public class CyclesTest {
 
     private List<?> cycles;
 
+    boolean verbose;
+
     @Fuzz
     public void johnson(@GraphModel(nodes=V, edges=E) DirectedGraph graph) {
         this.cycles = new JohnsonSimpleCycles<>(graph).findSimpleCycles();
@@ -73,7 +75,7 @@ public class CyclesTest {
 
     @After
     public void printCycles() {
-        if (this.cycles != null) {
+        if (this.cycles != null && verbose) {
             System.out.println(this.cycles.size() + " cycles found");
         }
     }

@@ -1,6 +1,5 @@
 package edu.berkeley.cs.jqf.examples.trees;
 
-import java.util.Arrays;
 import java.util.Set;
 
 import com.pholser.junit.quickcheck.generator.InRange;
@@ -36,9 +35,4 @@ public class BinaryTreeTest {
         }
     }
 
-
-    @Fuzz
-    public void print(int @Size(min=100, max=100)[] elements) {
-        System.out.println(Arrays.toString(elements));
-    }
 }

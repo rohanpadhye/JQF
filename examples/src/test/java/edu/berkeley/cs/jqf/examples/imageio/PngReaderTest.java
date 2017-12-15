@@ -75,27 +75,19 @@ public class PngReaderTest {
     }
 
     @Fuzz
-    public void getWidth(ImageInputStream input) {
-        try {
-            // Decode image from input stream
-            reader.setInput(input);
-            int width = reader.getWidth(0);
-            System.out.println(width);
-        } catch (IOException e) {
-            System.err.println("Bad image: " + e.getMessage());
-        }
+    public void getWidth(ImageInputStream input) throws IOException {
+        // Decode image from input stream
+        reader.setInput(input);
+        int width = reader.getWidth(0);
+        System.out.println(width);
     }
 
     @Fuzz
-    public void getHeight(ImageInputStream input) {
-        try {
-            // Decode image from input stream
-            reader.setInput(input);
-            int height = reader.getHeight(0);
-            System.out.println(height);
-        } catch (IOException e) {
-            System.err.println("Bad image: " + e.getMessage());
-        }
+    public void getHeight(ImageInputStream input) throws IOException {
+        // Decode image from input stream
+        reader.setInput(input);
+        int height = reader.getHeight(0);
+        System.out.println(height);
     }
 
 }
