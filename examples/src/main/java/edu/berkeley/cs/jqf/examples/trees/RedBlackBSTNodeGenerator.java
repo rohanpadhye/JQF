@@ -9,7 +9,7 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 /**
  * Created by clemieux on 9/15/17.
  */
-class RedBlackBSTNodeGenerator extends Generator<RedBlackBSTNode> {
+public class RedBlackBSTNodeGenerator extends Generator<RedBlackBSTNode> {
 
     private static final GenerationStatus.Key<Integer> SUBTREE_SIZE = new GenerationStatus.Key<>("treesize", Integer.class);
 

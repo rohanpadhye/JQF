@@ -36,7 +36,7 @@ import java.util.NoSuchElementException;
  *  @author Kevin Wayne
  */
 
-class RedBlackBST<Key extends Comparable<Key>, Value> {
+public class RedBlackBST<Key extends Comparable<Key>, Value> {
 
     private static final boolean RED   = true;
     private static final boolean BLACK = false;

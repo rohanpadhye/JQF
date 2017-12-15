@@ -3,7 +3,7 @@ package edu.berkeley.cs.jqf.examples.trees;
 /**
  * Created by clemieux on 9/18/17.
  */
-class RedBlackBSTNode<Key,Value> {
+public class RedBlackBSTNode<Key,Value> {
 
     public Key key;           // key
     public Value val;         // associated data

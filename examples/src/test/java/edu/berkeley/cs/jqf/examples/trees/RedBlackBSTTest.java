@@ -33,7 +33,6 @@ import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.generator.InRange;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.junit.Assert;
 import org.junit.runner.RunWith;
 
 
@@ -48,6 +47,6 @@ public class RedBlackBSTTest {
     public void isRBT(@InRange(minInt=10, maxInt=30)
                           @From(RedBlackBSTGenerator.class)
                                   RedBlackBST<Integer, Integer> tree) {
-        Assert.assertFalse(tree.check());
+        tree.check();
     }
 }
