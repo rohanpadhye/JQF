@@ -63,18 +63,18 @@ public class Counter {
         return Hashing.hash(key, size);
     }
 
-    public void increment(int key) {
-        this.counts[idx(key)]++;
+    public int increment(int key) {
+        return ++this.counts[idx(key)];
     }
 
-    public void increment(int key, int delta) {
-        this.counts[idx(key)] += delta;
+    public int increment(int key, int delta) {
+        return (this.counts[idx(key)] += delta);
     }
 
     public Collection<Integer> nonZeroValues() {
         List<Integer> values = new ArrayList<>(size /2);
         for (int count : counts) {
-            if (count > 0) {
+            if (count != 0) {
                 values.add(count);
             }
         }
