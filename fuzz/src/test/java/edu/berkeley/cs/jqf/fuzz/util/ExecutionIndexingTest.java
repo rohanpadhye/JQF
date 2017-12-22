@@ -26,13 +26,12 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.fuzz;
+package edu.berkeley.cs.jqf.fuzz.util;
 
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import edu.berkeley.cs.jqf.fuzz.util.ExecutionIndexingState;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
@@ -61,7 +60,7 @@ public class ExecutionIndexingTest {
     @Test
     public void testDepth0() {
         ExecutionIndexingState e = new ExecutionIndexingState();
-        int[] ei = e.getExecutionIndex(readEvent(42));
+        int[] ei = e.getExecutionIndex(readEvent(42)).ei;
 
         int[] expected = {42, 1};
         Assert.assertArrayEquals(expected, ei);
@@ -71,7 +70,7 @@ public class ExecutionIndexingTest {
     public void testDepth1() {
         ExecutionIndexingState e = new ExecutionIndexingState();
         e.pushCall(callEvent(4));
-        int[] ei = e.getExecutionIndex(readEvent(42));
+        int[] ei = e.getExecutionIndex(readEvent(42)).ei;
         e.popReturn(returnEvent(-1));
 
         int[] expected = {4, 1, 42, 1};
@@ -86,7 +85,7 @@ public class ExecutionIndexingTest {
         e.getExecutionIndex(readEvent(42));
         e.getExecutionIndex(readEvent(41));
         e.getExecutionIndex(readEvent(42));
-        int[] ei = e.getExecutionIndex(readEvent(42));
+        int[] ei = e.getExecutionIndex(readEvent(42)).ei;
         e.popReturn(returnEvent(-1));
 
         int[] expected = {4, 1, 42, 3};
@@ -129,7 +128,7 @@ public class ExecutionIndexingTest {
             e.pushCall(callEvent(5));
             e.getExecutionIndex(readEvent(41));
             e.getExecutionIndex(readEvent(42));
-            ei = e.getExecutionIndex(readEvent(42));
+            ei = e.getExecutionIndex(readEvent(42)).ei;
 
             e.popReturn(returnEvent(-1));
         }
@@ -158,7 +157,7 @@ public class ExecutionIndexingTest {
         int iid = expected[i];
         int times = expected[i+1];
         for (int j = 0; j < times; j++) {
-            ei = e.getExecutionIndex(readEvent(iid));
+            ei = e.getExecutionIndex(readEvent(iid)).ei;
         }
 
         Assert.assertArrayEquals(expected, ei);

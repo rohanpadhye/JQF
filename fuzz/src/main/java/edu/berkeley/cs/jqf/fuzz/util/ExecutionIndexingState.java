@@ -79,7 +79,7 @@ public class ExecutionIndexingState {
         stackOfCounters.pop();
     }
 
-    public int[] getExecutionIndex(TraceEvent e) {
+    public ExecutionIndex getExecutionIndex(TraceEvent e) {
         // Increment counter for event
         int count = stackOfCounters.peek().increment(e.getIid());
 
@@ -88,21 +88,21 @@ public class ExecutionIndexingState {
         rollingIndex.push(count);
 
         // Snapshot the rolling index
-        int[] executionIndex = new int[rollingIndex.size()];
-        assert (executionIndex.length == (depth + 1) * 2);
+        int[] ei = new int[rollingIndex.size()];
+        assert (ei.length == (depth + 1) * 2);
 
         // Copy stack backwards into integer array
         Iterator<Integer> it = rollingIndex.descendingIterator();
         int i = 0;
         while (it.hasNext()) {
-            executionIndex[i++] = it.next();
+            ei[i++] = it.next();
         }
-        assert (i == executionIndex.length);
+        assert (i == ei.length);
 
         // Pop twice from rolling index
         rollingIndex.pop();
         rollingIndex.pop();
 
-        return executionIndex;
+        return new ExecutionIndex(ei);
     }
 }

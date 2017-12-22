@@ -80,4 +80,40 @@ public class Coverage {
     }
 
 
+    public boolean updateMax(Coverage cov) {
+        boolean changed = false;
+        int[] thisCounts = this.counter.getCounts();
+        int[] thatCounts = cov.counter.getCounts();
+        for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
+            if (thatCounts[i] > thisCounts[i]) {
+                thisCounts[i] = thatCounts[i];
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    /**
+     * Updates this coverage with bits from the parameter.
+     *
+     * @param that the run coverage whose bits to OR
+     *
+     * @return <tt>true</tt> iff <tt>that</tt> is not a proper subset
+     *         of <tt>this</tt>, causing <tt>this</tt> to change.
+     */
+    public boolean updateBits(Coverage that) {
+        boolean changed = false;
+        int[] thisCounts = this.counter.getCounts();
+        int[] thatCounts = that.counter.getCounts();
+        for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
+            int before = thisCounts[i];
+            thisCounts[i] |= thatCounts[i];
+            if (thisCounts[i] != before) {
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+
 }
