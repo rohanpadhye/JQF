@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import edu.berkeley.cs.jqf.fuzz.util.Coverage;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
@@ -56,6 +57,7 @@ public class ReproGuidance implements Guidance {
     private int nextFileIdx = 0;
     private List<PrintStream> traceStreams = new ArrayList<>();
     private InputStream inputStream;
+    private Coverage coverage = new Coverage();
 
     /**
      * Constructs an instance of ReproGuidance with a list of
@@ -167,6 +169,7 @@ public class ReproGuidance implements Guidance {
 
                 // Return an event logging callback
                 return (e) -> {
+                    coverage.handleEvent(e);
                     out.println(e);
                 };
             } catch (FileNotFoundException e) {
@@ -175,9 +178,16 @@ public class ReproGuidance implements Guidance {
             }
         }
 
-        // Ignore trace events
-        return (e) -> {};
+        // Only update coverage
+        return coverage::handleEvent;
     }
 
+    /**
+     * Returns a reference to the coverage statistics.
+     * @return a reference to the coverage statistics
+     */
+    public Coverage getCoverage() {
+        return coverage;
+    }
 
 }

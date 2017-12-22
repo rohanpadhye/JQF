@@ -31,7 +31,6 @@ package edu.berkeley.cs.jqf.fuzz.drivers;
 
 import java.io.File;
 
-import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.ReproGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
@@ -60,10 +59,16 @@ public class ReproDriver {
             File traceDir = traceDirName != null ? new File(traceDirName) : null;
 
             // Load the guidance
-            Guidance guidance = new ReproGuidance(testInputFiles, traceDir);
+            ReproGuidance guidance = new ReproGuidance(testInputFiles, traceDir);
 
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
+
+            if (Boolean.getBoolean("jqf.logCoverage")) {
+                System.out.println(String.format("Covered %d edges.",
+                        guidance.getCoverage().getNonZeroCount()));
+            }
+
 
         } catch (Exception e) {
             e.printStackTrace();
