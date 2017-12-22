@@ -32,7 +32,7 @@ $ jqf/bin/jqf-afl-fuzz DateFormatterTest fuzzSimple
 
 Grab a coffee while AFL does its thing:
 
-![AFL status screen](https://raw.githubusercontent.com/wiki/rohanpadhye/jqf/images/AFL-DateFormatter.png?token=AECYMpic7QZ24GarENgw-UNtuD8c93kHks5aOG25wA%3D%3D)
+![AFL status screen](https://rohanpadhye.github.io/jqf/images/AFL-DateFormatter.png)
 
 Ooh! We found some crashes. Let's reproduce one such test case and see what the error was.
 
