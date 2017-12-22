@@ -50,7 +50,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  * instance is as follows (in pseudo-code):
  * <pre>
  *     while (guidance.hasInput()) {
- *         Random rng = new StreamBackedRandom(guidance.getInputStream());
+ *         Random rng = new StreamBackedRandom(guidance.getInput());
  *         Object[] args = generateInput(rng);
  *         try {
  *             runTest(args); // generates many trace events
