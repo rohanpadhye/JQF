@@ -26,43 +26,58 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package edu.berkeley.cs.jqf.fuzz.util;
 
-package edu.berkeley.cs.jqf.fuzz.drivers;
-
-import edu.berkeley.cs.jqf.fuzz.guidance.NoGuidance;
-import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
+import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
+ * Utility class to collect branch and function coverage
+ *
  * @author Rohan Padhye
  */
-public class RandomDriver {
+public class Coverage {
 
-    public static void main(String[] args) {
-        if (args.length < 2){
-            System.err.println("Usage: java " + RandomDriver.class + " TEST_CLASS TEST_METHOD [MAX_TRIALS]");
-            System.exit(1);
+    /** The size of the coverage map. */
+    private final int COVERAGE_MAP_SIZE = 1 << 16;
+
+    /** The coverage counts for each edge. */
+    private final Counter counter = new Counter(COVERAGE_MAP_SIZE);
+
+    /**
+     * Updates coverage information based on emitted event.
+     *
+     * <p>This method updates its internal counters for branch and
+     * call events.</p>
+     *
+     * @param e the event to be processed
+     */
+    public void handleEvent(TraceEvent e) {
+        // Handle branches and calls
+        if (e instanceof BranchEvent) {
+            BranchEvent b = (BranchEvent) e;
+            counter.increment(b.getIid() * 31 + b.getArm());
+        } else if (e instanceof CallEvent) {
+            counter.increment(e.getIid());
         }
-
-        String testClassName  = args[0];
-        String testMethodName = args[1];
-        Long maxTrials = args.length > 2 ? Long.parseLong(args[2]) : Long.MAX_VALUE;
-
-        try {
-            // Load the guidance
-            NoGuidance guidance = new NoGuidance(maxTrials, System.err);
-
-            // Run the Junit test
-            GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
-
-            if (Boolean.getBoolean("jqf.logCoverage")) {
-                System.out.println(String.format("Covered %d edges.",
-                        guidance.getCoverage().getNonZeroCount()));
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(2);
-        }
-
     }
+
+    /**
+     * Get the number of edges covered.
+     *
+     * @return the number of edges with non-zero counts
+     */
+    public int getNonZeroCount() {
+        return counter.nonZeroValues().size();
+    }
+
+    /**
+     * Clears the coverage map.
+     */
+    public void clear() {
+        this.counter.clear();
+    }
+
+
 }

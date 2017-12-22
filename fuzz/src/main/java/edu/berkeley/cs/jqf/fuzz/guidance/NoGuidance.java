@@ -33,6 +33,7 @@ import java.io.PrintStream;
 import java.util.Random;
 import java.util.function.Consumer;
 
+import edu.berkeley.cs.jqf.fuzz.util.Coverage;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
@@ -51,6 +52,7 @@ public class NoGuidance implements Guidance {
     private final float maxDiscardRatio = 0.9f;
     private final PrintStream out;
     private Random random = new Random();
+    private Coverage coverage = new Coverage();
 
     /**
      * Creates a NoGuidance instance that will run a maximum number
@@ -120,16 +122,26 @@ public class NoGuidance implements Guidance {
     }
 
     /**
-     * Returns a callback that does nothing.
+     * Returns a callback that does almost nothing.
      *
      * <p>Since this is unguided random guidance, the trace events are
-     * simply ignored.
+     * not used in generating inputs.</p>
+     *
+     * <p>The handler here merely updates coverage statistics.</p>
      *
      * @param thread the thread whose events to handle
      * @return a callback that does nothing.
      */
     @Override
     public Consumer<TraceEvent> generateCallBack(Thread thread) {
-        return (e) -> {};
+        return coverage::handleEvent;
+    }
+
+    /**
+     * Returns a reference to the coverage statistics.
+     * @return a reference to the coverage statistics
+     */
+    public Coverage getCoverage() {
+        return coverage;
     }
 }
