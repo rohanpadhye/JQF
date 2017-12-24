@@ -32,7 +32,11 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
+import com.pholser.junit.quickcheck.From;
+import com.pholser.junit.quickcheck.generator.Size;
+import edu.berkeley.cs.jqf.examples.kaitai.PngKaitaiGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.After;
@@ -88,6 +92,17 @@ public class PngReaderTest {
         reader.setInput(input);
         int height = reader.getHeight(0);
         System.out.println(height);
+    }
+
+    @Fuzz
+    public void readUsingKaitai(@From(PngKaitaiGenerator.class) @Size(max = 1024) InputStream input) throws IOException {
+        // Decode image from input stream
+        reader.setInput(ImageIO.createImageInputStream(input));
+        // Bound dimensions
+        Assume.assumeTrue(reader.getHeight(0) < 1024);
+        Assume.assumeTrue(reader.getWidth(0) < 1024);
+        // Parse PNG
+        reader.read(0);
     }
 
 }

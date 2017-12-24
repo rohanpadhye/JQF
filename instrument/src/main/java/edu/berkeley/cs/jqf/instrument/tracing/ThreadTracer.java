@@ -272,7 +272,10 @@ public class ThreadTracer extends Thread {
             if (ins instanceof METHOD_BEGIN) {
                 METHOD_BEGIN begin = (METHOD_BEGIN) ins;
                 // Try to match the top-level call with the entry point
-                if (begin.getOwner().equals(entryPointClass) && begin.getName().equals(entryPointMethod)) {
+                String clazz = begin.getOwner();
+                String method = begin.getName();
+                if ((clazz.equals(entryPointClass) && method.equals(entryPointMethod)) ||
+                        clazz.endsWith("Generator") && method.equals("generate")) {
                     emit(new CallEvent(0, null, 0, begin));
                     handlers.push(new TraceEventGeneratingHandler(begin, 0));
                 } else {

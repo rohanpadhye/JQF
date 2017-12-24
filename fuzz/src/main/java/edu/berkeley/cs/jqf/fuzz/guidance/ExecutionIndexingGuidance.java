@@ -81,6 +81,9 @@ public class ExecutionIndexingGuidance implements Guidance {
     /** Current input thats running -- valid after getInput() and before handleResult(). */
     private Input currentInput;
 
+    /** Whether to use real execution indexes as opposed to flat numbering (for evaluation). */
+    private boolean realExecutionIndex = true;
+
     /**
      * Creates a new execution-index-parametric guidance.
      *
@@ -100,9 +103,9 @@ public class ExecutionIndexingGuidance implements Guidance {
 
         // Create a seed input in the first run; fuzz on others
         if (inputQueue.isEmpty()) {
-            if (currentInput != null || numTrials > 0) {
-                throw new GuidanceException("Input queue should not be empty " +
-                        "after the first trial");
+            if (numTrials > 100) {
+                throw new GuidanceException("Too many trials without coverage; " +
+                        "likely all assumption violations");
             }
             currentInput = new Input();
         } else {
@@ -115,15 +118,27 @@ public class ExecutionIndexingGuidance implements Guidance {
 
         //System.out.println("Current input size = " + currentInput.valuesMap.size());
 
+
         // Return an input stream that uses the EI map
         return new InputStream() {
+            int bytesRead = 0;
+
             @Override
             public int read() throws IOException {
                 // Sync with shadow thread for events to be handled
                 SingleSnoop.waitForQuiescence();
 
+                // lastEvent must not be null
+                if (lastEvent == null) {
+                    throw new IOException("Could not compute execution index; no instrumentation?");
+                }
+
                 // Get the execution index of the last event
-                ExecutionIndex executionIndex = eiState.getExecutionIndex(lastEvent);
+                ExecutionIndex executionIndex = realExecutionIndex ?
+                        eiState.getExecutionIndex(lastEvent) :
+                        new ExecutionIndex(new int[]{bytesRead++});
+
+                // System.out.println("Reading byte at EI: " + executionIndex);
 
                 return currentInput.getOrGenerateFresh(executionIndex, random);
             }
@@ -151,8 +166,15 @@ public class ExecutionIndexingGuidance implements Guidance {
             // Possibly add input to queue
             if (newCoverage) {
                 currentInput.gc();
-                System.out.println("Added to queue: " + currentInput.valuesMap.values());
                 inputQueue.add(currentInput);
+                System.out.println(String.format("Added to queue (at run %d): " +
+                        "input #%d " +
+                        "of size %d; " +
+                        "total coverage = %d",
+                        numTrials,
+                        inputQueue.size(),
+                        currentInput.valuesMap.size(),
+                        getTotalCoverage().getNonZeroCount()));
             }
         } else if (result == Result.FAILURE) {
             error.printStackTrace();
