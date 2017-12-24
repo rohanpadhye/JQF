@@ -147,6 +147,9 @@ public class FuzzStatement extends Statement {
                     } catch (AssumptionViolatedException e) {
                         // Propagate assumption violations out
                         throw e;
+                    } catch (GuidanceException e) {
+                        // Throw the guidance exception outside to stop fuzzing
+                        throw e;
                     } catch (Throwable e) {
                         // Throw the guidance exception outside to stop fuzzing
                         throw new GuidanceException(e);
@@ -187,6 +190,7 @@ public class FuzzStatement extends Statement {
             }
         } catch (GuidanceException e) {
             System.err.println("Fuzzing stopped due to guidance exception: " + e.getMessage());
+            e.printStackTrace();
         }
 
         if (failures.size() > 0) {
