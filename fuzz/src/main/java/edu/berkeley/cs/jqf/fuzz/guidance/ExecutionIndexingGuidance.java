@@ -225,7 +225,7 @@ public class ExecutionIndexingGuidance implements Guidance {
             valuesMap = new LinkedHashMap<>();
         }
 
-        private Input(Input toClone) {
+        public Input(Input toClone) {
             valuesMap = new LinkedHashMap<>(toClone.valuesMap);
         }
 
