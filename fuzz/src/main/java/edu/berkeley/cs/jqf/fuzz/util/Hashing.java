@@ -29,6 +29,8 @@
 package edu.berkeley.cs.jqf.fuzz.util;
 
 /**
+ * Utility class for computing bounded hash values.
+ *
  * @author Rohan Padhye
  */
 public class Hashing {
@@ -45,14 +47,39 @@ public class Hashing {
         return res;
     }
 
+    /**
+     * Compute knuth's multiplicative hash.
+     *
+     * <p>Source: Donald Knuth's <em>The Art of Computer Programming</em>,
+     * Volume 3 (2nd edition), section 6.4, page 516.</p>
+     *
+     * @param x     the input value to hash
+     * @param bound the upper bound
+     * @return the hash value
+     */
     protected static int knuth(long x, int bound) {
         return cap(x*2654435761L, bound);
     }
 
+    /**
+     * Returns a bounded hashed value with one input.
+     *
+     * @param x     the input to hash
+     * @param bound the upper bound
+     * @return a pseudo-uniformly distributed value in [0, bound)
+     */
     public static int hash(long x, int bound) {
         return knuth(x, bound);
     }
 
+    /**
+     * Returns a bounded hashed value with two inputs.
+     *
+     * @param x     the first input to hash
+     * @param y     the second input to hash
+     * @param bound the upper bound
+     * @return a pseudo-uniformly distributed value in [0, bound)
+     */
     public static int hash1(long x, long y, int bound) {
         return knuth(x+hash(y, bound), bound);
     }
