@@ -64,8 +64,7 @@ def compute_aec(ec):
 	# Return an immutable sequence
 	return tuple(aec_seq)
 
-def str_method_iid(method, iid, line_map):
-	line_number = line_map[iid]
+def str_method_line(method, line_number):
 	first_dollar = method.find("$")
 	first_hash = method.find("#")
 	first_paren = method.find("(")
@@ -79,4 +78,5 @@ def str_method_iid(method, iid, line_map):
 
 def print_aec(aec, line_map):
 	for (method, iid) in reversed(aec):
-		print str_method_iid(method, iid, line_map)
+		line_number = line_map[iid]
+		print str_method_line(method, line_number)
