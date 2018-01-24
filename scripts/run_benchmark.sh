@@ -23,7 +23,7 @@ fi
 
 afl_options="-t 6000 -m 8192"
 jqf_options=""
-input_dir="examples/target/seeds/zeros"
+input_dir="$ROOT_DIR/examples/target/seeds/zeros"
 suffix=""
 while getopts ":abcdeihvrs:t:x:" opt; do
   case $opt in
@@ -53,7 +53,7 @@ while getopts ":abcdeihvrs:t:x:" opt; do
       input_dir="-"
       ;;
     s)
-      input_dir="examples/target/seeds/$OPTARG"
+      input_dir="$ROOT_DIR/examples/target/seeds/$OPTARG"
       ;;
     t)
       suffix="-$OPTARG"
@@ -87,7 +87,7 @@ fi
 
 export AFL_SKIP_BIN_CHECK=1
 export AFL_NO_AFFINITY=1
-export CLASSPATH="examples/target/classes/:examples/target/test-classes/:examples/target/dependency/*"
+export CLASSPATH="$ROOT_DIR/examples/target/classes/:$ROOT_DIR/examples/target/test-classes/:$ROOT_DIR/examples/target/dependency/*"
 
 echo "Fuzzing method $class#$method..."
   
