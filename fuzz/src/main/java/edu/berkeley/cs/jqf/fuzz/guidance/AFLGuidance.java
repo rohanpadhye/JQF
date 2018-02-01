@@ -274,14 +274,14 @@ public class AFLGuidance implements Guidance {
                 // status to prevent AFL from marking this as a "crash"
                 status = 0;
 
-                /*
+
                 // However, we clear trace-bits so that AFL does not
                 // ever consider such an input as interesting enough to
                 // save in its queue
-                for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
+                for (int i = 1; i < COVERAGE_MAP_SIZE; i++) {
                     traceBits[i] = 0;
                 }
-                */
+
                 break;
             }
             default: {
