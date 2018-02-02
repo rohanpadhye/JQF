@@ -16,7 +16,6 @@ print_usage() {
   echo "  -x AFL_DICT        Provide a dictionary to AFL (default is no dictionary)"
   echo "  -T AFL_TITLE       Customize title banner (default is TEST_CLASS#TEST_METHOD)"
   echo "  -m MEM_LIMIT       Set a memory limit in MB (default is 8192)"
-  echo "  -d                 Run AFL in fidgety mode (i.e. skip deterministic mutations)"
 }
 
 # Ensure that afl-fuzz can be found
@@ -42,7 +41,7 @@ fi
 
 
 # Build AFL command-line
-afl_options=""
+afl_options="-d" # fidgety by default
 classpath="."
 mem_limit="8192"
 target_options=""

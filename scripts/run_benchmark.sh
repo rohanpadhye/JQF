@@ -21,7 +21,7 @@ if [ ! -x "$AFL_FUZZ" ]; then
   exit 2
 fi
 
-afl_options="-t 6000 -m 8192"
+afl_options="-t 6000 -m 8192 -d"
 jqf_options=""
 input_dir="$ROOT_DIR/examples/target/seeds/zeros"
 suffix=""
