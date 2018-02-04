@@ -42,7 +42,7 @@ package edu.berkeley.cs.jqf.instrument.util;
  *
  * @author Rohan Padhye
  */
-public class FastBlockingQueue<T> {
+public final class FastBlockingQueue<T> {
     private final int size;
     private final Object[] buffer;
     private volatile int producer = 0;
@@ -57,15 +57,15 @@ public class FastBlockingQueue<T> {
         return (idx + 1) % size;
     }
 
-    public boolean isEmpty() {
+    public final boolean isEmpty() {
         return producer == consumer;
     }
 
-    public boolean isFull() {
+    public final boolean isFull() {
         return increment(producer) == consumer;
     }
 
-    public void put(T item) {
+    public final void put(T item) {
         while (isFull()) {
             // Spin-block
         }
@@ -73,7 +73,7 @@ public class FastBlockingQueue<T> {
         producer = increment(producer);
     }
 
-    public T remove(long timeout) {
+    public final T remove(long timeout) {
         long ticks = 0;
         while(isEmpty()) {
             if (++ticks > timeout) {
