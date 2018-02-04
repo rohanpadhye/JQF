@@ -134,14 +134,16 @@ public class ReproGuidance implements Guidance {
             throw new GuidanceException(e);
         }
 
-        // Increment file
-        nextFileIdx++;
 
         // Show errors for invalid tests
         if (result == Result.INVALID && error != null) {
-            System.err.println("Test run was invalid");
+            File inputFile = inputFiles[nextFileIdx];
+            System.err.println(inputFile.getName() + ": Test run was invalid");
             error.printStackTrace();
         }
+
+        // Increment file
+        nextFileIdx++;
 
 
     }
