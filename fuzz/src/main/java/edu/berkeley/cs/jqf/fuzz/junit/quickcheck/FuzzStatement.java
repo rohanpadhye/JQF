@@ -129,11 +129,11 @@ public class FuzzStatement extends Statement {
 
                 // Initialize guided fuzzing using a file-backed random number source
                 try {
-                    StreamBackedRandom randomFile = new StreamBackedRandom(guidance.getInput(), Long.BYTES);
-
-                    // Generate input values
                     Object[] args;
                     try {
+
+                        // Generate input values
+                        StreamBackedRandom randomFile = new StreamBackedRandom(guidance.getInput(), Long.BYTES);
                         SourceOfRandomness random = new FastSourceOfRandomness(randomFile);
                         GenerationStatus genStatus = new NonTrackingGenerationStatus(random);
                         args = generators.stream()
@@ -197,6 +197,8 @@ public class FuzzStatement extends Statement {
             if (failures.size() == 1) {
                 throw failures.get(0);
             } else {
+                // Not sure if we should report each failing run,
+                // as there may be duplicates
                 throw new MultipleFailureException(failures);
             }
         }
