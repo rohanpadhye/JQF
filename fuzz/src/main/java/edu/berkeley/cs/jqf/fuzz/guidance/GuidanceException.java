@@ -34,5 +34,9 @@ public class GuidanceException extends RuntimeException {
         super(e);
     }
 
+    public GuidanceException(String msg, Throwable e) {
+        super(msg, e);
+    }
+
 
 }

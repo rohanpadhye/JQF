@@ -33,7 +33,7 @@ import java.util.Arrays;
 /**
  * @author Rohan Padhye
  */
-public class ExecutionIndex {
+public class ExecutionIndex implements Comparable<ExecutionIndex> {
 
     final int[] ei;
 
@@ -56,7 +56,28 @@ public class ExecutionIndex {
     }
 
     @Override
+    public int compareTo(ExecutionIndex other) {
+        int len1 = ei.length;
+        int len2 = other.ei.length;
+        int lim = Math.min(len1, len2);
+        int v1[] = ei;
+        int v2[] = other.ei;
+
+        int k = 0;
+        while (k < lim) {
+            int c1 = v1[k];
+            int c2 = v2[k];
+            if (c1 != c2) {
+                return c1 - c2;
+            }
+            k++;
+        }
+        return len1 - len2;
+    }
+
+    @Override
     public String toString() {
         return Arrays.toString(ei);
     }
+
 }

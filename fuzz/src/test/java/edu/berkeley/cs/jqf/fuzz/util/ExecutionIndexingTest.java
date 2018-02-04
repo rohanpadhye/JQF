@@ -28,6 +28,8 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import java.util.Arrays;
+
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.generator.Size;
@@ -36,10 +38,12 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import janala.logger.inst.INVOKESTATIC;
-import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.*;
 
 @RunWith(JUnitQuickcheck.class)
 public class ExecutionIndexingTest {
@@ -63,7 +67,7 @@ public class ExecutionIndexingTest {
         int[] ei = e.getExecutionIndex(readEvent(42)).ei;
 
         int[] expected = {42, 1};
-        Assert.assertArrayEquals(expected, ei);
+        assertArrayEquals(expected, ei);
     }
 
     @Test
@@ -74,7 +78,7 @@ public class ExecutionIndexingTest {
         e.popReturn(returnEvent(-1));
 
         int[] expected = {4, 1, 42, 1};
-        Assert.assertArrayEquals(expected, ei);
+        assertArrayEquals(expected, ei);
     }
 
 
@@ -89,7 +93,7 @@ public class ExecutionIndexingTest {
         e.popReturn(returnEvent(-1));
 
         int[] expected = {4, 1, 42, 3};
-        Assert.assertArrayEquals(expected, ei);
+        assertArrayEquals(expected, ei);
     }
 
 
@@ -136,11 +140,11 @@ public class ExecutionIndexingTest {
 
 
         int[] expected = {4, 3, 5, 2, 42, 2};
-        Assert.assertArrayEquals(expected, ei);
+        assertArrayEquals(expected, ei);
     }
 
     @Property
-    public void validExecutionIndex(@InRange(minInt=11, maxInt=32) int @Size(min=2, max=48)[] expected) {
+    public void validExecutionIndex(@InRange(minInt=1, maxInt=32) int @Size(min=2, max=48)[] expected) {
         Assume.assumeTrue(expected.length % 2 == 0);
         ExecutionIndexingState e = new ExecutionIndexingState();
         int i;
@@ -160,6 +164,36 @@ public class ExecutionIndexingTest {
             ei = e.getExecutionIndex(readEvent(iid)).ei;
         }
 
-        Assert.assertArrayEquals(expected, ei);
+        assertArrayEquals(expected, ei);
+    }
+
+    @Property
+    public void comparesEqual(int @Size(min=1, max=20)[] v1) {
+        int[] v2 = Arrays.copyOf(v1, v1.length);
+        ExecutionIndex e1 = new ExecutionIndex(v1);
+        ExecutionIndex e2 = new ExecutionIndex(v2);
+        assertEquals(0, e1.compareTo(e2));
+    }
+
+    @Property
+    public void comparesLexicographically(@InRange(minInt=1, maxInt=32) int @Size(min=1, max=20)[] v1) {
+        int[] v2 = Arrays.copyOf(v1, v1.length);
+        v2[v1.length/2]--; // Make v2 less than v1
+
+        ExecutionIndex e1 = new ExecutionIndex(v1);
+        ExecutionIndex e2 = new ExecutionIndex(v2);
+        assertThat(e1.compareTo(e2), greaterThan(0));
+        assertThat(e2.compareTo(e1), lessThan(0));
+    }
+
+
+    @Property
+    public void comparesLength(@InRange(minInt=1, maxInt=32) int @Size(min=1, max=20)[] v1) {
+        int[] v2 = Arrays.copyOf(v1, v1.length-1); // v2 is smaller
+
+        ExecutionIndex e1 = new ExecutionIndex(v1);
+        ExecutionIndex e2 = new ExecutionIndex(v2);
+        assertThat(e1.compareTo(e2), greaterThan(0));
+        assertThat(e2.compareTo(e1), lessThan(0));
     }
 }

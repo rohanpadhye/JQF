@@ -28,14 +28,20 @@
  */
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
@@ -89,20 +95,42 @@ public class ExecutionIndexingGuidance implements Guidance {
     /** Coverage statistics for a single run. */
     private Coverage runCoverage = new Coverage();
 
-    /** Queue of inputs to fuzz. */
-    private ArrayList<Input> inputQueue = new ArrayList<>();
+    /** Set of saved inputs to fuzz. */
+    private ArrayList<Input> savedInputs = new ArrayList<>();
 
-    /** Current input thats running -- valid after getInput() and before handleResult(). */
+    /** Queue of seeds to fuzz. */
+    private Deque<SeedInput> seedInputs = new ArrayDeque<>();
+
+    /** Current input that's running -- valid after getInput() and before handleResult(). */
     private Input currentInput;
 
-    /** Whether to use real execution indexes as opposed to flat numbering (for evaluation). */
-    private boolean realExecutionIndex = true;
+    /** Index of currentInput in the savedInputs -- valid after seeds are processed (OK if this is inaccurate). */
+    private int currentInputIdx = 0;
+
+    /** Number of mutated inputs generated from currentInput. */
+    private int numChildrenGeneratedForCurrentInput = 0;
+
+    /** Number of cycles completed (i.e. how many times we've reset currentInputIdx to 0. */
+    private int cyclesCompleted = 0;
+
+    /** Whether to use real execution indexes as opposed to flat numbering (debug option; manually edit). */
+    private final boolean realExecutionIndex = true;
+
+    /** Whether to print log statements to stdout (debug option; manually edit). */
+    private final boolean verbose = true;
+
+    /** Max input size to generate. */
+    private static final int MAX_INPUT_SIZE = 1024; // TODO: Make this configurable
+
+    /** Number of mutated children to produce from a given parent input. */
+    private static final int NUM_CHILDREN = 10;
 
     /** Mean number of mutations to perform in each round. */
     private static final double MEAN_MUTATION_COUNT = 1.2;
 
     /** Mean number of contiguous bytes to mutate in each mutation. */
     private static final double MEAN_MUTATION_SIZE = 1.5; // Bytes
+
 
     /**
      * Creates a new execution-index-parametric guidance.
@@ -113,6 +141,21 @@ public class ExecutionIndexingGuidance implements Guidance {
         this.maxTrials = maxTrials;
     }
 
+    public ExecutionIndexingGuidance(long maxTrials, File... seedInputFiles) throws IOException {
+        this(maxTrials);
+        for (File seedInputFile : seedInputFiles) {
+            seedInputs.add(new SeedInput(seedInputFile));
+        }
+    }
+
+
+
+    private void infoLog(String str) {
+        if (verbose) {
+            System.out.println(str);
+        }
+    }
+
     @Override
     public InputStream getInput() throws GuidanceException {
         // Clear coverage stats for this run
@@ -121,22 +164,37 @@ public class ExecutionIndexingGuidance implements Guidance {
         // Reset execution index state
         eiState = new ExecutionIndexingState();
 
-        // Create a seed input in the first run; fuzz on others
-        if (inputQueue.isEmpty()) {
+        // Choose an input to execute based on state of queues
+        if (!seedInputs.isEmpty()) {
+            // First, if we have some specific seeds, use those
+            currentInput = seedInputs.removeFirst();
+
+            // Hopefully, the seeds will lead to new coverage and be added to saved inputs
+
+        } else if (savedInputs.isEmpty()) {
+            // If no seeds given try to start with something random
             if (numTrials > 100) {
                 throw new GuidanceException("Too many trials without coverage; " +
                         "likely all assumption violations");
             }
             currentInput = new Input();
         } else {
-            // Select a random input from the queue to fuzz
-            Input seed = inputQueue.get(random.nextInt(inputQueue.size()));
+            if (numChildrenGeneratedForCurrentInput >= NUM_CHILDREN) {
+                // Select the next saved input to fuzz
+                currentInputIdx = (currentInputIdx + 1) % savedInputs.size();
+                numChildrenGeneratedForCurrentInput = 0;
+                // Count cycles
+                if (currentInputIdx == 0) {
+                    cyclesCompleted++;
+                    infoLog("Cycle " + cyclesCompleted + " completed.");
+                }
+            }
+            Input parent = savedInputs.get(currentInputIdx);
 
             // Fuzz it to get a new input
-            currentInput = seed.fuzz(random);
+            currentInput = parent.fuzz(random);
+            numChildrenGeneratedForCurrentInput++;
         }
-
-        //System.out.println("Current input size = " + currentInput.valuesMap.size());
 
 
         // Return an input stream that uses the EI map
@@ -157,8 +215,6 @@ public class ExecutionIndexingGuidance implements Guidance {
                 ExecutionIndex executionIndex = realExecutionIndex ?
                         eiState.getExecutionIndex(lastEvent) :
                         new ExecutionIndex(new int[]{bytesRead++});
-
-                // System.out.println("Reading byte at EI: " + executionIndex);
 
                 return currentInput.getOrGenerateFresh(executionIndex, random);
             }
@@ -183,21 +239,25 @@ public class ExecutionIndexingGuidance implements Guidance {
             // Update total coverage
             boolean newCoverage = totalCoverage.updateBits(runCoverage);
 
-            // Possibly add input to queue
+            // Possibly save input
             if (newCoverage) {
                 currentInput.gc();
-                inputQueue.add(currentInput);
-                System.out.println(String.format("Added to queue (at run %d): " +
+                savedInputs.add(currentInput);
+                infoLog(String.format("Saved new input (at run %d): " +
                         "input #%d " +
                         "of size %d; " +
                         "total coverage = %d",
                         numTrials,
-                        inputQueue.size(),
+                        savedInputs.size(),
                         currentInput.valuesMap.size(),
                         getTotalCoverage().getNonZeroCount()));
             }
         } else if (result == Result.FAILURE) {
-            error.printStackTrace();
+            String msg = error.getMessage();
+            // infoLog("Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
+            if (msg != null && msg.contains("bound")) {
+                error.printStackTrace();
+            }
         }
     }
 
@@ -251,14 +311,14 @@ public class ExecutionIndexingGuidance implements Guidance {
      */
     public static class Input {
 
-        private Map<ExecutionIndex, Integer> valuesMap;
-        private Collection<ExecutionIndex> requiredKeys = new ArrayList<>();
+        protected SortedMap<ExecutionIndex, Integer> valuesMap;
+        protected Collection<ExecutionIndex> requiredKeys = new ArrayList<>();
 
         /**
          * Create an empty input map.
          */
         public Input() {
-            valuesMap = new LinkedHashMap<>();
+            valuesMap = new TreeMap<>();
         }
 
         /**
@@ -267,7 +327,7 @@ public class ExecutionIndexingGuidance implements Guidance {
          * @param toClone the input map to clone
          */
         public Input(Input toClone) {
-            valuesMap = new LinkedHashMap<>(toClone.valuesMap);
+            valuesMap = new TreeMap<>(toClone.valuesMap);
         }
 
         /**
@@ -279,6 +339,11 @@ public class ExecutionIndexingGuidance implements Guidance {
          * @return the value to return to the quickcheck-like generator
          */
         public int getOrGenerateFresh(ExecutionIndex key, Random random) {
+            // If we reached a limit, then just return EOF
+            if (valuesMap.size() >= MAX_INPUT_SIZE) {
+                return -1;
+            }
+
             // Try to get existing values
             Integer val = valuesMap.get(key);
             // If not, generate a new random value
@@ -302,7 +367,7 @@ public class ExecutionIndexingGuidance implements Guidance {
          * deterministic).</p>
          */
         public void gc() {
-            Map<ExecutionIndex, Integer> newMap = new LinkedHashMap<>(valuesMap.size());
+            SortedMap<ExecutionIndex, Integer> newMap = new TreeMap<>();
             for (ExecutionIndex key : requiredKeys) {
                 newMap.put(key, valuesMap.get(key));
             }
@@ -367,6 +432,42 @@ public class ExecutionIndexingGuidance implements Guidance {
             double p = 1 / mean;
             double uniform = random.nextDouble();
             return (int) ceil(log(1 - uniform) / log(1 - p));
+        }
+
+    }
+
+    public static class SeedInput extends Input {
+        final File seedFile;
+        final InputStream in;
+
+        public SeedInput(File seedFile) throws IOException {
+            this.seedFile = seedFile;
+            this.in = new BufferedInputStream(new FileInputStream(seedFile));
+        }
+
+        @Override
+        public int getOrGenerateFresh(ExecutionIndex key, Random random) {
+            int value;
+            try {
+                value = in.read();
+            } catch (IOException e) {
+                throw new GuidanceException("Error reading form seed file: " + seedFile.getName(), e);
+
+            }
+            if (value >= 0) {
+                valuesMap.put(key, value);
+                requiredKeys.add(key);
+            }
+            return value;
+        }
+
+        @Override
+        public void gc() {
+            try {
+                in.close();
+            } catch (IOException e) {
+                throw new GuidanceException("Error closing seed file:" + seedFile.getName(), e);
+            }
         }
 
     }

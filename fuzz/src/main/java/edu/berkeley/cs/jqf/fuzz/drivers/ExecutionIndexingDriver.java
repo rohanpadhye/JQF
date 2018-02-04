@@ -29,6 +29,8 @@
 
 package edu.berkeley.cs.jqf.fuzz.drivers;
 
+import java.io.File;
+
 import edu.berkeley.cs.jqf.fuzz.guidance.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
@@ -39,17 +41,26 @@ public class ExecutionIndexingDriver {
 
     public static void main(String[] args) {
         if (args.length < 2){
-            System.err.println("Usage: java " + ExecutionIndexingDriver.class + " TEST_CLASS TEST_METHOD [MAX_TRIALS]");
+            System.err.println("Usage: java " + ExecutionIndexingDriver.class + " TEST_CLASS TEST_METHOD [MAX_TRIALS [SEEDS...]]");
             System.exit(1);
         }
 
         String testClassName  = args[0];
         String testMethodName = args[1];
         Long maxTrials = args.length > 2 ? Long.parseLong(args[2]) : Long.MAX_VALUE;
+        File[] seedFiles = null;
+        if (args.length > 3) {
+            seedFiles = new File[args.length-3];
+            for (int i = 3; i < args.length; i++) {
+                seedFiles[i-3] = new File(args[i]);
+            }
+        }
 
         try {
             // Load the guidance
-            ExecutionIndexingGuidance guidance = new ExecutionIndexingGuidance(maxTrials);
+            ExecutionIndexingGuidance guidance = seedFiles != null ?
+                    new ExecutionIndexingGuidance(maxTrials, seedFiles) :
+                    new ExecutionIndexingGuidance(maxTrials);
 
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
