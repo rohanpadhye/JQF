@@ -214,9 +214,15 @@ public class ExecutionIndexingGuidance implements Guidance {
                 // Get the execution index of the last event
                 ExecutionIndex executionIndex = realExecutionIndex ?
                         eiState.getExecutionIndex(lastEvent) :
-                        new ExecutionIndex(new int[]{bytesRead++});
+                        new ExecutionIndex(new int[]{bytesRead});
 
-                return currentInput.getOrGenerateFresh(executionIndex, random);
+                // Attempt to get a value from the map, or else generate a random value
+                int value = currentInput.getOrGenerateFresh(executionIndex, random);
+
+                // Keep track of how many bytes were read in this input
+                bytesRead++;
+
+                return value;
             }
         };
     }
@@ -242,6 +248,7 @@ public class ExecutionIndexingGuidance implements Guidance {
             // Possibly save input
             if (newCoverage) {
                 currentInput.gc();
+                assert(currentInput.valuesMap.size() > 0);
                 savedInputs.add(currentInput);
                 infoLog(String.format("Saved new input (at run %d): " +
                         "input #%d " +
@@ -254,10 +261,7 @@ public class ExecutionIndexingGuidance implements Guidance {
             }
         } else if (result == Result.FAILURE) {
             String msg = error.getMessage();
-            // infoLog("Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
-            if (msg != null && msg.contains("bound")) {
-                error.printStackTrace();
-            }
+            infoLog("Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
         }
     }
 
@@ -340,7 +344,7 @@ public class ExecutionIndexingGuidance implements Guidance {
          */
         public int getOrGenerateFresh(ExecutionIndex key, Random random) {
             // If we reached a limit, then just return EOF
-            if (valuesMap.size() >= MAX_INPUT_SIZE) {
+            if (requiredKeys.size() >= MAX_INPUT_SIZE) {
                 return -1;
             }
 
@@ -451,7 +455,7 @@ public class ExecutionIndexingGuidance implements Guidance {
             try {
                 value = in.read();
             } catch (IOException e) {
-                throw new GuidanceException("Error reading form seed file: " + seedFile.getName(), e);
+                throw new GuidanceException("Error reading from seed file: " + seedFile.getName(), e);
 
             }
             if (value >= 0) {
