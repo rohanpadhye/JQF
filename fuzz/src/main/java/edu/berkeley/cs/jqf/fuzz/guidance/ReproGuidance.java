@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
+import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
@@ -173,6 +174,10 @@ public class ReproGuidance implements Guidance {
                 return (e) -> {
                     coverage.handleEvent(e);
                     out.println(e);
+                    if (e instanceof BranchEvent) {
+                        BranchEvent b = (BranchEvent) e;
+                        // out.println(" -- hash="+ Hashing.hash1(b.getIid(), b.getArm(), AFLGuidance.COVERAGE_MAP_SIZE-1));
+                    }
                 };
             } catch (FileNotFoundException e) {
                 // Note the exception, but ignore trace events

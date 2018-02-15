@@ -81,7 +81,7 @@ public class Hashing {
      * @return a pseudo-uniformly distributed value in [0, bound)
      */
     public static int hash1(long x, long y, int bound) {
-        return knuth(x+hash(y, bound), bound);
+        return knuth(x*31 + y, bound);
     }
 
 }

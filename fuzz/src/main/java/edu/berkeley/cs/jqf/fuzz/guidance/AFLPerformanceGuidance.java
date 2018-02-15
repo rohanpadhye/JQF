@@ -77,16 +77,16 @@ public class AFLPerformanceGuidance extends AFLGuidance {
     protected static final int PERF_MAP_SIZE = 1 << 14;
 
     /** Maps branches to counts */
-    protected Counter branchCounts = new Counter(PERF_MAP_SIZE);
+    protected Counter branchCounts = new Counter(PERF_MAP_SIZE - 1);
 
     /** Count of total number of branches */
     protected int totalBranchCount;
 
     /** Maps allocation sites to counts */
-    protected Counter allocCounts = new Counter(PERF_MAP_SIZE);
+    protected Counter allocCounts = new Counter(PERF_MAP_SIZE - 1);
 
     /** Maps acyclic execution contexts to accessed memory locations. */
-    protected MapOfCounters memoryAccesses = new MapOfCounters(PERF_MAP_SIZE, 6151);
+    protected MapOfCounters memoryAccesses = new MapOfCounters(PERF_MAP_SIZE - 1, 6151);
 
     /**
      * Maintains a dynamic calling context (i.e. call stack).
@@ -143,8 +143,8 @@ public class AFLPerformanceGuidance extends AFLGuidance {
         if (e instanceof BranchEvent) {
             BranchEvent b = (BranchEvent) e;
 
-            // Map branch IID to first half of the tracebits map
-            int edgeId = Hashing.hash1(b.getIid(), b.getArm(), COVERAGE_MAP_SIZE/2);
+            // Map branch IID to first half of the tracebits map (excluding 0)
+            int edgeId = 1 + Hashing.hash1(b.getIid(), b.getArm(), (COVERAGE_MAP_SIZE/2) - 1);
 
             // Increment the 8-bit branch counter
             incrementTraceBits(edgeId);
@@ -172,8 +172,8 @@ public class AFLPerformanceGuidance extends AFLGuidance {
             // Push to calling context
             callingContext.push((CallEvent) e);
 
-            // Map branch IID to first half of the tracebits map
-            int edgeId = Hashing.hash(e.getIid(), COVERAGE_MAP_SIZE/2);
+            // Map branch IID to first half of the tracebits map (excluding 0)
+            int edgeId = 1 + Hashing.hash(e.getIid(), (COVERAGE_MAP_SIZE/2) - 1);
 
             // Increment the 8-bit counter
             incrementTraceBits(edgeId);
@@ -239,10 +239,11 @@ public class AFLPerformanceGuidance extends AFLGuidance {
             break;
             case BRANCH_COUNTS: {
                 int[] counts = branchCounts.getCounts();
-                assert (counts.length == PERF_MAP_SIZE);
+                assert (counts.length == PERF_MAP_SIZE - 1);
                 for (int k = 0; k < counts.length; k++) {
-                    // Put count at offset `k` integers into the bitmap
-                    feedback.putInt(k * 4, counts[k]);
+                    // Put count at offset `k+1` integers into the bitmap
+                    // since offset 0 is for the total
+                    feedback.putInt((k+1) * 4, counts[k]);
                     if (counts[k] > 0) {
                         //scores.println(String.format("counts[%d] = %d", k, counts[k]));
                     }
@@ -253,10 +254,11 @@ public class AFLPerformanceGuidance extends AFLGuidance {
             break;
             case ALLOCATION_COUNTS: {
                 int[] counts = allocCounts.getCounts();
-                assert (counts.length == PERF_MAP_SIZE);
+                assert (counts.length == PERF_MAP_SIZE - 1);
                 for (int k = 0; k < counts.length; k++) {
-                    // Put count at offset `k` integers into the bitmap
-                    feedback.putInt(k * 4, counts[k]);
+                    // Put count at offset `k+1` integers into the bitmap
+                    // since offset 0 is for the total
+                    feedback.putInt((k+1) * 4, counts[k]);
                 }
             }
             break;

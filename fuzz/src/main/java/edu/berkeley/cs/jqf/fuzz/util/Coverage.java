@@ -40,7 +40,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 public class Coverage {
 
     /** The size of the coverage map. */
-    private final int COVERAGE_MAP_SIZE = 1 << 16;
+    private final int COVERAGE_MAP_SIZE = (1 << 16) - 1; // Minus one to reduce collisions
 
     /** The coverage counts for each edge. */
     private final Counter counter = new Counter(COVERAGE_MAP_SIZE);

@@ -338,8 +338,8 @@ public class AFLGuidance implements Guidance {
     protected void handleEvent(TraceEvent e) {
         if (e instanceof BranchEvent) {
             BranchEvent b = (BranchEvent) e;
-            // Map branch IID to [0, MAP_SIZE)
-            int edgeId = Hashing.hash1(b.getIid(), b.getArm(), COVERAGE_MAP_SIZE);
+            // Map branch IID to [1, MAP_SIZE); the odd bound also reduces collisions
+            int edgeId = 1 + Hashing.hash1(b.getIid(), b.getArm(), COVERAGE_MAP_SIZE-1);
 
             // Increment the 8-bit branch counter
             incrementTraceBits(edgeId);
@@ -351,8 +351,8 @@ public class AFLGuidance implements Guidance {
                 callStackEmpty = false;
             }
 
-            // Map IID to [0, MAP_SIZE]
-            int edgeId = Hashing.hash(e.getIid(), COVERAGE_MAP_SIZE);
+            // Map IID to [1, MAP_SIZE]; the odd bound also reduces collisions
+            int edgeId = 1 + Hashing.hash(e.getIid(), COVERAGE_MAP_SIZE-1);
 
             // Increment the 8-bit branch counter
             incrementTraceBits(edgeId);
