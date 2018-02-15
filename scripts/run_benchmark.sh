@@ -28,7 +28,7 @@ suffix=""
 while getopts ":abcdeihvrs:t:x:" opt; do
   case $opt in
     r)
-      afl_options="$afl_options -d -p -s"
+      afl_options="$afl_options -p -s"
       jqf_options="$jqf_options -r"
       ;;
     v)
@@ -45,9 +45,6 @@ while getopts ":abcdeihvrs:t:x:" opt; do
       ;;
     h)
       export JVM_OPTS="$JVM_OPTS -Djqf.afl.perfFeedbackType=REDUNDANCY_SCORES -Djanala.instrumentHeapLoad=true"
-      ;;
-    d)
-      afl_options="$afl_options -d"
       ;;
     e)
       input_dir="-"
