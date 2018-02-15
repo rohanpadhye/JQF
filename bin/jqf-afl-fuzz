@@ -84,6 +84,7 @@ while getopts ":c:i:o:x:m:dpsrvT:" opt; do
       ;;
     v)
       target_options="$target_options -v"
+      export JVM_OPTS="$JVM_OPTS -Djanala.verbose=true"
       ;;
     T)
       title="$OPTARG"
