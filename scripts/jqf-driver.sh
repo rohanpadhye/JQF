@@ -19,7 +19,7 @@ INST_JAR="${INST_DIR}/$project-instrument-$version.jar"
 
 # Compute classpaths (the /classes are only for development; 
 #   if empty the JARs will have whatever is needed)
-INST_CLASSPATH="${INST_DIR}/classes:${INST_JAR}:${INST_DIR}/dependency/asm-all-5.2.jar" 
+INST_CLASSPATH="${INST_DIR}/classes:${INST_JAR}:${INST_DIR}/dependency/asm-6.0.jar" 
 FUZZ_CLASSPATH="${FUZZ_DIR}/classes:${FUZZ_JAR}"
 
 # If user-defined classpath is not set, default to '.'

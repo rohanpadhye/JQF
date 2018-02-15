@@ -37,6 +37,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayDeque;
@@ -381,9 +382,12 @@ public class AFLGuidance implements Guidance {
 
     /** Clears the feedback buffer by resetting it to zero. */
     protected void clearFeedbackBuffer() {
-        feedback.clear();
+        // These redundant casts are to prevent Java 9's covariant
+        // return types to use the new methods that return ByteBuffer
+        // instead, which do not exist in JDK 8 and below.
+        ((Buffer) feedback).rewind();
         feedback.put(FEEDBACK_ZEROS);
-        feedback.clear();
+        ((Buffer) feedback).rewind();
     }
 
 

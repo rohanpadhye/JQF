@@ -82,7 +82,7 @@
 		                        </goals> 
 		                        <configuration> 
 		                                <includeScope>runtime</includeScope> 
-		                                <excludeArtifactIds>jqf-instrument,asm-all</excludeArtifactIds>
+		                                <excludeArtifactIds>jqf-instrument,asm</excludeArtifactIds>
 		                        </configuration> 
 		                </execution> 
 		        </executions> 
