@@ -67,8 +67,10 @@ public class FastSourceOfRandomness extends SourceOfRandomness {
     public byte nextByte(byte min, byte max) {
         if (min == Byte.MIN_VALUE && max == Byte.MAX_VALUE) {
             return delegate.nextByte();
+        } else if (min >= Byte.MIN_VALUE && max <= Byte.MAX_VALUE) {
+
         }
-        return (byte)(this.fastChooseIntInRange(min, max));
+        return this.fastChooseByteInRange(min, max);
     }
 
     @Override
@@ -118,6 +120,23 @@ public class FastSourceOfRandomness extends SourceOfRandomness {
             return min + random;
         } else {
             return (int) Ranges.choose(this, min, max);
+        }
+    }
+
+    private byte fastChooseByteInRange(byte min, byte max) {
+        int range = max - min;
+
+        // If range is too wide, overflow will make it negative
+        if (range > 0 && range <= (Byte.MAX_VALUE)) {
+            int random = delegate.nextByte() % range;
+            if (random < 0) {
+                random += range;
+            }
+            byte result = (byte) (min + random);
+            assert (result >= min && result <= max);
+            return result;
+        } else {
+            return (byte) fastChooseIntInRange((int) min, (int) max);
         }
     }
 
