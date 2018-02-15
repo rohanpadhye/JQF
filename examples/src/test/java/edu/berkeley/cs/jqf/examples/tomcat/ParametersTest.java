@@ -30,7 +30,7 @@ package edu.berkeley.cs.jqf.examples.tomcat;
 
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
+import edu.berkeley.cs.jqf.examples.common.ArbitraryLengthStringGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.apache.tomcat.util.http.Parameters;
@@ -43,7 +43,7 @@ import org.junit.runner.RunWith;
 public class ParametersTest {
 
     @Fuzz
-    public void test(@From(AsciiStringGenerator.class) @Size(max=100) String queryString) {
+    public void test(@From(ArbitraryLengthStringGenerator.class) @Size(max=100) String queryString) {
         Parameters parameters = new Parameters();
         parameters.processParameters(queryString.getBytes(), 0, queryString.length());
     }

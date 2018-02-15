@@ -35,7 +35,7 @@ import com.opensymphony.xwork2.validator.validators.EmailValidator;
 import com.opensymphony.xwork2.validator.validators.URLValidator;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
+import edu.berkeley.cs.jqf.examples.common.ArbitraryLengthStringGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.Assume;
@@ -48,7 +48,7 @@ import org.junit.runner.RunWith;
 public class RegexTest {
 
     @Fuzz
-    public void patternGenerationTest(@From(AsciiStringGenerator.class) String pattern) {
+    public void patternGenerationTest(@From(ArbitraryLengthStringGenerator.class) String pattern) {
         try {
             Pattern.matches(pattern, "aaaaaa");
         } catch (PatternSyntaxException e) {
@@ -57,7 +57,7 @@ public class RegexTest {
     }
 
     @Fuzz
-    public void exponentialMatchTest(@From(AsciiStringGenerator.class) String input) {
+    public void exponentialMatchTest(@From(ArbitraryLengthStringGenerator.class) String input) {
         Pattern.matches("^(([a-z])+.)+[A-Z]([a-z])+$", input);
     }
 
@@ -68,12 +68,12 @@ public class RegexTest {
 
 
     @Fuzz
-    public void strutsUrlTest(@From(AsciiStringGenerator.class) @Size(max=80) String url) {
+    public void strutsUrlTest(@From(ArbitraryLengthStringGenerator.class) @Size(max=80) String url) {
         strutsUrlPattern.matcher(url).matches();
     }
 
     @Fuzz
-    public void strutsEmailTest(@From(AsciiStringGenerator.class) String email) {
+    public void strutsEmailTest(@From(ArbitraryLengthStringGenerator.class) String email) {
         strutsEmailPattern.matcher(email).matches();
     }
 }

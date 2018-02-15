@@ -34,15 +34,15 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 /**
  * @author Rohan Padhye
  */
-public class AsciiStringGenerator extends AbstractStringGenerator {
+public class AlphaStringGenerator extends AbstractStringGenerator {
 
     @Override
     protected int nextCodePoint(SourceOfRandomness sourceOfRandomness) {
-        return sourceOfRandomness.nextByte((byte) 1, (byte) 127);
+        return sourceOfRandomness.nextByte((byte) 'a', (byte) 'z');
     }
 
     @Override
     protected boolean codePointInRange(int i) {
-        return i >= 1 && i <= 127;
+        return i >= 'a' && i <= 'z';
     }
 }

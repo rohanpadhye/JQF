@@ -28,21 +28,40 @@
  */
 package edu.berkeley.cs.jqf.examples.common;
 
-import com.pholser.junit.quickcheck.generator.java.lang.AbstractStringGenerator;
+import java.io.IOException;
+import java.io.InputStream;
+
+import com.pholser.junit.quickcheck.generator.GenerationStatus;
+import com.pholser.junit.quickcheck.generator.Generator;
+import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 /**
  * @author Rohan Padhye
  */
-public class AsciiStringGenerator extends AbstractStringGenerator {
+public class ArbitraryLengthStringGenerator extends Generator<String> {
 
-    @Override
-    protected int nextCodePoint(SourceOfRandomness sourceOfRandomness) {
-        return sourceOfRandomness.nextByte((byte) 1, (byte) 127);
+    private int maxSize = 4096;
+
+    public ArbitraryLengthStringGenerator() {
+        super(String.class);
     }
 
+    public void configure(Size size) {
+        maxSize = size.max();
+    }
+
+
     @Override
-    protected boolean codePointInRange(int i) {
-        return i >= 1 && i <= 127;
+    public String generate(SourceOfRandomness sourceOfRandomness, GenerationStatus generationStatus) {
+        InputStream in = new InputStreamGenerator().generate(sourceOfRandomness, generationStatus);
+        byte[] bytes = new byte[maxSize];
+        try {
+            int len = in.read(bytes);
+            return new String(bytes, 0, len);
+        } catch (IOException e) {
+            throw new RuntimeException("Should not get I/O exception when using generated InputStream", e);
+        }
+
     }
 }

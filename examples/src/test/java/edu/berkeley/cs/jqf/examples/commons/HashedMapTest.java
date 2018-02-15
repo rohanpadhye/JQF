@@ -32,7 +32,7 @@ import java.util.Map;
 
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.generator.Size;
-import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
+import edu.berkeley.cs.jqf.examples.common.ArbitraryLengthStringGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.apache.commons.collections4.map.HashedMap;
@@ -46,7 +46,7 @@ import org.junit.runner.RunWith;
 public class HashedMapTest {
 
     @Fuzz
-    public void queryStringTest(@From(AsciiStringGenerator.class) @Size(max=80) String queryString) {
+    public void queryStringTest(@From(ArbitraryLengthStringGenerator.class) @Size(max=80) String queryString) {
         Assume.assumeTrue(queryString.length() > 0);
         String[] params = queryString.split("&");
         Map<String, String> map = new HashedMap<>();
