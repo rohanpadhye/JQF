@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import com.pholser.junit.quickcheck.From;
-import com.pholser.junit.quickcheck.generator.Size;
 import edu.berkeley.cs.jqf.examples.XmlDocumentGenerator;
 import edu.berkeley.cs.jqf.examples.common.Dictionary;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
@@ -60,8 +59,9 @@ public class ModelReaderTest {
     }
 
     @Fuzz
-    public void debug(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/maven-model.dict") @Size(max=5)  Document dom) {
+    public void debug(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/maven-model.dict") Document dom) throws IOException {
         System.out.println(XmlDocumentGenerator.documentToString(dom));
+        testWithGenerator(dom);
     }
 
 }
