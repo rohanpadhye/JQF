@@ -69,6 +69,9 @@ public class ThreadTracer extends Thread {
     // Values set by GETVALUE_* instructions inserted by Janala
     private final Values values = new Values();
 
+    // Whether to instrument generators (TODO: Make this configurable)
+    private final boolean instrumentGenerators = false;
+
 
     /**
      * Creates a new tracer that will process instructions executed by an application
@@ -274,7 +277,8 @@ public class ThreadTracer extends Thread {
                 // Try to match the top-level call with the entry point
                 String clazz = begin.getOwner();
                 String method = begin.getName();
-                if ((clazz.equals(entryPointClass) && method.equals(entryPointMethod))) {
+                if ((clazz.equals(entryPointClass) && method.equals(entryPointMethod)) ||
+                        (instrumentGenerators && clazz.endsWith("Generator") && method.equals("generate")) ) {
                     emit(new CallEvent(0, null, 0, begin));
                     handlers.push(new TraceEventGeneratingHandler(begin, 0));
                 } else {
@@ -289,7 +293,7 @@ public class ThreadTracer extends Thread {
         }
     }
 
-    class TraceEventGeneratingHandler implements Callable<Void> {
+    class TraceEventGeneratingHandler extends ControlFlowInstructionVisitor implements Callable<Void> {
 
         private final int depth;
         private final MemberRef method;
@@ -309,195 +313,212 @@ public class ThreadTracer extends Thread {
 
         private MemberRef invokeTarget = null;
         private boolean invokingSuperOrThis = false;
-        private int lastIid = 0;
-        private int lastMid = 0;
+
+        @Override
+        public void visitMETHOD_BEGIN(METHOD_BEGIN begin) {
+            if (sameNameDesc(begin, this.invokeTarget)) {
+                // Trace continues with callee
+                int invokerIid = ((Instruction) invokeTarget).iid;
+                int invokerMid = ((Instruction) invokeTarget).mid;
+                emit(new CallEvent(invokerIid, this.method, invokerMid, begin));
+                handlers.push(new TraceEventGeneratingHandler(begin, depth+1));
+            } else {
+                // Class loading or static initializer
+                handlers.push(new MatchingNullHandler());
+            }
+
+            super.visitMETHOD_BEGIN(begin);
+        }
+
+        @Override
+        public void visitINVOKEMETHOD_EXCEPTION(INVOKEMETHOD_EXCEPTION ins) {
+            if (this.invokeTarget == null) {
+                throw new RuntimeException("Unexpected INVOKEMETHOD_EXCEPTION");
+            } else {
+                // Unset the invocation target for the rest of the instruction stream
+                this.invokeTarget = null;
+                // Handle end of super() or this() call
+                if (invokingSuperOrThis) {
+                    while (true) { // will break when outer caller of <init> found
+                        emit(new ReturnEvent(-1, this.method, 0));
+                        handlers.pop();
+                        Callable<?> handler = handlers.peek();
+                        // We should not reach the BaseHandler without finding
+                        // the TraceEventGeneratingHandler who called the outer <init>().
+                        assert (handler instanceof TraceEventGeneratingHandler);
+                        TraceEventGeneratingHandler traceEventGeneratingHandler = (TraceEventGeneratingHandler) handler;
+                        if (traceEventGeneratingHandler.invokingSuperOrThis) {
+                            // Go down the stack further
+                            continue;
+                        } else {
+                            // Found caller of new()
+                            assert(traceEventGeneratingHandler.invokeTarget.getName().startsWith("<init>"));
+                            restore(ins);
+                            return; // defer handling to new top of stack
+                        }
+                    }
+                }
+            }
+
+            super.visitINVOKEMETHOD_EXCEPTION(ins);
+        }
+
+        @Override
+        public void visitINVOKEMETHOD_END(INVOKEMETHOD_END ins) {
+            if (this.invokeTarget == null) {
+                throw new RuntimeException("Unexpected INVOKEMETHOD_EXCEPTION");
+            } else {
+                // Unset the invocation target for the rest of the instruction stream
+                this.invokeTarget = null;
+                // Handle end of super() or this() call
+                if (invokingSuperOrThis) {
+                    // For normal end, simply unset the flag
+                    this.invokingSuperOrThis = false;
+                }
+            }
+
+            super.visitINVOKEMETHOD_END(ins);
+        }
+
+        @Override
+        public void visitSPECIAL(SPECIAL special) {
+            // Handle marker that says calling super() or this()
+            if (special.i == SPECIAL.CALLING_SUPER_OR_THIS) {
+                this.invokingSuperOrThis = true;
+            }
+            return; // Do not process SPECIAL instructions further
+        }
+
+        @Override
+        public void visitInvokeInstruction(InvokeInstruction ins) {
+            // Remember invocation target until METHOD_BEGIN or INVOKEMETHOD_END/INVOKEMETHOD_EXCEPTION
+            this.invokeTarget = ins;
+
+            super.visitInvokeInstruction(ins);
+        }
+
+        @Override
+        public void visitGETVALUE_int(GETVALUE_int gv) {
+            values.intValue = gv.v;
+
+            super.visitGETVALUE_int(gv);
+        }
+
+        @Override
+        public void visitConditionalBranch(Instruction ins) {
+            try {
+                Instruction next = next();
+                int iid = ins.iid;
+                int lineNum = ins.mid;
+                boolean taken;
+                if ((next instanceof SPECIAL) && ((SPECIAL) next).i == SPECIAL.DID_NOT_BRANCH) {
+                    // Special marker ==> False Branch
+                    taken = false;
+                } else {
+                    // Not a special marker ==> True Branch
+                    restore(next); // Remember to put this instruction back on the queue
+                    taken = true;
+                }
+                emit(new BranchEvent(iid, this.method, lineNum, taken ? 1 : 0));
+
+                super.visitConditionalBranch(ins);
+            } catch (InterruptedException e) {
+                // Unfortunately, visitor cannot throw a checked exception
+                throw new RuntimeException(e); // this is unwrappped in call()
+            }
+        }
+
+        @Override
+        public void visitTABLESWITCH(TABLESWITCH tableSwitch) {
+            int iid = tableSwitch.iid;
+            int lineNum = tableSwitch.mid;
+            int value = values.intValue;
+            int numCases = tableSwitch.labels.length;
+            // Compute arm index or else default
+            int arm = -1;
+            if (value >= 0 && value < numCases) {
+                arm = value;
+            }
+            // Emit a branch instruction corresponding to the arm
+            emit(new BranchEvent(iid, this.method, lineNum, arm));
+
+            super.visitTABLESWITCH(tableSwitch);
+        }
+
+        @Override
+        public void visitLOOKUPSWITCH(LOOKUPSWITCH lookupSwitch) {
+            int iid = lookupSwitch.iid;
+            int lineNum = lookupSwitch.mid;
+            int value = values.intValue;
+            int[] cases = lookupSwitch.keys;
+            // Compute arm index or else default
+            int arm = -1;
+            for (int i = 0; i < cases.length; i++) {
+                if (value == cases[i]) {
+                    arm = i;
+                    break;
+                }
+            }
+            // Emit a branch instruction corresponding to the arm
+            emit(new BranchEvent(iid, this.method, lineNum, arm));
+
+            super.visitLOOKUPSWITCH(lookupSwitch);
+        }
+
+        @Override
+        public void visitHEAPLOAD(HEAPLOAD heapload) {
+            int iid = heapload.iid;
+            int lineNum = heapload.mid;
+            int objectId = heapload.objectId;
+            String field = heapload.field;
+            // Log the object access (unless it was a NPE)
+            if (objectId != 0) {
+                emit(new ReadEvent(iid, this.method, lineNum, objectId, field));
+            }
+
+            super.visitHEAPLOAD(heapload);
+        }
+
+        @Override
+        public void visitNEW(NEW newInst) {
+            int iid = newInst.iid;
+            int lineNum = newInst.mid;
+            emit(new AllocEvent(iid, this.method, lineNum, 1));
+
+            super.visitNEW(newInst);
+        }
+
+        @Override
+        public void visitNEWARRAY(NEWARRAY newArray) {
+            int iid = newArray.iid;
+            int lineNum = newArray.mid;
+            int size = values.intValue;
+            emit(new AllocEvent(iid, this.method, lineNum, size));
+
+            super.visitNEWARRAY(newArray);
+        }
+
+        @Override
+        public void visitReturnOrMethodThrow(Instruction ins) {
+            emit(new ReturnEvent(ins.iid, this.method, ins.mid));
+            handlers.pop();
+
+            super.visitReturnOrMethodThrow(ins);
+        }
 
 
         @Override
         public Void call() throws InterruptedException {
             Instruction ins = next();
 
-            if (ins instanceof METHOD_BEGIN) {
-                METHOD_BEGIN begin = (METHOD_BEGIN) ins;
-                if (sameNameDesc(begin, this.invokeTarget)) {
-                    // Trace continues with callee
-                    emit(new CallEvent(lastIid, this.method, lastMid, begin));
-                    handlers.push(new TraceEventGeneratingHandler(begin, depth+1));
-                } else {
-                    // Class loading or static initializer
-                    handlers.push(new MatchingNullHandler());
+            try {
+                ins.visit(this);
+            } catch (RuntimeException e) {
+                // Unwrap thread interruptions if any
+                if (e.getCause() instanceof InterruptedException) {
+                    throw (InterruptedException) e.getCause();
                 }
-            } else {
-
-
-                // This should never really happen:
-                if (ins instanceof INVOKEMETHOD_EXCEPTION &&
-                        (this.invokeTarget == null))  {
-                    throw new RuntimeException("Unexpected INVOKEMETHOD_EXCEPTION");
-                }
-                // This should never really happen:
-                if (ins instanceof INVOKEMETHOD_END && this.invokeTarget == null) {
-                    throw new RuntimeException("Unexpected INVOKEMETHOD_END");
-                }
-
-                // Handle SPECIAL instructions if they haven't been consumed by their predecessors
-                if (ins instanceof SPECIAL) {
-                    SPECIAL special = (SPECIAL) ins;
-                    // Handle marker that says calling super() or this()
-                    if (special.i == SPECIAL.CALLING_SUPER_OR_THIS) {
-                        this.invokingSuperOrThis = true;
-                    }
-
-                    return null; // Do not process SPECIAL instructions further
-                }
-
-
-
-                // Handle setting or un-setting of invokeTarget buffer
-                if (isInvoke(ins)) {
-                    // Remember invocation target until METHOD_BEGIN or INVOKEMETHOD_END/INVOKEMETHOD_EXCEPTION
-                    this.invokeTarget = (MemberRef) ins;
-                } else if (this.invokeTarget != null) {
-                    // If we don't step into a method call, we must be stepping over it
-                    assert(ins instanceof  INVOKEMETHOD_END || ins instanceof  INVOKEMETHOD_EXCEPTION);
-
-                    // Unset the invocation target for the rest of the instruction stream
-                    this.invokeTarget = null;
-
-                    // Handle end of super() or this() call
-                    if (invokingSuperOrThis) {
-                        if (ins instanceof INVOKEMETHOD_END) {
-                            // For normal end, simply unset the flag
-                            this.invokingSuperOrThis = false;
-                        } else {
-                            assert(ins instanceof  INVOKEMETHOD_EXCEPTION);
-
-                            while (true) { // will break when outer caller of <init> found
-                                emit(new ReturnEvent(-1, this.method, 0));
-                                handlers.pop();
-                                Callable<?> handler = handlers.peek();
-                                // We should not reach the BaseHandler without finding
-                                // the TraceEventGeneratingHandler who called the outer <init>().
-                                assert (handler instanceof TraceEventGeneratingHandler);
-                                TraceEventGeneratingHandler traceEventGeneratingHandler = (TraceEventGeneratingHandler) handler;
-                                if (traceEventGeneratingHandler.invokingSuperOrThis) {
-                                    // Go down the stack further
-                                    continue;
-                                } else {
-                                    // Found caller of new()
-                                    assert(traceEventGeneratingHandler.invokeTarget.getName().startsWith("<init>"));
-                                    restore(ins);
-                                    return null; // defer handling to new top of stack
-                                }
-                            }
-
-                        }
-                    }
-
-                }
-
-
-                // Emit conditional branches
-                if (isIfJmp(ins)) {
-                    Instruction next = next();
-                    int iid = ins.iid;
-                    int lineNum = ins.mid;
-                    boolean taken;
-                    if ((next instanceof SPECIAL) && ((SPECIAL) next).i == SPECIAL.DID_NOT_BRANCH) {
-                        // Special marker ==> False Branch
-                        taken = false;
-                    } else {
-                        // Not a special marker ==> True Branch
-                        restore(next); // Remember to put this instruction back on the queue
-                        taken = true;
-                    }
-                    emit(new BranchEvent(iid, this.method, lineNum, taken ? 1 : 0));
-                }
-
-                // Save values from GETVALUE_* instructions
-                if (ins instanceof GETVALUE) {
-                    saveValue((GETVALUE) ins);
-                }
-
-
-                // Emit switch instructions
-                if (ins instanceof TABLESWITCH) {
-                    // Get parameters
-                    TABLESWITCH tableSwitch = (TABLESWITCH) ins;
-                    int iid = ins.iid;
-                    int lineNum = ins.mid;
-                    int value = values.intValue;
-                    int numCases = tableSwitch.labels.length;
-                    // Compute arm index or else default
-                    int arm = -1;
-                    if (value >= 0 && value < numCases) {
-                        arm = value;
-                    }
-                    // Emit a branch instruction corresponding to the arm
-                    emit(new BranchEvent(iid, this.method, lineNum, arm));
-                }
-
-                // Emit switch instructions
-                if (ins instanceof LOOKUPSWITCH) {
-                    // Get parameters
-                    LOOKUPSWITCH tableSwitch = (LOOKUPSWITCH) ins;
-                    int iid = ins.iid;
-                    int lineNum = ins.mid;
-                    int value = values.intValue;
-                    int[] cases = tableSwitch.keys;
-                    // Compute arm index or else default
-                    int arm = -1;
-                    for (int i = 0; i < cases.length; i++) {
-                        if (value == cases[i]) {
-                            arm = i;
-                            break;
-                        }
-                    }
-                    // Emit a branch instruction corresponding to the arm
-                    emit(new BranchEvent(iid, this.method, lineNum, arm));
-                }
-
-                // Emit memory access instructions
-                if (ins instanceof HEAPLOAD) {
-                    HEAPLOAD heapload = (HEAPLOAD) ins;
-                    int iid = heapload.iid;
-                    int lineNum = heapload.mid;
-                    int objectId = heapload.objectId;
-                    String field = heapload.field;
-                    // Log the object access (unless it was a NPE)
-                    if (objectId != 0) {
-                        emit(new ReadEvent(iid, this.method, lineNum, objectId, field));
-                    }
-                }
-
-                // Emit allocation instructions
-                if (ins instanceof NEW) {
-                    NEW newInst = (NEW) ins;
-                    int iid = newInst.iid;
-                    int lineNum = newInst.mid;
-                    emit(new AllocEvent(iid, this.method, lineNum, 1));
-                } else if (ins instanceof NEWARRAY) {
-                    // Note: Array size should be stored in a previous
-                    // GETVALUE instructions
-                    NEWARRAY newArray = (NEWARRAY) ins;
-                    int iid = newArray.iid;
-                    int lineNum = newArray.mid;
-                    int size = values.intValue;
-                    emit(new AllocEvent(iid, this.method, lineNum, size));
-                }
-
-
-                if (isReturnOrMethodThrow(ins)) {
-                    emit(new ReturnEvent(ins.iid, this.method, ins.mid));
-                    handlers.pop();
-                }
-
-                // For non-METHOD_BEGIN instructions, set last IID and lineNum
-                this.lastIid = ins.iid;
-                this.lastMid = ins.mid;
-
             }
-
 
             return null;
         }
