@@ -106,7 +106,7 @@ if [ -z "$input_dir" ]; then
   RANDOM_SEED_SIZE=1024
   input_dir=$(mktemp -d /tmp/jqf-seeds.XXX)
   for i in $(seq $RANDOM_SEED_COUNT); do
-    head -c $RANDOM_SEED_SIZE /dev/random > "$input_dir/random_seed_$i"
+    head -c $RANDOM_SEED_SIZE /dev/urandom > "$input_dir/random_seed_$i"
   done
 fi
 
