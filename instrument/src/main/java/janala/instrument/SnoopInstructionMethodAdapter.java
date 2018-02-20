@@ -784,100 +784,97 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     }
   }
 
+  private void addConditionalJumpInstrumentation(int opcode, Label finalBranchTarget,
+                                                 String instMethodName, String instMethodDesc) {
+    int iid = instrumentationState.incAndGetId();
+    Label intermediateBranchTarget = new Label();
+    Label fallthrough = new Label();
+
+    // Perform the original jump, but branch to intermediate label
+    mv.visitJumpInsn(opcode, intermediateBranchTarget);
+    // If we did not jump, skip to the fallthrough
+    mv.visitJumpInsn(GOTO, fallthrough);
+
+    // Now instrument the branch target
+    mv.visitLabel(intermediateBranchTarget);
+    addBipushInsn(mv, 1); // Mark branch as taken
+    addValueReadInsn(mv, "B", "GETVALUE_"); // Send value to logger
+    mv.visitInsn(POP);
+    addBipushInsn(mv, iid);
+    addBipushInsn(mv, lastLineNumber);
+    addBipushInsn(mv, getLabelNum(finalBranchTarget));
+    mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, instMethodName, instMethodDesc, false);
+    mv.visitJumpInsn(GOTO, finalBranchTarget); // Go to actual branch target
+
+    // Now instrument the fall through
+    mv.visitLabel(fallthrough);
+    addBipushInsn(mv, 0); // Mark branch as not taken
+    addValueReadInsn(mv, "B", "GETVALUE_"); // Send value to logger
+    mv.visitInsn(POP);
+    addBipushInsn(mv, iid);
+    addBipushInsn(mv, lastLineNumber);
+    addBipushInsn(mv, getLabelNum(finalBranchTarget));
+    mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, instMethodName, instMethodDesc, false);
+
+    // continue with fall-through code visiting
+  }
+
   @Override
   public void visitJumpInsn(int opcode, Label label) {
-    int iid3;
-    addBipushInsn(mv, iid3 = instrumentationState.incAndGetId());
-    addBipushInsn(mv, lastLineNumber);
-    addBipushInsn(mv, getLabelNum(label));
     switch (opcode) {
       case IFEQ:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IFEQ", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label, "IFEQ", "(III)V");
         break;
       case IFNE:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IFNE", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label, "IFNE", "(III)V");
         break;
       case IFLT:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IFLT", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IFLT", "(III)V");
         break;
       case IFGE:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IFGE", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IFGE", "(III)V");
         break;
       case IFGT:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IFGT", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IFGT", "(III)V");
         break;
       case IFLE:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IFLE", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IFLE", "(III)V");
         break;
       case IF_ICMPEQ:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IF_ICMPEQ", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IF_ICMPEQ", "(III)V");
         break;
       case IF_ICMPNE:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IF_ICMPNE", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IF_ICMPNE", "(III)V");
         break;
       case IF_ICMPLT:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IF_ICMPLT", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IF_ICMPLT", "(III)V");
         break;
       case IF_ICMPGE:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IF_ICMPGE", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IF_ICMPGE", "(III)V");
         break;
       case IF_ICMPGT:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IF_ICMPGT", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IF_ICMPGT", "(III)V");
         break;
       case IF_ICMPLE:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IF_ICMPLE", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IF_ICMPLE", "(III)V");
         break;
       case IF_ACMPEQ:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IF_ACMPEQ", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IF_ACMPEQ", "(III)V");
         break;
       case IF_ACMPNE:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IF_ACMPNE", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IF_ACMPNE", "(III)V");
         break;
       case GOTO:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "GOTO", "(III)V", false);
         mv.visitJumpInsn(opcode, label);
         break;
       case JSR:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "JSR", "(III)V", false);
         mv.visitJumpInsn(opcode, label);
         break;
       case IFNULL:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IFNULL", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IFNULL", "(III)V");
         break;
       case IFNONNULL:
-        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "IFNONNULL", "(III)V", false);
-        mv.visitJumpInsn(opcode, label);
-        addSpecialInsn(mv, 1); // for true path
+        addConditionalJumpInstrumentation(opcode, label,  "IFNONNULL", "(III)V");
         break;
       default:
         throw new RuntimeException("Unknown jump opcode " + opcode);

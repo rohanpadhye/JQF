@@ -31,7 +31,6 @@ package edu.berkeley.cs.jqf.instrument.tracing;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -41,7 +40,6 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
-import edu.berkeley.cs.jqf.instrument.util.FastBlockingQueue;
 import janala.logger.inst.*;
 
 /**
@@ -58,19 +56,18 @@ import janala.logger.inst.*;
  *
  * @author Rohan Padhye
  */
-public class ThreadTracer extends Thread {
-    protected final FastBlockingQueue<Instruction> queue = new FastBlockingQueue<>(1024*1024);
+public class ThreadTracer {
     protected final Thread tracee;
     protected final String entryPointClass;
     protected final String entryPointMethod;
     protected final Consumer<TraceEvent> callback;
-    private final Deque<Callable<?>> handlers = new ArrayDeque<>();
+    private final Deque<IVisitor> handlers = new ArrayDeque<>();
 
     // Values set by GETVALUE_* instructions inserted by Janala
     private final Values values = new Values();
 
     // Whether to instrument generators (TODO: Make this configurable)
-    private final boolean instrumentGenerators = false;
+    private final boolean instrumentGenerators = true;
 
 
     /**
@@ -82,7 +79,6 @@ public class ThreadTracer extends Thread {
      * @param callback the callback to invoke whenever a trace event is emitted
      */
     protected ThreadTracer(Thread tracee, String entryPoint, Consumer<TraceEvent> callback) {
-        super("__JWIG_TRACER__: " + tracee.getName()); // The name is important to block snooping
         this.tracee = tracee;
         if (entryPoint != null) {
             int separator = entryPoint.indexOf('#');
@@ -110,7 +106,6 @@ public class ThreadTracer extends Thread {
         Consumer<TraceEvent> callback = SingleSnoop.callbackGenerator.apply(thread);
         ThreadTracer t =
                 new ThreadTracer(thread, entryPoint, callback);
-        t.start();
         return t;
     }
 
@@ -129,82 +124,19 @@ public class ThreadTracer extends Thread {
      * @return whether the instruction queue is empty
      */
     protected final boolean isQueueEmpty() {
-        return queue.isEmpty();
+        return true;
     }
 
     /**
-     * Sends an instruction to the tracer for processing.
+     * Handles tracing of a single bytecode instruction.
      *
      * @param ins the instruction to process
      */
     protected final void consume(Instruction ins) {
-        queue.put(ins);
+        // Apply the visitor at the top of the stack
+        ins.visit(handlers.peek());
     }
 
-    /**
-     * Retrieves the next yet-unprocessed instruction in FIFO sequeuence.
-     *
-     * <p>This method blocks for the next instruction up to a fixed timeout.
-     * After the timeout, it checks to see if the tracee is alive and if so
-     * repeats the timed-block. If the tracee is dead, the tracer is
-     * interrupted.</p>
-     *
-     * @return the next yet-unprocessed instruction in FIFO sequeuence
-     * @throws InterruptedException  if the tracee appears to be dead
-     */
-    protected final Instruction next() throws InterruptedException {
-        // If a restored instruction exists, take that out instead of polling the queue
-        if (restored != null) {
-            Instruction ins = restored;
-            restored = null;
-            return ins;
-        }
-        // Keep attempting to get instructions while queue is non-empty or tracee is alive
-        while (!queue.isEmpty() || tracee.isAlive()) {
-            // Attempt to poll queue with a timeout
-            Instruction ins = queue.remove(1_000_000_000L);
-            // Return instruction if available, else re-try
-            if (ins != null) {
-                return ins;
-            }
-        }
-        // If tracee is dead, interrupt this thread
-        throw new InterruptedException();
-    }
-
-    // Hack on restore() to prevent deadlocks when main thread waits on put() and logger on restore()
-    private Instruction restored = null;
-
-
-    /**
-     * Returns an instruction to the queue for processing.
-     *
-     * <p>This is useful for performing a lookahead in the
-     * instruction stream.</p>
-     *
-     * @param ins the instruction to restore to the queue
-     */
-    protected final void restore(Instruction ins) {
-        if (restored != null) {
-            throw new IllegalStateException("Cannot restore multiple instructions");
-        } else {
-            restored = ins;
-        }
-    }
-
-    @Override
-    public void run() {
-        try {
-            while (!handlers.isEmpty()) {
-                handlers.peek().call();
-            }
-        } catch (InterruptedException e) {
-            // Exit normally
-        } catch (Throwable e) {
-            e.printStackTrace();
-            handlers.clear(); // Don't do anything else
-        }
-    }
 
     private static boolean isReturnOrMethodThrow(Instruction inst) {
         return  inst instanceof ARETURN ||
@@ -268,32 +200,24 @@ public class ThreadTracer extends Thread {
 
 
 
-    class BaseHandler implements Callable<Void> {
+    class BaseHandler extends ControlFlowInstructionVisitor {
         @Override
-        public Void call() throws Exception {
-            Instruction ins = next();
-            if (ins instanceof METHOD_BEGIN) {
-                METHOD_BEGIN begin = (METHOD_BEGIN) ins;
-                // Try to match the top-level call with the entry point
-                String clazz = begin.getOwner();
-                String method = begin.getName();
-                if ((clazz.equals(entryPointClass) && method.equals(entryPointMethod)) ||
-                        (instrumentGenerators && clazz.endsWith("Generator") && method.equals("generate")) ) {
-                    emit(new CallEvent(0, null, 0, begin));
-                    handlers.push(new TraceEventGeneratingHandler(begin, 0));
-                } else {
-                    // Ignore all top-level calls that are not the entry point
-                    handlers.push(new MatchingNullHandler());
-                }
+        public void visitMETHOD_BEGIN(METHOD_BEGIN begin) {
+            // Try to match the top-level call with the entry point
+            String clazz = begin.getOwner();
+            String method = begin.getName();
+            if ((clazz.equals(entryPointClass) && method.equals(entryPointMethod)) ||
+                    (instrumentGenerators && clazz.endsWith("Generator") && method.equals("generate")) ) {
+                emit(new CallEvent(0, null, 0, begin));
+                handlers.push(new TraceEventGeneratingHandler(begin, 0));
             } else {
-                // Instructions not nested in a METHOD_BEGIN are quite unexpected
-                // System.err.println("Unexpected: " + ins); -- XXX: First instruction is a dummy
+                // Ignore all top-level calls that are not the entry point
+                handlers.push(new MatchingNullHandler());
             }
-            return null;
         }
     }
 
-    class TraceEventGeneratingHandler extends ControlFlowInstructionVisitor implements Callable<Void> {
+    class TraceEventGeneratingHandler extends ControlFlowInstructionVisitor {
 
         private final int depth;
         private final MemberRef method;
@@ -340,9 +264,9 @@ public class ThreadTracer extends Thread {
                 // Handle end of super() or this() call
                 if (invokingSuperOrThis) {
                     while (true) { // will break when outer caller of <init> found
-                        emit(new ReturnEvent(-1, this.method, 0));
+                        emit(new ReturnEvent(-1, this.method, -1));
                         handlers.pop();
-                        Callable<?> handler = handlers.peek();
+                        IVisitor handler = handlers.peek();
                         // We should not reach the BaseHandler without finding
                         // the TraceEventGeneratingHandler who called the outer <init>().
                         assert (handler instanceof TraceEventGeneratingHandler);
@@ -353,8 +277,9 @@ public class ThreadTracer extends Thread {
                         } else {
                             // Found caller of new()
                             assert(traceEventGeneratingHandler.invokeTarget.getName().startsWith("<init>"));
-                            restore(ins);
-                            return; // defer handling to new top of stack
+                            // Let this handler (now top-of-stack) process the instruction
+                            ins.visit(traceEventGeneratingHandler);
+                            break;
                         }
                     }
                 }
@@ -405,27 +330,22 @@ public class ThreadTracer extends Thread {
         }
 
         @Override
-        public void visitConditionalBranch(Instruction ins) {
-            try {
-                Instruction next = next();
-                int iid = ins.iid;
-                int lineNum = ins.mid;
-                boolean taken;
-                if ((next instanceof SPECIAL) && ((SPECIAL) next).i == SPECIAL.DID_NOT_BRANCH) {
-                    // Special marker ==> False Branch
-                    taken = false;
-                } else {
-                    // Not a special marker ==> True Branch
-                    restore(next); // Remember to put this instruction back on the queue
-                    taken = true;
-                }
-                emit(new BranchEvent(iid, this.method, lineNum, taken ? 1 : 0));
+        public void visitGETVALUE_boolean(GETVALUE_boolean gv) {
+            values.booleanValue = gv.v;
 
-                super.visitConditionalBranch(ins);
-            } catch (InterruptedException e) {
-                // Unfortunately, visitor cannot throw a checked exception
-                throw new RuntimeException(e); // this is unwrappped in call()
-            }
+            super.visitGETVALUE_boolean(gv);
+        }
+
+        @Override
+        public void visitConditionalBranch(Instruction ins) {
+            int iid = ins.iid;
+            int lineNum = ins.mid;
+            // The branch taken-or-not would have been set by a previous
+            // GETVALUE instruction
+            boolean taken = values.booleanValue;
+            emit(new BranchEvent(iid, this.method, lineNum, taken ? 1 : 0));
+
+            super.visitConditionalBranch(ins);
         }
 
         @Override
@@ -506,34 +426,18 @@ public class ThreadTracer extends Thread {
             super.visitReturnOrMethodThrow(ins);
         }
 
-
-        @Override
-        public Void call() throws InterruptedException {
-            Instruction ins = next();
-
-            try {
-                ins.visit(this);
-            } catch (RuntimeException e) {
-                // Unwrap thread interruptions if any
-                if (e.getCause() instanceof InterruptedException) {
-                    throw (InterruptedException) e.getCause();
-                }
-            }
-
-            return null;
-        }
     }
 
-    class MatchingNullHandler implements Callable<Void> {
+    class MatchingNullHandler extends ControlFlowInstructionVisitor {
+
         @Override
-        public Void call() throws InterruptedException {
-            Instruction ins = next();
-            if (ins instanceof METHOD_BEGIN) {
-                handlers.push(new MatchingNullHandler());
-            } else if (isReturnOrMethodThrow(ins)) {
-                handlers.pop();
-            }
-            return null;
+        public void visitMETHOD_BEGIN(METHOD_BEGIN begin) {
+            handlers.push(new MatchingNullHandler());
+        }
+
+        @Override
+        public void visitReturnOrMethodThrow(Instruction ins) {
+            handlers.pop();
         }
     }
 }

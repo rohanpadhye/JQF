@@ -16,7 +16,7 @@ public class GlobalStateForInstrumentation {
 
   public int incAndGetId() {
     iid++;
-    validate(iid, (32 - CBITS - MBITS));
+    validate(iid, IBITS);
     return getId();
   }
 

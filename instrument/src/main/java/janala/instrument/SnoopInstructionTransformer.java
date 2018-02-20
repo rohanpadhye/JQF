@@ -129,6 +129,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
       try {
         cr.accept(cv, 0);
       } catch (Throwable e) {
+        System.err.println("Error instrumenting class " + cname);
         e.printStackTrace();
         return null;
       }
