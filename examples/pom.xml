@@ -99,7 +99,6 @@
                         </goals>
                         <configuration>
                             <includeScope>test</includeScope>
-                            <excludeArtifactIds>jqf-fuzz</excludeArtifactIds>
                         </configuration>
                     </execution>
                 </executions>
