@@ -28,9 +28,8 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
@@ -41,68 +40,63 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  */
 public class ExecutionIndexingState {
     private final int COUNTER_SIZE = 6151;
+    private final int MAX_SUPPORTED_DEPTH = 1024; // Nothing deeper than this
 
     private int depth = 0;
-    private Deque<Counter> stackOfCounters = new ArrayDeque<>();
-    private Deque<Integer> rollingIndex = new ArrayDeque<>();
+    private ArrayList<Counter> stackOfCounters = new ArrayList<>();
+    private int[] rollingIndex = new int[2*MAX_SUPPORTED_DEPTH];
 
     public ExecutionIndexingState() {
         // Create a counter for depth = 0
-        stackOfCounters.push(new Counter(COUNTER_SIZE));
+        stackOfCounters.add(new Counter(COUNTER_SIZE));
     }
 
     public void pushCall(CallEvent e) {
-        // Increment counter for call-site
-        int count = stackOfCounters.peek().increment(e.getIid());
+        // Increment counter for call-site (note: this is subject to hash collisions)
+        int count = stackOfCounters.get(depth).increment(e.getIid());
+
+        // Add to rolling execution index
+        rollingIndex[2*depth] = e.getIid();
+        rollingIndex[2*depth + 1] = count;
 
         // Increment depth
         depth++;
 
-        // Add to rolling execution index
-        rollingIndex.push(e.getIid());
-        rollingIndex.push(count);
+        // Ensure that we do not go very deep
+        if (depth >= MAX_SUPPORTED_DEPTH) {
+            throw new StackOverflowError("Very deep stack; cannot compute execution index");
+        }
 
-        // Push a new counter for this new prefix
-        stackOfCounters.push(new Counter(COUNTER_SIZE));
+        // Push a new counter if it does not exist
+        if (depth >= stackOfCounters.size()) {
+            stackOfCounters.add(new Counter(COUNTER_SIZE));
+        }
 
     }
 
     public void popReturn(ReturnEvent e) {
+        // Clear the top-of-stack
+        stackOfCounters.get(depth).clear();
+
         // Decrement depth
         depth--;
 
-        // Pop twice from rolling index
-        rollingIndex.pop();
-        rollingIndex.pop();
-
-        // Pop counter
-        stackOfCounters.pop();
+        assert (depth >= 0);
     }
 
     public ExecutionIndex getExecutionIndex(TraceEvent e) {
-        // Increment counter for event
-        int count = stackOfCounters.peek().increment(e.getIid());
+        // Increment counter for event (note: this is subject to hash collisions)
+        int count = stackOfCounters.get(depth).increment(e.getIid());
 
         // Add to rolling execution index
-        rollingIndex.push(e.getIid());
-        rollingIndex.push(count);
+        rollingIndex[2*depth] = e.getIid();
+        rollingIndex[2*depth + 1] = count;
 
         // Snapshot the rolling index
-        int[] ei = new int[rollingIndex.size()];
-        assert (ei.length == (depth + 1) * 2);
+        int size = 2*(depth+1); // 2 integers for each depth value
+        int[] ei = Arrays.copyOf(rollingIndex, size);
 
-        // Copy stack backwards into integer array
-        Iterator<Integer> it = rollingIndex.descendingIterator();
-        int i = 0;
-        while (it.hasNext()) {
-            ei[i++] = it.next();
-        }
-        assert (i == ei.length);
-
-        // Pop twice from rolling index
-        rollingIndex.pop();
-        rollingIndex.pop();
-
+        // Create an execution index
         return new ExecutionIndex(ei);
     }
 }
