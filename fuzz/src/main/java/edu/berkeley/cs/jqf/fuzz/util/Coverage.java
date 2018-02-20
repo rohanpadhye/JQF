@@ -31,13 +31,14 @@ package edu.berkeley.cs.jqf.fuzz.util;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEventVisitor;
 
 /**
  * Utility class to collect branch and function coverage
  *
  * @author Rohan Padhye
  */
-public class Coverage {
+public class Coverage implements TraceEventVisitor {
 
     /** The size of the coverage map. */
     private final int COVERAGE_MAP_SIZE = (1 << 16) - 1; // Minus one to reduce collisions
@@ -54,13 +55,17 @@ public class Coverage {
      * @param e the event to be processed
      */
     public void handleEvent(TraceEvent e) {
-        // Handle branches and calls
-        if (e instanceof BranchEvent) {
-            BranchEvent b = (BranchEvent) e;
-            counter.increment(b.getIid() * 31 + b.getArm());
-        } else if (e instanceof CallEvent) {
-            counter.increment(e.getIid());
-        }
+        e.applyVisitor(this);
+    }
+
+    @Override
+    public void visitBranchEvent(BranchEvent b) {
+        counter.increment(b.getIid() * 31 + b.getArm());
+    }
+
+    @Override
+    public void visitCallEvent(CallEvent e) {
+        counter.increment(e.getIid());
     }
 
     /**

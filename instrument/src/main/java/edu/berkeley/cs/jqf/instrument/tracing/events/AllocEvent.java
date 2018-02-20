@@ -59,4 +59,9 @@ public class AllocEvent extends TraceEvent {
     public String toString() {
         return String.format("ALLOC(%d,%d,%d)", iid, lineNumber, size);
     }
+
+    @Override
+    public void applyVisitor(TraceEventVisitor v) {
+        v.visitAllocEvent(this);
+    }
 }

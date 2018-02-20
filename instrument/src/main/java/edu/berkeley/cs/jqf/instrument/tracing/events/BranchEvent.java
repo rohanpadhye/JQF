@@ -57,4 +57,9 @@ public class BranchEvent extends TraceEvent {
     public String toString() {
         return String.format("BRANCH(%d,%d,%d)", iid, arm, lineNumber);
     }
+
+    @Override
+    public void applyVisitor(TraceEventVisitor v) {
+        v.visitBranchEvent(this);
+    }
 }

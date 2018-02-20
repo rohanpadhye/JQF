@@ -65,4 +65,6 @@ public abstract class TraceEvent {
     public int getLineNumber() {
         return lineNumber;
     }
+
+    public abstract void applyVisitor(TraceEventVisitor v);
 }

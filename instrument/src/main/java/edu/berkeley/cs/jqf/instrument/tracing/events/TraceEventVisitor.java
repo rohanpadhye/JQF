@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, University of California, Berkeley
+ * Copyright (c) 2018, University of California, Berkeley
  *
  * All rights reserved.
  *
@@ -28,23 +28,20 @@
  */
 package edu.berkeley.cs.jqf.instrument.tracing.events;
 
-import janala.logger.inst.MemberRef;
-
 /**
+ * Visitor class for {@code TraceEvent} instances.
+ *
  * @author Rohan Padhye
  */
-public class ReturnEvent extends TraceEvent {
-    public ReturnEvent(int iid, MemberRef containingMethod, int lineNumber) {
-        super(iid, containingMethod, lineNumber);
-    }
+public interface TraceEventVisitor {
 
-    @Override
-    public String toString() {
-        return String.format("RET(%d,%d)", iid, lineNumber);
-    }
+    default void visitAllocEvent(AllocEvent e) {}
 
-    @Override
-    public void applyVisitor(TraceEventVisitor v) {
-        v.visitReturnEvent(this);
-    }
+    default void visitBranchEvent(BranchEvent e) {}
+
+    default void visitCallEvent(CallEvent e) {}
+
+    default void visitReadEvent(ReadEvent e) {}
+
+    default void visitReturnEvent(ReturnEvent e) {}
 }

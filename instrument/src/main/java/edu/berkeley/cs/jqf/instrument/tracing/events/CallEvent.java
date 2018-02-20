@@ -51,4 +51,9 @@ public class CallEvent extends TraceEvent {
     public String toString() {
         return String.format("CALL(%d,%d,%s)", iid, lineNumber, getInvokedMethodName());
     }
+
+    @Override
+    public void applyVisitor(TraceEventVisitor v) {
+        v.visitCallEvent(this);
+    }
 }

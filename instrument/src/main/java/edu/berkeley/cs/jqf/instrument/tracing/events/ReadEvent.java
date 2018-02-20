@@ -55,4 +55,9 @@ public class ReadEvent extends TraceEvent {
     public String toString() {
         return String.format("HEAPLOAD(%d,%d,%d,%s)", iid, lineNumber, objectId, field);
     }
+
+    @Override
+    public void applyVisitor(TraceEventVisitor v) {
+        v.visitReadEvent(this);
+    }
 }

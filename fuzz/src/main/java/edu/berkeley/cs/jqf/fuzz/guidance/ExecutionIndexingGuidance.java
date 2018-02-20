@@ -52,6 +52,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEventVisitor;
 
 import static java.lang.Math.ceil;
 import static java.lang.Math.log;
@@ -68,7 +69,7 @@ import static java.lang.Math.log;
  *
  * @author Rohan Padhye
  */
-public class ExecutionIndexingGuidance implements Guidance {
+public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     // Currently, we only support single-threaded applications
     // This field is used to ensure that
@@ -281,14 +282,20 @@ public class ExecutionIndexingGuidance implements Guidance {
         lastEvent = e;
 
         // Update execution indexing logic
-        if (e instanceof CallEvent) {
-            eiState.pushCall((CallEvent) e);
-        } else if (e instanceof ReturnEvent) {
-            eiState.popReturn((ReturnEvent) e);
-        }
+        e.applyVisitor(this);
 
         // Collect totalCoverage
         runCoverage.handleEvent(e);
+    }
+
+    @Override
+    public void visitCallEvent(CallEvent c) {
+        eiState.pushCall(c);
+    }
+
+    @Override
+    public void visitReturnEvent(ReturnEvent r) {
+        eiState.popReturn(r);
     }
 
     /**
