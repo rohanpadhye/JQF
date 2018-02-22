@@ -50,7 +50,7 @@ This shouldn't happen! `DateFormat.format()` does not specify that it will throw
 
 ## Building 
 
-To build JQF, you need Maven (`mvn`) and GNU Make (`make`) installed and on your path. 
+To build JQF, you need Java 8+, Maven (`mvn`) and GNU Make (`make`) installed and on your path. 
 
 Clone the JQF repo and run `setup.sh`.
 
