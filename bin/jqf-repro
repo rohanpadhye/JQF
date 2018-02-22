@@ -8,7 +8,7 @@ popd > /dev/null
 ROOT_DIR=`dirname $BIN_DIR`
 
 print_usage() {
-  echo "Usage: $0 [-c CLASSPATH] [-i] TEST_CLASS TEST_METHOD INPUT_FILE.."
+  echo "Usage: $0 [-c CLASSPATH] [-i] [-v] TEST_CLASS TEST_METHOD INPUT_FILE.."
 }
 
 while getopts ":c:iv" opt; do
