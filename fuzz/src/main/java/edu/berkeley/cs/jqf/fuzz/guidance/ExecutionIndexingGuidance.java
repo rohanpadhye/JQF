@@ -29,9 +29,11 @@
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayDeque;
@@ -92,6 +94,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** The number of trials completed. */
     private long numTrials = 0;
 
+    /** The directory where saved inputs are written. */
+    private final File outputDirectory;
+
     /** Cumulative coverage statistics. */
     private Coverage totalCoverage = new Coverage();
 
@@ -108,12 +113,12 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     private Input currentInput;
 
     /** Index of currentInput in the savedInputs -- valid after seeds are processed (OK if this is inaccurate). */
-    private int currentInputIdx = 0;
+    private int currentParentInputIdx = 0;
 
     /** Number of mutated inputs generated from currentInput. */
-    private int numChildrenGeneratedForCurrentInput = 0;
+    private int numChildrenGeneratedForCurrentParentInput = 0;
 
-    /** Number of cycles completed (i.e. how many times we've reset currentInputIdx to 0. */
+    /** Number of cycles completed (i.e. how many times we've reset currentParentInputIdx to 0. */
     private int cyclesCompleted = 0;
 
     /** Whether to use real execution indexes as opposed to flat numbering (debug option; manually edit). */
@@ -128,14 +133,17 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Time since this guidance instance was created. */
     private final Date startTime = new Date();
 
-    /** Number of execs after which to update the stats on the console. */
-    private static final int STATS_REFRESH_PERIOD = 500;
+    /** Time since last stats refresh. */
+    private Date lastRefreshTime = startTime;
+
+    /** Minimum amount of time (in millis) between two stats refreshes. */
+    private static final long STATS_REFRESH_TIME_PERIOD = 300;
 
     /** Max input size to generate. */
     private static final int MAX_INPUT_SIZE = 1024; // TODO: Make this configurable
 
     /** Number of mutated children to produce from a given parent input. */
-    private static final int NUM_CHILDREN = 10;
+    private static final int NUM_CHILDREN = 600;
 
     /** Mean number of mutations to perform in each round. */
     private static final double MEAN_MUTATION_COUNT = 1.2;
@@ -149,34 +157,75 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
      *
      * @param maxTrials the max number of trials to run
      */
-    public ExecutionIndexingGuidance(long maxTrials) {
+    public ExecutionIndexingGuidance(long maxTrials, File outputDirectory) throws IOException {
         this.maxTrials = maxTrials;
+        this.outputDirectory = outputDirectory;
+        prepareOutputDirectory();
     }
 
-    public ExecutionIndexingGuidance(long maxTrials, File... seedInputFiles) throws IOException {
-        this(maxTrials);
+    public ExecutionIndexingGuidance(long maxTrials, File outputDirectory, File... seedInputFiles) throws IOException {
+        this(maxTrials, outputDirectory);
         for (File seedInputFile : seedInputFiles) {
             seedInputs.add(new SeedInput(seedInputFile));
         }
     }
 
-    private void infoLog(String str) {
-        if (verbose) {
-            System.out.println(str);
+    private void prepareOutputDirectory() throws IOException {
+
+        // Create the output directory if it does not exist
+        if (!outputDirectory.exists()) {
+            if (!outputDirectory.mkdirs()) {
+                throw new IOException("Could not create output directory" +
+                        outputDirectory.getAbsolutePath());
+            }
         }
+
+        // Make sure we can write to output directory
+        if (!outputDirectory.isDirectory() || !outputDirectory.canWrite()) {
+            throw new IOException("Output directory is not a writable directory: " +
+                    outputDirectory.getAbsolutePath());
+        }
+
+        // Delete everything in the output directory (for cases where we re-use an existing dir)
+        for (File file : outputDirectory.listFiles()) {
+            file.delete(); // We do not check if this was successful
+        }
+
+
     }
 
-
+    private void infoLog(String str) {
+        if (verbose) {
+            // If we are not displaying stats, then print info to STDOUT
+            if (console == null) {
+                System.out.println(str);
+            }
+        }
+    }
 
     // Call only if console exists
     private void displayStats() {
         assert (console != null);
 
         Date now = new Date();
+        long intervalMilliseconds = now.getTime() - lastRefreshTime.getTime();
+        if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD) {
+            return;
+        }
+        lastRefreshTime = now;
         long elapsedMilliseconds = now.getTime() - startTime.getTime();
         long elapsedSeconds = TimeUnit.MILLISECONDS.toSeconds(elapsedMilliseconds);
         long elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedMilliseconds);
         long execsPerSec = numTrials * 1000L / elapsedMilliseconds;
+
+        String currentParentInputDesc;
+        if (seedInputs.size() > 0 || savedInputs.isEmpty()) {
+            currentParentInputDesc = "<seed>";
+        } else {
+            Input currentParentInput = savedInputs.get(currentParentInputIdx);
+            currentParentInputDesc = currentParentInputIdx + " ";
+            currentParentInputDesc += currentParentInput.favorite ? "(favored)" : "(not favored)";
+        }
 
         console.printf("\033[2J");
         console.printf("\033[H");
@@ -184,10 +233,11 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         console.printf("------------------------------\n");
         console.printf("Cycles completed:     %d\n", cyclesCompleted);
         console.printf("Queue size:           %d\n", savedInputs.size());
+        console.printf("Current parent input: %s\n", currentParentInputDesc);
         console.printf("Number of executions: %d\n", numTrials);
         console.printf("Elapsed time:         %d min %d sec\n", elapsedMinutes, elapsedSeconds);
         console.printf("Execution speed:      %d execs/sec\n", execsPerSec);
-        console.printf("Covered branches:     %d\n", getTotalCoverage().getNonZeroCount());
+        console.printf("Covered branches:     %d\n", totalCoverage.getNonZeroCount());
 
     }
 
@@ -214,21 +264,31 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             }
             currentInput = new Input();
         } else {
-            if (numChildrenGeneratedForCurrentInput >= NUM_CHILDREN) {
+            if (numChildrenGeneratedForCurrentParentInput >= NUM_CHILDREN) {
                 // Select the next saved input to fuzz
-                currentInputIdx = (currentInputIdx + 1) % savedInputs.size();
-                numChildrenGeneratedForCurrentInput = 0;
-                // Count cycles
-                if (currentInputIdx == 0) {
-                    cyclesCompleted++;
-                    infoLog("Cycle " + cyclesCompleted + " completed.");
-                }
+                double selectionProbability = 1.0;
+                do {
+                    // Try the next input as a candidate
+                    currentParentInputIdx = (currentParentInputIdx + 1) % savedInputs.size();
+                    Input candidate = savedInputs.get(currentParentInputIdx);
+
+                    // It is selected or skipped with some probability
+                    selectionProbability = candidate.favorite ? 0.8 : 0.2;
+
+                    // Count cycles
+                    if (currentParentInputIdx == 0) {
+                        cyclesCompleted++;
+                        infoLog("Cycle " + cyclesCompleted + " completed.");
+                    }
+
+                } while (random.nextDouble() > selectionProbability);
+                numChildrenGeneratedForCurrentParentInput = 0;
             }
-            Input parent = savedInputs.get(currentInputIdx);
+            Input parent = savedInputs.get(currentParentInputIdx);
 
             // Fuzz it to get a new input
             currentInput = parent.fuzz(random);
-            numChildrenGeneratedForCurrentInput++;
+            numChildrenGeneratedForCurrentParentInput++;
         }
 
 
@@ -272,33 +332,71 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         if (result == Result.SUCCESS) {
 
+            // Coverage before
+            int nonZeroBefore = totalCoverage.getNonZeroCount();
+
             // Update total coverage
-            boolean newCoverage = totalCoverage.updateBits(runCoverage);
+            boolean coverageUpdated = totalCoverage.updateBits(runCoverage);
+
+            // Coverage after
+            int nonZeroAfter = totalCoverage.getNonZeroCount();
 
             // Possibly save input
-            if (newCoverage) {
+            if (coverageUpdated) {
+                // Trim input (remove unused keys)
                 currentInput.gc();
+
+                // It must still be non-empty
                 assert(currentInput.valuesMap.size() > 0);
-                savedInputs.add(currentInput);
+
+                // Save input to queue and to disk
+                try {
+                    saveCurrentInput();
+                } catch (IOException e) {
+                    throw new GuidanceException(e);
+                }
+
                 infoLog(String.format("Saved new input (at run %d): " +
-                        "input #%d " +
-                        "of size %d; " +
-                        "total coverage = %d",
+                                "input #%d " +
+                                "of size %d; " +
+                                "total coverage = %d",
                         numTrials,
                         savedInputs.size(),
                         currentInput.valuesMap.size(),
-                        getTotalCoverage().getNonZeroCount()));
+                        nonZeroAfter));
+
+                // Mark as favorite if it found new coverage
+                if (nonZeroAfter > nonZeroBefore) {
+                    currentInput.favorite = true;
+                }
             }
         } else if (result == Result.FAILURE) {
             String msg = error.getMessage();
             infoLog("Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
         }
 
-        if (!verbose && console != null && numTrials % STATS_REFRESH_PERIOD == 0) {
+        if (console != null) {
             displayStats();
         }
 
     }
+
+
+    private void saveCurrentInput() throws IOException {
+        // First, save to queue
+        savedInputs.add(currentInput);
+
+        // Second, save to disk
+        File outputFile = new File(outputDirectory, String.format("id:%06d", savedInputs.size()-1));
+        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+            for (Object key : currentInput.requiredKeys) {
+                int b = currentInput.valuesMap.get(key);
+                assert (b >= 0 && b < 256);
+                out.write(b);
+            }
+        }
+    }
+
 
     @Override
     public Consumer<TraceEvent> generateCallBack(Thread thread) {
@@ -358,6 +456,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         protected SortedMap<ExecutionIndex, Integer> valuesMap;
         protected Collection<ExecutionIndex> requiredKeys = new ArrayList<>();
+
+        private boolean favorite = false;
 
         /**
          * Create an empty input map.
