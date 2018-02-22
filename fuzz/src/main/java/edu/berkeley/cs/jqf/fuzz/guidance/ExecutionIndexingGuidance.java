@@ -29,6 +29,7 @@
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
 import java.io.BufferedInputStream;
+import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,12 +37,14 @@ import java.io.InputStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
@@ -117,7 +120,16 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     private final boolean realExecutionIndex = true;
 
     /** Whether to print log statements to stdout (debug option; manually edit). */
-    private final boolean verbose = true;
+    private final boolean verbose = false;
+
+    /** A system console, which is non-null only if STDOUT is a console. */
+    private final Console console = System.console();
+
+    /** Time since this guidance instance was created. */
+    private final Date startTime = new Date();
+
+    /** Number of execs after which to update the stats on the console. */
+    private static final int STATS_REFRESH_PERIOD = 500;
 
     /** Max input size to generate. */
     private static final int MAX_INPUT_SIZE = 1024; // TODO: Make this configurable
@@ -152,6 +164,31 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         if (verbose) {
             System.out.println(str);
         }
+    }
+
+
+
+    // Call only if console exists
+    private void displayStats() {
+        assert (console != null);
+
+        Date now = new Date();
+        long elapsedMilliseconds = now.getTime() - startTime.getTime();
+        long elapsedSeconds = TimeUnit.MILLISECONDS.toSeconds(elapsedMilliseconds);
+        long elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedMilliseconds);
+        long execsPerSec = numTrials * 1000L / elapsedMilliseconds;
+
+        console.printf("\033[2J");
+        console.printf("\033[H");
+        console.printf("JQF: ExecutionIndexingGuidance\n");
+        console.printf("------------------------------\n");
+        console.printf("Cycles completed:     %d\n", cyclesCompleted);
+        console.printf("Queue size:           %d\n", savedInputs.size());
+        console.printf("Number of executions: %d\n", numTrials);
+        console.printf("Elapsed time:         %d min %d sec\n", elapsedMinutes, elapsedSeconds);
+        console.printf("Execution speed:      %d execs/sec\n", execsPerSec);
+        console.printf("Covered branches:     %d\n", getTotalCoverage().getNonZeroCount());
+
     }
 
     @Override
@@ -257,6 +294,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             infoLog("Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
         }
 
+        if (!verbose && console != null && numTrials % STATS_REFRESH_PERIOD == 0) {
+            displayStats();
+        }
 
     }
 
