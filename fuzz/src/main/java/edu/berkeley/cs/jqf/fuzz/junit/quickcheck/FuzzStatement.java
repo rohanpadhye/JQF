@@ -179,9 +179,6 @@ public class FuzzStatement extends Statement {
                         failures.add(e);
                     }
                 } finally {
-                    // Wait for any instrumentation events to finish processing
-                    SingleSnoop.waitForQuiescence();
-
                     // Inform guidance about the outcome of this trial
                     guidance.handleResult(result, error);
                 }

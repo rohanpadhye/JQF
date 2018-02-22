@@ -48,7 +48,6 @@ import java.util.function.UnaryOperator;
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
 import edu.berkeley.cs.jqf.fuzz.util.ExecutionIndex;
 import edu.berkeley.cs.jqf.fuzz.util.ExecutionIndexingState;
-import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
@@ -149,8 +148,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         }
     }
 
-
-
     private void infoLog(String str) {
         if (verbose) {
             System.out.println(str);
@@ -204,8 +201,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
             @Override
             public int read() throws IOException {
-                // Sync with shadow thread for events to be handled
-                SingleSnoop.waitForQuiescence();
 
                 // lastEvent must not be null
                 if (lastEvent == null) {
@@ -235,9 +230,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     @Override
     public void handleResult(Result result, Throwable error) throws GuidanceException {
-        // Wait for everything to be processed
-        SingleSnoop.waitForQuiescence();
-
         // Increment run count
         this.numTrials++;
 
@@ -264,6 +256,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             String msg = error.getMessage();
             infoLog("Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
         }
+
+
     }
 
     @Override
