@@ -238,27 +238,22 @@ public class AFLPerformanceGuidance extends AFLGuidance {
             }
             break;
             case BRANCH_COUNTS: {
-                int[] counts = branchCounts.getCounts();
-                assert (counts.length == PERF_MAP_SIZE - 1);
-                for (int k = 0; k < counts.length; k++) {
+                assert (branchCounts.size() == PERF_MAP_SIZE - 1);
+                for (int k = 0; k < branchCounts.size(); k++) {
                     // Put count at offset `k+1` integers into the bitmap
                     // since offset 0 is for the total
-                    feedback.putInt((k+1) * 4, counts[k]);
-                    if (counts[k] > 0) {
-                        //scores.println(String.format("counts[%d] = %d", k, counts[k]));
-                    }
+                    feedback.putInt((k+1) * 4, branchCounts.getAtIndex(k));
                 }
                 // Also add the total instruction count
                 putTotalBranchCountIntoFeedback();
             }
             break;
             case ALLOCATION_COUNTS: {
-                int[] counts = allocCounts.getCounts();
-                assert (counts.length == PERF_MAP_SIZE - 1);
-                for (int k = 0; k < counts.length; k++) {
+                assert (allocCounts.size() == PERF_MAP_SIZE - 1);
+                for (int k = 0; k < allocCounts.size(); k++) {
                     // Put count at offset `k+1` integers into the bitmap
                     // since offset 0 is for the total
-                    feedback.putInt((k+1) * 4, counts[k]);
+                    feedback.putInt((k+1) * 4, allocCounts.getAtIndex(k));
                 }
             }
             break;

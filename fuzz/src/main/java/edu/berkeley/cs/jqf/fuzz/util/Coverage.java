@@ -47,7 +47,7 @@ public class Coverage implements TraceEventVisitor {
     private final int COVERAGE_MAP_SIZE = (1 << 16) - 1; // Minus one to reduce collisions
 
     /** The coverage counts for each edge. */
-    private final Counter counter = new Counter(COVERAGE_MAP_SIZE);
+    private final Counter counter = new NonZeroCachingCounter(COVERAGE_MAP_SIZE);
 
     /** Creates a new coverage map. */
     public Coverage() {
@@ -60,10 +60,8 @@ public class Coverage implements TraceEventVisitor {
      * @param that the coverage map to copy
      */
     public Coverage(Coverage that) {
-        int[] thisCounts = this.counter.getCounts();
-        int[] thatCounts = that.counter.getCounts();
-        for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
-            thisCounts[i] = thatCounts[i];
+        for (int idx = 0; idx < COVERAGE_MAP_SIZE; idx++) {
+            this.counter.setAtIndex(idx, that.counter.getAtIndex(idx));
         }
     }
 
@@ -104,7 +102,7 @@ public class Coverage implements TraceEventVisitor {
      * @return the number of edges with non-zero counts
      */
     public int getNonZeroCount() {
-        return counter.nonZeroSize();
+        return counter.getNonZeroSize();
     }
 
     /**
@@ -119,11 +117,9 @@ public class Coverage implements TraceEventVisitor {
 
     public Collection<?> computeNewCoverage(Coverage baseline) {
         Collection<Integer> newCoverage = new ArrayList<>();
-        int[] thisCounts = this.counter.getCounts();
-        int[] thatCounts = baseline.counter.getCounts();
-        for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
-            if (thisCounts[i] > 0 && thatCounts[i] == 0) {
-                newCoverage.add(i);
+        for (int idx : this.counter.getNonZeroIndices()) {
+            if (baseline.counter.getAtIndex(idx) == 0) {
+                newCoverage.add(idx);
             }
         }
         return newCoverage;
@@ -140,19 +136,6 @@ public class Coverage implements TraceEventVisitor {
     }
 
 
-    public boolean updateMax(Coverage cov) {
-        boolean changed = false;
-        int[] thisCounts = this.counter.getCounts();
-        int[] thatCounts = cov.counter.getCounts();
-        for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
-            if (thatCounts[i] > thisCounts[i]) {
-                thisCounts[i] = thatCounts[i];
-                changed = true;
-            }
-        }
-        return changed;
-    }
-
     /**
      * Updates this coverage with bits from the parameter.
      *
@@ -163,12 +146,11 @@ public class Coverage implements TraceEventVisitor {
      */
     public boolean updateBits(Coverage that) {
         boolean changed = false;
-        int[] thisCounts = this.counter.getCounts();
-        int[] thatCounts = that.counter.getCounts();
-        for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
-            int before = thisCounts[i];
-            thisCounts[i] |= thatCounts[i];
-            if (thisCounts[i] != before) {
+        for (int idx = 0; idx < COVERAGE_MAP_SIZE; idx++) {
+            int before = this.counter.getAtIndex(idx);
+            int after = before | that.counter.getAtIndex(idx);
+            if (after != before) {
+                this.counter.setAtIndex(idx, after);
                 changed = true;
             }
         }

@@ -78,7 +78,7 @@ public class MapOfCounters {
 
     public Collection<Integer> nonZeroCountsAtIndex(int idx) {
         if (counters[idx] != null) {
-            return counters[idx].nonZeroValues();
+            return counters[idx].getNonZeroValues();
         } else {
             return Collections.EMPTY_LIST;
         }

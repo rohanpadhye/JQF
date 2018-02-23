@@ -262,7 +262,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     }
 
     private int getTargetChildrenForParent(Input parentInput) {
-        return (MAX_NUM_CHILDREN * parentInput.nonZeroCoverage) / maxCoverage;
+        return maxCoverage == 0 ? MAX_NUM_CHILDREN
+                : (MAX_NUM_CHILDREN * parentInput.nonZeroCoverage) / maxCoverage;
     }
 
     private void completeCycle() {
@@ -383,9 +384,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         this.numTrials++;
 
         if (result == Result.SUCCESS) {
-
-            // Coverage before
-            int nonZeroBefore = totalCoverage.getNonZeroCount();
 
             // Compute a list of keys for which this input can assume responsiblity.
             // Newly covered branches are always included.

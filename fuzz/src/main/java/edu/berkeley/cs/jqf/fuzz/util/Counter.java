@@ -35,18 +35,23 @@ import java.util.List;
 /**
  * Maps integer keys to integer counts using a fixed-size table.
  *
- * Hash collisions are completely ignored; therefore, the counts
- * are unreliable.
+ * <p>Hash collisions are completely ignored; therefore, the counts
+ * are unreliable.</p>
+ *
+ * <p>Throughout the internal documentation, the term "key" is used
+ * to refer to the keys that are hashed, while "index" is used to
+ * the result of key-hashing, i.e. the location in the internal
+ * array storage.</p>
  *
  * @author Rohan Padhye
  */
 public class Counter {
 
     /** The size of the counter map. */
-    final int size;
+    protected final int size;
 
     /** The counter map as an array of integers. */
-    final int[] counts;
+    protected final int[] counts;
 
     /**
      * Creates a new counter with given size.
@@ -56,6 +61,15 @@ public class Counter {
     public Counter(int size) {
         this.size = size;
         this.counts = new int[size];
+    }
+
+    /**
+     * Returns the size of this counter.
+     *
+     * @return the size of this counter
+     */
+    public int size() {
+        return this.size;
     }
 
     /**
@@ -71,6 +85,10 @@ public class Counter {
         return Hashing.hash(key, size);
     }
 
+    protected int incrementAtIndex(int index, int delta) {
+        return (this.counts[index] += delta);
+    }
+
     /**
      * Increments the count at the given key.
      *
@@ -82,7 +100,7 @@ public class Counter {
      * @return the new value after incrementing the count
      */
     public int increment(int key) {
-        return ++this.counts[idx(key)];
+        return incrementAtIndex(idx(key), 1);
     }
 
     /**
@@ -98,7 +116,7 @@ public class Counter {
      * @return the new value after incrementing the count
      */
     public int increment(int key, int delta) {
-        return (this.counts[idx(key)] += delta);
+        return incrementAtIndex(idx(key), delta);
     }
 
     /**
@@ -106,7 +124,7 @@ public class Counter {
      *
      * @return the number of indices with non-zero counts
      */
-    public int nonZeroSize() {
+    public int getNonZeroSize() {
         int size = 0;
         for (int i = 0; i < counts.length; i++) {
             int count = counts[i];
@@ -143,7 +161,7 @@ public class Counter {
      *
      * @return a set of non-zero count values in this counter.
      */
-    public Collection<Integer> nonZeroValues() {
+    public Collection<Integer> getNonZeroValues() {
         List<Integer> values = new ArrayList<>(size /2);
         for (int i = 0; i < counts.length; i++) {
             int count = counts[i];
@@ -152,15 +170,6 @@ public class Counter {
             }
         }
         return values;
-    }
-
-
-    /**
-     * Returns a reference to the underlying array.
-     * @return a reference to the underlying array of counts.
-     */
-    public int[] getCounts() {
-        return this.counts;
     }
 
     /**
@@ -174,5 +183,14 @@ public class Counter {
      */
     public int get(int key) {
         return this.counts[idx(key)];
+    }
+
+
+    public int getAtIndex(int idx) {
+        return this.counts[idx];
+    }
+
+    public void setAtIndex(int idx, int value) {
+        this.counts[idx] = value;
     }
 }
