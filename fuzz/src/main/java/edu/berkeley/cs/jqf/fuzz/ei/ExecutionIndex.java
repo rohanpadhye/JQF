@@ -26,42 +26,58 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package edu.berkeley.cs.jqf.fuzz.ei;
 
-package edu.berkeley.cs.jqf.fuzz.drivers;
-
-import edu.berkeley.cs.jqf.fuzz.guidance.AFLPerformanceGuidance;
-import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
-import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
+import java.util.Arrays;
 
 /**
  * @author Rohan Padhye
  */
-public class AFLPerformanceDriver {
+public class ExecutionIndex implements Comparable<ExecutionIndex> {
 
-    public static void main(String[] args) {
-        if (args.length != 5){
-            System.err.println("Usage: java " + AFLPerformanceDriver.class + " TEST_CLASS TEST_METHOD TEST_INPUT_FILE AFL_TO_JAVA_PIPE JAVA_TO_AFL_PIPE");
-            System.exit(1);
-        }
+    final int[] ei;
 
-
-        String testClassName  = args[0];
-        String testMethodName = args[1];
-        String testInputFile  = args[2];
-        String a2jPipe  = args[3];
-        String j2aPipe  = args[4];
-
-        try {
-            // Load the guidance
-            Guidance guidance = new AFLPerformanceGuidance(testInputFile, a2jPipe, j2aPipe);
-
-            // Run the Junit test
-            GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.exit(2);
-        }
-
+    public ExecutionIndex(int[] ei) {
+        this.ei = ei;
     }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(ei);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other != null && other instanceof ExecutionIndex) {
+            return Arrays.equals(ei, ((ExecutionIndex) other).ei);
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int compareTo(ExecutionIndex other) {
+        int len1 = ei.length;
+        int len2 = other.ei.length;
+        int lim = Math.min(len1, len2);
+        int v1[] = ei;
+        int v2[] = other.ei;
+
+        int k = 0;
+        while (k < lim) {
+            int c1 = v1[k];
+            int c2 = v2[k];
+            if (c1 != c2) {
+                return c1 - c2;
+            }
+            k++;
+        }
+        return len1 - len2;
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(ei);
+    }
+
 }

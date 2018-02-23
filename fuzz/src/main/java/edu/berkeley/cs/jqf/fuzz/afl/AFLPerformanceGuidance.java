@@ -26,7 +26,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.fuzz.guidance;
+package edu.berkeley.cs.jqf.fuzz.afl;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -39,6 +39,7 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 
+import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.util.Counter;
 import edu.berkeley.cs.jqf.fuzz.util.Hashing;
 import edu.berkeley.cs.jqf.fuzz.util.MapOfCounters;

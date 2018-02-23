@@ -27,48 +27,35 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package edu.berkeley.cs.jqf.fuzz.drivers;
+package edu.berkeley.cs.jqf.fuzz.afl;
 
-import java.io.File;
-
-import edu.berkeley.cs.jqf.fuzz.guidance.ExecutionIndexingGuidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
 /**
  * @author Rohan Padhye
  */
-public class ExecutionIndexingDriver {
+public class AFLPerformanceDriver {
 
     public static void main(String[] args) {
-        if (args.length < 2){
-            System.err.println("Usage: java " + ExecutionIndexingDriver.class + " TEST_CLASS TEST_METHOD [OUTPUT_DIR [SEEDS...]]");
+        if (args.length != 5){
+            System.err.println("Usage: java " + AFLPerformanceDriver.class + " TEST_CLASS TEST_METHOD TEST_INPUT_FILE AFL_TO_JAVA_PIPE JAVA_TO_AFL_PIPE");
             System.exit(1);
         }
 
+
         String testClassName  = args[0];
         String testMethodName = args[1];
-        String outputDirectoryName = args.length > 2 ? args[2] : "fuzz-results";
-        File outputDirectory = new File(outputDirectoryName);
-        File[] seedFiles = null;
-        if (args.length > 3) {
-            seedFiles = new File[args.length-3];
-            for (int i = 3; i < args.length; i++) {
-                seedFiles[i-3] = new File(args[i]);
-            }
-        }
+        String testInputFile  = args[2];
+        String a2jPipe  = args[3];
+        String j2aPipe  = args[4];
 
         try {
             // Load the guidance
-            ExecutionIndexingGuidance guidance = seedFiles != null ?
-                    new ExecutionIndexingGuidance(Long.MAX_VALUE, outputDirectory, seedFiles) :
-                    new ExecutionIndexingGuidance(Long.MAX_VALUE, outputDirectory);
+            Guidance guidance = new AFLPerformanceGuidance(testInputFile, a2jPipe, j2aPipe);
 
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
-            if (Boolean.getBoolean("jqf.logCoverage")) {
-                System.out.println(String.format("Covered %d edges.",
-                        guidance.getTotalCoverage().getNonZeroCount()));
-            }
 
         } catch (Exception e) {
             e.printStackTrace();

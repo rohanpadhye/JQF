@@ -27,9 +27,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package edu.berkeley.cs.jqf.fuzz.drivers;
+package edu.berkeley.cs.jqf.fuzz.random;
 
-import edu.berkeley.cs.jqf.fuzz.guidance.NoGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
 /**

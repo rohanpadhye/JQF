@@ -27,48 +27,47 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package edu.berkeley.cs.jqf.fuzz.drivers;
+package edu.berkeley.cs.jqf.fuzz.ei;
 
 import java.io.File;
 
-import edu.berkeley.cs.jqf.fuzz.guidance.ReproGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
 /**
  * @author Rohan Padhye
  */
-public class ReproDriver {
+public class ExecutionIndexingDriver {
 
     public static void main(String[] args) {
-        if (args.length < 3){
-            System.err.println("Usage: java " + ReproDriver.class + " TEST_CLASS TEST_METHOD TEST_INPUT_FILE...");
+        if (args.length < 2){
+            System.err.println("Usage: java " + ExecutionIndexingDriver.class + " TEST_CLASS TEST_METHOD [OUTPUT_DIR [SEEDS...]]");
             System.exit(1);
         }
 
-
         String testClassName  = args[0];
         String testMethodName = args[1];
-        File[] testInputFiles = new File[args.length - 2];
-        for (int i = 0; i < testInputFiles.length; i++) {
-            testInputFiles[i] = new File(args[i+2]);
+        String outputDirectoryName = args.length > 2 ? args[2] : "fuzz-results";
+        File outputDirectory = new File(outputDirectoryName);
+        File[] seedFiles = null;
+        if (args.length > 3) {
+            seedFiles = new File[args.length-3];
+            for (int i = 3; i < args.length; i++) {
+                seedFiles[i-3] = new File(args[i]);
+            }
         }
 
         try {
-            // Maybe log the trace
-            String traceDirName = System.getProperty("jqf.repro.traceDir");
-            File traceDir = traceDirName != null ? new File(traceDirName) : null;
-
             // Load the guidance
-            ReproGuidance guidance = new ReproGuidance(testInputFiles, traceDir);
+            ExecutionIndexingGuidance guidance = seedFiles != null ?
+                    new ExecutionIndexingGuidance(Long.MAX_VALUE, outputDirectory, seedFiles) :
+                    new ExecutionIndexingGuidance(Long.MAX_VALUE, outputDirectory);
 
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
-
             if (Boolean.getBoolean("jqf.logCoverage")) {
                 System.out.println(String.format("Covered %d edges.",
-                        guidance.getCoverage().getNonZeroCount()));
+                        guidance.getTotalCoverage().getNonZeroCount()));
             }
-
 
         } catch (Exception e) {
             e.printStackTrace();

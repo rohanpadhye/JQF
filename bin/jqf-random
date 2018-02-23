@@ -35,4 +35,4 @@ if [ $# -lt 2 ]; then
 fi
 
 # Run the random input driver
-$ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.drivers.RandomDriver $@
+$ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.random.RandomDriver $@

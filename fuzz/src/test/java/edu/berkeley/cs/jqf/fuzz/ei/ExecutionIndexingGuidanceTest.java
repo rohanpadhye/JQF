@@ -26,13 +26,13 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.fuzz.guidance;
+package edu.berkeley.cs.jqf.fuzz.ei;
 
 import java.util.Random;
 
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import edu.berkeley.cs.jqf.fuzz.guidance.ExecutionIndexingGuidance.Input;
-import edu.berkeley.cs.jqf.fuzz.util.ExecutionIndex;
+import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance.Input;
+import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

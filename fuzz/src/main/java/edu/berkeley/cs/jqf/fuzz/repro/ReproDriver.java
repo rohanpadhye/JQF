@@ -26,58 +26,53 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.fuzz.util;
 
-import java.util.Arrays;
+package edu.berkeley.cs.jqf.fuzz.repro;
+
+import java.io.File;
+
+import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
 /**
  * @author Rohan Padhye
  */
-public class ExecutionIndex implements Comparable<ExecutionIndex> {
+public class ReproDriver {
 
-    final int[] ei;
-
-    public ExecutionIndex(int[] ei) {
-        this.ei = ei;
-    }
-
-    @Override
-    public int hashCode() {
-        return Arrays.hashCode(ei);
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other != null && other instanceof ExecutionIndex) {
-            return Arrays.equals(ei, ((ExecutionIndex) other).ei);
-        } else {
-            return false;
+    public static void main(String[] args) {
+        if (args.length < 3){
+            System.err.println("Usage: java " + ReproDriver.class + " TEST_CLASS TEST_METHOD TEST_INPUT_FILE...");
+            System.exit(1);
         }
-    }
 
-    @Override
-    public int compareTo(ExecutionIndex other) {
-        int len1 = ei.length;
-        int len2 = other.ei.length;
-        int lim = Math.min(len1, len2);
-        int v1[] = ei;
-        int v2[] = other.ei;
 
-        int k = 0;
-        while (k < lim) {
-            int c1 = v1[k];
-            int c2 = v2[k];
-            if (c1 != c2) {
-                return c1 - c2;
+        String testClassName  = args[0];
+        String testMethodName = args[1];
+        File[] testInputFiles = new File[args.length - 2];
+        for (int i = 0; i < testInputFiles.length; i++) {
+            testInputFiles[i] = new File(args[i+2]);
+        }
+
+        try {
+            // Maybe log the trace
+            String traceDirName = System.getProperty("jqf.repro.traceDir");
+            File traceDir = traceDirName != null ? new File(traceDirName) : null;
+
+            // Load the guidance
+            ReproGuidance guidance = new ReproGuidance(testInputFiles, traceDir);
+
+            // Run the Junit test
+            GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
+
+            if (Boolean.getBoolean("jqf.logCoverage")) {
+                System.out.println(String.format("Covered %d edges.",
+                        guidance.getCoverage().getNonZeroCount()));
             }
-            k++;
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(2);
         }
-        return len1 - len2;
-    }
 
-    @Override
-    public String toString() {
-        return Arrays.toString(ei);
     }
-
 }

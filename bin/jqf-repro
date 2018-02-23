@@ -45,4 +45,4 @@ fi
 
 
 # Run the repro input driver
-$ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.drivers.ReproDriver $@
+$ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.repro.ReproDriver $@

@@ -14,7 +14,7 @@ if [ ! -f "$ROOT_DIR/bin/afl-proxy" ]; then
 fi
 
 # Set defaults and parse options to override
-driver="edu.berkeley.cs.jqf.fuzz.drivers.AFLDriver"
+driver="edu.berkeley.cs.jqf.fuzz.afl.AFLDriver"
 java_log="/dev/stdout"
 afl_log="/dev/null"
 
@@ -31,7 +31,7 @@ while getopts ":avr" opt; do
       afl_log="proxy.log"
       ;;
     r)
-      driver="edu.berkeley.cs.jqf.fuzz.drivers.AFLPerformanceDriver"
+      driver="edu.berkeley.cs.jqf.fuzz.afl.AFLPerformanceDriver"
       export JQF_PERF_MAP=1
       ;;
   esac
