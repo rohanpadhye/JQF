@@ -53,6 +53,9 @@ public abstract class TraceEvent {
     }
 
     public String getFileName() {
+        if (containingMethod == null) {
+            return "<unknown>";
+        }
         String owner = containingMethod.getOwner();
         int idxOfDollar = owner.indexOf('$');
         if (idxOfDollar >= 0) {
@@ -64,6 +67,30 @@ public abstract class TraceEvent {
 
     public int getLineNumber() {
         return lineNumber;
+    }
+
+    public String getContainingClass() {
+        if (containingMethod == null) {
+            return "";
+        } else {
+            return containingMethod.getOwner();
+        }
+    }
+
+    public String getContainingMethodName() {
+        if (containingMethod == null) {
+            return "<unknown>";
+        } else {
+            return containingMethod.getName();
+        }
+    }
+
+    public String getContainingMethodDesc() {
+        if (containingMethod == null) {
+            return "(?)";
+        } else {
+            return containingMethod.getDesc();
+        }
     }
 
     public abstract void applyVisitor(TraceEventVisitor v);

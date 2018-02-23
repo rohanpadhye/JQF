@@ -43,10 +43,10 @@ import java.util.List;
 public class Counter {
 
     /** The size of the counter map. */
-    private final int size;
+    final int size;
 
     /** The counter map as an array of integers. */
-    private final int[] counts;
+    final int[] counts;
 
     public Counter(int size) {
         this.size = size;
@@ -71,9 +71,33 @@ public class Counter {
         return (this.counts[idx(key)] += delta);
     }
 
+    public int nonZeroSize() {
+        int size = 0;
+        for (int i = 0; i < counts.length; i++) {
+            int count = counts[i];
+            if (count != 0) {
+                size++;
+            }
+        }
+        return size;
+    }
+
+
+    public Collection<Integer> nonZeroKeys() {
+        List<Integer> keys = new ArrayList<>(size /2);
+        for (int i = 0; i < counts.length; i++) {
+            int count = counts[i];
+            if (count != 0) {
+                keys.add(i);
+            }
+        }
+        return keys;
+    }
+
     public Collection<Integer> nonZeroValues() {
         List<Integer> values = new ArrayList<>(size /2);
-        for (int count : counts) {
+        for (int i = 0; i < counts.length; i++) {
+            int count = counts[i];
             if (count != 0) {
                 values.add(count);
             }

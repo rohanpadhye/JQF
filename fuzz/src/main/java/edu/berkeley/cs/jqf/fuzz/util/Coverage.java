@@ -28,6 +28,9 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
@@ -45,6 +48,33 @@ public class Coverage implements TraceEventVisitor {
 
     /** The coverage counts for each edge. */
     private final Counter counter = new Counter(COVERAGE_MAP_SIZE);
+
+    /** Creates a new coverage map. */
+    public Coverage() {
+
+    }
+
+    /**
+     * Creates a copy of an existing coverage map.
+     *
+     * @param that the coverage map to copy
+     */
+    public Coverage(Coverage that) {
+        int[] thisCounts = this.counter.getCounts();
+        int[] thatCounts = that.counter.getCounts();
+        for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
+            thisCounts[i] = thatCounts[i];
+        }
+    }
+
+    /**
+     * Returns the size of the coverage map.
+     *
+     * @return the size of the coverage map
+     */
+    public int size() {
+        return COVERAGE_MAP_SIZE;
+    }
 
     /**
      * Updates coverage information based on emitted event.
@@ -69,13 +99,38 @@ public class Coverage implements TraceEventVisitor {
     }
 
     /**
-     * Get the number of edges covered.
+     * Returns the number of edges covered.
      *
      * @return the number of edges with non-zero counts
      */
     public int getNonZeroCount() {
-        return counter.nonZeroValues().size();
+        return counter.nonZeroSize();
     }
+
+    /**
+     * Returns a collection of branches that are covered.
+     *
+     * @return a collection of keys that are covered
+     */
+    public Collection<Integer> getNonZeroKeys() {
+        return counter.nonZeroKeys();
+    }
+
+
+    public Collection<?> computeNewCoverage(Coverage baseline) {
+        Collection<Integer> newCoverage = new ArrayList<>();
+        int[] thisCounts = this.counter.getCounts();
+        int[] thatCounts = baseline.counter.getCounts();
+        for (int i = 0; i < COVERAGE_MAP_SIZE; i++) {
+            if (thisCounts[i] > 0 && thatCounts[i] == 0) {
+                newCoverage.add(i);
+            }
+        }
+        return newCoverage;
+
+    }
+
+
 
     /**
      * Clears the coverage map.
@@ -103,7 +158,7 @@ public class Coverage implements TraceEventVisitor {
      *
      * @param that the run coverage whose bits to OR
      *
-     * @return <tt>true</tt> iff <tt>that</tt> is not a proper subset
+     * @return <tt>true</tt> iff <tt>that</tt> is not a subset
      *         of <tt>this</tt>, causing <tt>this</tt> to change.
      */
     public boolean updateBits(Coverage that) {
