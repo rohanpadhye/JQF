@@ -91,6 +91,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** A pseudo-random number generator for generating fresh values. */
     private Random random = new Random();
 
+    // ------------ ALGORITHM BOOKKEEPING ------------
+
     /** The total number of trials to run. */
     private final long maxTrials;
 
@@ -133,8 +135,10 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Whether to use real execution indexes as opposed to flat numbering (debug option; manually edit). */
     private final boolean realExecutionIndex = true;
 
+    // ---------- LOGGING / STATS OUTPUT ------------
+
     /** Whether to print log statements to stderr (debug option; manually edit). */
-    private final boolean verbose = false;
+    private final boolean verbose = true;
 
     /** A system console, which is non-null only if STDOUT is a console. */
     private final Console console = System.console();
@@ -148,17 +152,25 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Minimum amount of time (in millis) between two stats refreshes. */
     private static final long STATS_REFRESH_TIME_PERIOD = 300;
 
+    // ------------- FUZZING HEURISTICS ------------
+
     /** Max input size to generate. */
     private static final int MAX_INPUT_SIZE = 1024; // TODO: Make this configurable
 
-    /** Number of mutated children to produce from a given parent input. */
-    private static final int NUM_CHILDREN = 600;
+    /** Max number of mutated children to produce from a given parent input. */
+    private static final int MAX_NUM_CHILDREN = 600;
 
     /** Mean number of mutations to perform in each round. */
     private static final double MEAN_MUTATION_COUNT = 1.2;
 
     /** Mean number of contiguous bytes to mutate in each mutation. */
     private static final double MEAN_MUTATION_SIZE = 1.5; // Bytes
+
+    /** Whether to save inputs that only add new coverage bits (but no new responsibilities). */
+    private static final boolean SAVE_NEW_COUNTS = true;
+
+    /** Whether to steal responsibility from old inputs (this increases computation cost). */
+    private static final boolean STEAL_RESPONSIBILITY = true;
 
 
     /**
@@ -239,18 +251,43 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         console.printf("\033[H");
         console.printf("JQF: ExecutionIndexingGuidance\n");
         console.printf("------------------------------\n");
+        console.printf("Elapsed time:         %d min %d sec\n", elapsedMinutes, elapsedSeconds);
         console.printf("Cycles completed:     %d\n", cyclesCompleted);
         console.printf("Queue size:           %d\n", savedInputs.size());
         console.printf("Current parent input: %s\n", currentParentInputDesc);
         console.printf("Number of executions: %d\n", numTrials);
-        console.printf("Elapsed time:         %d min %d sec\n", elapsedMinutes, elapsedSeconds);
         console.printf("Execution speed:      %d execs/sec\n", execsPerSec);
         console.printf("Covered branches:     %d\n", totalCoverage.getNonZeroCount());
 
     }
 
     private int getTargetChildrenForParent(Input parentInput) {
-        return (NUM_CHILDREN * parentInput.nonZeroCoverage) / maxCoverage;
+        return (MAX_NUM_CHILDREN * parentInput.nonZeroCoverage) / maxCoverage;
+    }
+
+    private void completeCycle() {
+        // Increment cycle count
+        cyclesCompleted++;
+        infoLog("\n# Cycle " + cyclesCompleted + " completed.");
+
+        // Go over all inputs and do a sanity check (plus log)
+        infoLog("Here is a list of favored inputs:");
+        int sumResponsibilities = 0;
+        for (Input input : savedInputs) {
+            if (input.isFavored()) {
+                int responsibleFor = input.responsibilities.size();
+                infoLog("Input %d is responsible for %d branches", input.id, responsibleFor);
+                sumResponsibilities += responsibleFor;
+            }
+        }
+        int totalCoverageCount = totalCoverage.getNonZeroCount();
+        infoLog("Total %d branches covered", totalCoverageCount);
+        if (sumResponsibilities != totalCoverageCount) {
+            throw new AssertionError("Responsibilty mistmatch");
+        }
+
+        // Break log after cycle
+        infoLog("\n\n\n");
     }
 
     @Override
@@ -289,12 +326,11 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                     Input candidate = savedInputs.get(currentParentInputIdx);
 
                     // It is selected or skipped with some probability
-                    selectionProbability = candidate.isFavored() ? 0.8 : 0.2;
+                    selectionProbability = candidate.isFavored() ? 0.98 : 0.02;
 
                     // Count cycles
                     if (currentParentInputIdx == 0) {
-                        cyclesCompleted++;
-                        infoLog("Cycle " + cyclesCompleted + " completed.");
+                        completeCycle();
                     }
 
                 } while (random.nextDouble() > selectionProbability);
@@ -365,9 +401,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 maxCoverage = nonZeroAfter;
             }
 
-
             // Possibly save input
-            if (responsibilities.size() > 0 || coverageBitsUpdated) {
+            if (responsibilities.size() > 0 || (SAVE_NEW_COUNTS && coverageBitsUpdated)) {
                 // Trim input (remove unused keys)
                 currentInput.gc();
 
@@ -406,10 +441,50 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     // Compute a set of branches for which the current input may assume responsibility
     private Set<Object> computeResponsibilities() {
         Set<Object> result = new HashSet<>();
+
+        // This input is responsible for all new coverage
         Collection<?> newCoverage = runCoverage.computeNewCoverage(totalCoverage);
         if (newCoverage.size() > 0) {
             result.addAll(newCoverage);
         }
+
+        // Perhaps it can also steal responsibility from other inputs
+        if (STEAL_RESPONSIBILITY) {
+            int currentNonZeroCoverage = runCoverage.getNonZeroCount();
+            Set<?> covered = new HashSet<>(runCoverage.getCovered());
+            for (Input candidate : savedInputs) {
+                Set<?> responsibilities = candidate.responsibilities;
+
+                // Candidates with no responsibility are not interesting
+                if (responsibilities.isEmpty()) {
+                    continue;
+                }
+
+                // To avoid thrashing, only consider candidates with strictly
+                // smaller total coverage (implying that responsibility can only
+                // be stolen by an input that covers a larger set).
+                if (candidate.nonZeroCoverage >= currentNonZeroCoverage) {
+                    continue;
+                }
+
+                // Check if we can steal all responsibilities from candidate
+                boolean canSteal = true;
+                for (Object b : responsibilities) {
+                    if (covered.contains(b) == false) {
+                        // Cannot steal if this input does not cover something
+                        // that the candidate is responsible for
+                        canSteal = false;
+                        break;
+                    }
+                }
+                // If all of candidate's responsibilities are covered by the
+                // current input, then it can completely subsume the candidate
+                if (canSteal) {
+                    result.addAll(responsibilities);
+                }
+            }
+        }
+
         return result;
     }
 
@@ -444,12 +519,13 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             // subsume it
             Input oldResponsible = responsibleInputs.get(b);
             if (oldResponsible != null) {
-                responsibleInputs.put(b, currentInput);
                 oldResponsible.responsibilities.remove(b);
                 infoLog("-- Stealing responsibility for %s from input %d", b, oldResponsible.id);
             } else {
                 infoLog("-- Assuming new responsibility for %s", b);
             }
+            // We are now responsible
+            responsibleInputs.put(b, currentInput);
         }
 
     }
@@ -702,7 +778,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @return
          */
         public boolean isFavored() {
-            return responsibilities.size() > 0 || offspring > 0;
+            return responsibilities.size() > 0;
         }
 
         private int sampleGeometric(double mean, Random random) {

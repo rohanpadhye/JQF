@@ -48,11 +48,19 @@ public class Counter {
     /** The counter map as an array of integers. */
     final int[] counts;
 
+    /**
+     * Creates a new counter with given size.
+     *
+     * @param size the fixed-number of elements in the hashtable.
+     */
     public Counter(int size) {
         this.size = size;
         this.counts = new int[size];
     }
 
+    /**
+     * Clears the counter by setting all values to zero.
+     */
     public void clear() {
         for (int i = 0; i < counts.length; i++) {
             this.counts[i] = 0;
@@ -63,14 +71,41 @@ public class Counter {
         return Hashing.hash(key, size);
     }
 
+    /**
+     * Increments the count at the given key.
+     *
+     * <p>Note that the key is hashed and therefore the count
+     * to increment may be shared with another key that hashes
+     * to the same value. </p>
+     *
+     * @param key the key whose count to increment
+     * @return the new value after incrementing the count
+     */
     public int increment(int key) {
         return ++this.counts[idx(key)];
     }
 
+    /**
+     *
+     * Increments the count at the given key by a given delta.
+     *
+     * <p>Note that the key is hashed and therefore the count
+     * to increment may be shared with another key that hashes
+     * to the same value. </p>
+     *
+     * @param key the key whose count to increment
+     * @param delta the amount to increment by
+     * @return the new value after incrementing the count
+     */
     public int increment(int key, int delta) {
         return (this.counts[idx(key)] += delta);
     }
 
+    /**
+     * Returns the number of indices with non-zero counts.
+     *
+     * @return the number of indices with non-zero counts
+     */
     public int nonZeroSize() {
         int size = 0;
         for (int i = 0; i < counts.length; i++) {
@@ -83,17 +118,31 @@ public class Counter {
     }
 
 
-    public Collection<Integer> nonZeroKeys() {
-        List<Integer> keys = new ArrayList<>(size /2);
+    /**
+     * Returns a set of indices at which the count is non-zero.
+     *
+     * <p>Note that indices are different from keys, in that
+     * multiple keys can map to the same index due to hash
+     * collisions.</p>
+     *
+     * @return a set of indices at which the count is non-zero
+     */
+    public Collection<Integer> getNonZeroIndices() {
+        List<Integer> indices = new ArrayList<>(size /2);
         for (int i = 0; i < counts.length; i++) {
             int count = counts[i];
             if (count != 0) {
-                keys.add(i);
+                indices.add(i);
             }
         }
-        return keys;
+        return indices;
     }
 
+    /**
+     * Returns a set of non-zero count values in this counter.
+     *
+     * @return a set of non-zero count values in this counter.
+     */
     public Collection<Integer> nonZeroValues() {
         List<Integer> values = new ArrayList<>(size /2);
         for (int i = 0; i < counts.length; i++) {
@@ -105,10 +154,24 @@ public class Counter {
         return values;
     }
 
+
+    /**
+     * Returns a reference to the underlying array.
+     * @return a reference to the underlying array of counts.
+     */
     public int[] getCounts() {
         return this.counts;
     }
 
+    /**
+     * Retreives a value for a given key.
+     *
+     * <p>The key is first hashed to retreive a value from
+     * the counter, and hence the result is modulo collisions.</p>
+     *
+     * @param key the key to query
+     * @return the count for the index corresponding to this key
+     */
     public int get(int key) {
         return this.counts[idx(key)];
     }
