@@ -157,8 +157,11 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Max input size to generate. */
     private static final int MAX_INPUT_SIZE = 1024; // TODO: Make this configurable
 
-    /** Max number of mutated children to produce from a given parent input. */
-    private static final int MAX_NUM_CHILDREN = 600;
+    /** Baseline number of mutated children to produce from a given parent input. */
+    private static final int NUM_CHILDREN_BASELINE = 50;
+
+    /** Multiplication factor for number of children to produce for favored inputs. */
+    private static final int NUM_CHILDREN_MULTIPLIER_FAVORED = 20;
 
     /** Mean number of mutations to perform in each round. */
     private static final double MEAN_MUTATION_COUNT = 1.2;
@@ -262,8 +265,20 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     }
 
     private int getTargetChildrenForParent(Input parentInput) {
-        return maxCoverage == 0 ? MAX_NUM_CHILDREN
-                : (MAX_NUM_CHILDREN * parentInput.nonZeroCoverage) / maxCoverage;
+        // Baseline is a constant
+        int target = NUM_CHILDREN_BASELINE;
+
+        // We like inputs that cover many things, so scale with fraction of max
+        if (maxCoverage > 0) {
+            target = (NUM_CHILDREN_BASELINE * parentInput.nonZeroCoverage) / maxCoverage;
+        }
+
+        // We absolutey love favored inputs, so fuzz them more
+        if (parentInput.isFavored()) {
+            target = target * NUM_CHILDREN_MULTIPLIER_FAVORED;
+        }
+
+        return target;
     }
 
     private void completeCycle() {
@@ -320,21 +335,13 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             int targetNumChildren = getTargetChildrenForParent(currentParentInput);
             if (numChildrenGeneratedForCurrentParentInput >= targetNumChildren) {
                 // Select the next saved input to fuzz
-                double selectionProbability = 1.0;
-                do {
-                    // Try the next input as a candidate
-                    currentParentInputIdx = (currentParentInputIdx + 1) % savedInputs.size();
-                    Input candidate = savedInputs.get(currentParentInputIdx);
+                currentParentInputIdx = (currentParentInputIdx + 1) % savedInputs.size();
 
-                    // It is selected or skipped with some probability
-                    selectionProbability = candidate.isFavored() ? 0.98 : 0.02;
+                // Count cycles
+                if (currentParentInputIdx == 0) {
+                    completeCycle();
+                }
 
-                    // Count cycles
-                    if (currentParentInputIdx == 0) {
-                        completeCycle();
-                    }
-
-                } while (random.nextDouble() > selectionProbability);
                 numChildrenGeneratedForCurrentParentInput = 0;
             }
             Input parent = savedInputs.get(currentParentInputIdx);
