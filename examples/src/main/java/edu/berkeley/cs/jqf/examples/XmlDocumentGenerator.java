@@ -71,7 +71,7 @@ public class XmlDocumentGenerator extends Generator<Document> {
             new GeometricDistribution();
 
     private static double PROB_MORE_CHILDREN = 0.8;
-    private static double MEAN_NUM_CHILDREN = 1.6;
+    private static double MEAN_NUM_CHILDREN = 2;
     private static double MEAN_NUM_ATTRIBUTES = 1.2;
 
     private int minDepth = 0;
