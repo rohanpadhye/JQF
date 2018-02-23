@@ -146,8 +146,11 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Time since this guidance instance was created. */
     private final Date startTime = new Date();
 
-    /** Time since last stats refresh. */
+    /** Time at last stats refresh. */
     private Date lastRefreshTime = startTime;
+
+    /** Total execs at last stats refresh. */
+    private long lastNumTrials = 0;
 
     /** Minimum amount of time (in millis) between two stats refreshes. */
     private static final long STATS_REFRESH_TIME_PERIOD = 300;
@@ -155,7 +158,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     // ------------- FUZZING HEURISTICS ------------
 
     /** Max input size to generate. */
-    private static final int MAX_INPUT_SIZE = 1024; // TODO: Make this configurable
+    private static final int MAX_INPUT_SIZE = 10240; // TODO: Make this configurable
 
     /** Baseline number of mutated children to produce from a given parent input. */
     private static final int NUM_CHILDREN_BASELINE = 50;
@@ -233,7 +236,10 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD) {
             return;
         }
+        long interlvalTrials = numTrials - lastNumTrials;
+        long intervalExecsPerSec = interlvalTrials * 1000L / intervalMilliseconds;
         lastRefreshTime = now;
+        lastNumTrials = numTrials;
         long elapsedMilliseconds = now.getTime() - startTime.getTime();
         long elapsedSeconds = TimeUnit.MILLISECONDS.toSeconds(elapsedMilliseconds % 60_000);
         long elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedMilliseconds);
@@ -250,6 +256,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                     "/" + getTargetChildrenForParent(currentParentInput) + " mutations}";
         }
 
+        int nonZeroCount = totalCoverage.getNonZeroCount();
+        double nonZeroFraction = nonZeroCount * 100.0 / totalCoverage.size();
+
         console.printf("\033[2J");
         console.printf("\033[H");
         console.printf("JQF: ExecutionIndexingGuidance\n");
@@ -259,8 +268,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         console.printf("Queue size:           %d\n", savedInputs.size());
         console.printf("Current parent input: %s\n", currentParentInputDesc);
         console.printf("Number of executions: %d\n", numTrials);
-        console.printf("Execution speed:      %d execs/sec\n", execsPerSec);
-        console.printf("Covered branches:     %d\n", totalCoverage.getNonZeroCount());
+        console.printf("Execution speed:      %d/sec now | %d/sec overall\n", intervalExecsPerSec, execsPerSec);
+        console.printf("Covered branches:     %d (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
 
     }
 
