@@ -44,7 +44,10 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
             }
           }
         } catch (Exception e){
-          e.printStackTrace();
+          if (verbose) {
+            println("[JANALA] Could not instrument " + clazz + " :-(");
+            e.printStackTrace();
+          }
         }
       }
     }
@@ -129,8 +132,10 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
       try {
         cr.accept(cv, 0);
       } catch (Throwable e) {
-        System.err.println("Error instrumenting class " + cname);
-        e.printStackTrace();
+        System.err.println("\n[JANALA] Error instrumenting class " + cname);
+        if (verbose) {
+          e.printStackTrace();
+        }
         return null;
       }
 
