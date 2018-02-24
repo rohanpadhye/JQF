@@ -26,7 +26,7 @@ public class Utils implements Opcodes {
         mv.visitInsn(ICONST_5);
         break;
       default:
-        mv.visitLdcInsn(new Integer(val));
+        mv.visitLdcInsn(val);
         break;
     }
   }

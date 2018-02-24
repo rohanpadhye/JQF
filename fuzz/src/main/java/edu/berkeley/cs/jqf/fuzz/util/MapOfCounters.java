@@ -80,7 +80,7 @@ public class MapOfCounters {
         if (counters[idx] != null) {
             return counters[idx].getNonZeroValues();
         } else {
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
 
     }

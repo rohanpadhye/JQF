@@ -56,7 +56,7 @@ public class DoublyLinkedList<T> implements Iterable<T>, Stack<T> {
     }
 
     public void addFirst(T value) {
-        Node node = new Node(value);
+        Node<T> node = new Node<>(value);
         if (head != null) {
             head.prev = node;
             node.next = head;
@@ -68,7 +68,7 @@ public class DoublyLinkedList<T> implements Iterable<T>, Stack<T> {
     }
 
     public void addLast(T value) {
-        Node node = new Node(value);
+        Node<T> node = new Node<>(value);
         if (tail != null) {
             tail.next = node;
             node.prev = tail;
