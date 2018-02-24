@@ -54,7 +54,9 @@ public class NonZeroCachingCounter extends Counter {
 
     @Override
     public void clear() {
-        super.clear();
+        for (int idx : nonZeroIndices) {
+            counts[idx] = 0;
+        }
         this.nonZeroCount = 0;
         this.nonZeroIndices.clear();
     }
@@ -86,9 +88,8 @@ public class NonZeroCachingCounter extends Counter {
         List<Integer> values = new ArrayList<>(size /2);
         for (int idx : nonZeroIndices) {
             int count = counts[idx];
-            if (count != 0) {
-                values.add(count);
-            }
+            assert (count != 0);
+            values.add(count);
         }
         return values;
     }

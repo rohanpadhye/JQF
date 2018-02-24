@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import edu.berkeley.cs.jqf.fuzz.util.Counter;
+import edu.berkeley.cs.jqf.fuzz.util.NonZeroCachingCounter;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
@@ -49,7 +50,7 @@ public class ExecutionIndexingState {
 
     public ExecutionIndexingState() {
         // Create a counter for depth = 0
-        stackOfCounters.add(new Counter(COUNTER_SIZE));
+        stackOfCounters.add(new NonZeroCachingCounter(COUNTER_SIZE));
     }
 
     public void pushCall(CallEvent e) {
@@ -70,7 +71,7 @@ public class ExecutionIndexingState {
 
         // Push a new counter if it does not exist
         if (depth >= stackOfCounters.size()) {
-            stackOfCounters.add(new Counter(COUNTER_SIZE));
+            stackOfCounters.add(new NonZeroCachingCounter(COUNTER_SIZE));
         }
 
     }
