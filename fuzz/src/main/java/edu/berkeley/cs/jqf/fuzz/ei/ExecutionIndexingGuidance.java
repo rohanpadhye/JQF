@@ -43,15 +43,11 @@ import java.util.Date;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
@@ -402,6 +398,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         if (result == Result.SUCCESS) {
 
+            assert (currentInput.requiredKeys.size() > 0);
+
             // Compute a list of keys for which this input can assume responsiblity.
             // Newly covered branches are always included.
             // Existing branches *may* be included, depending on the heuristics used.
@@ -422,7 +420,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 currentInput.gc();
 
                 // It must still be non-empty
-                assert(currentInput.valuesMap.size() > 0);
+                assert(currentInput.requiredKeys.size() > 0);
 
                 infoLog("Saving new input (at run %d): " +
                                 "input #%d " +
@@ -430,7 +428,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                                 "total coverage = %d",
                         numTrials,
                         savedInputs.size(),
-                        currentInput.valuesMap.size(),
+                        currentInput.requiredKeys.size(),
                         nonZeroAfter);
 
                 // Save input to queue and to disk
@@ -512,8 +510,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         String saveFileName = String.format("id:%06d,src:%06d", newInputIdx, currentParentInputIdx);
         File outputFile = new File(outputDirectory, saveFileName);
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-            for (Object key : currentInput.requiredKeys) {
-                int b = currentInput.valuesMap.get(key);
+            for (ExecutionIndex key : currentInput.requiredKeys) {
+                int b = currentInput.trie.getValue(key);
                 assert (b >= 0 && b < 256);
                 out.write(b);
             }
@@ -602,8 +600,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
      */
     public static class Input {
 
-        /** A map from execution indexes to the byte (0-255) to be returned at that index. */
-        protected SortedMap<ExecutionIndex, Integer> valuesMap;
+        /** A trie of execution indexes to byte values. */
+        protected ExecutionIndexingTrie trie;
 
         /**
          * A list of execution indexes that are actually requested by the test program when
@@ -614,7 +612,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * trace and can therefore be used to serialize the map into a sequence of bytes.</p>
          *
          */
-        protected Collection<ExecutionIndex> requiredKeys = new ArrayList<>();
+        protected ArrayList<ExecutionIndex> requiredKeys = new ArrayList<>();
 
         /**
          * The file where this input is saved.
@@ -673,7 +671,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * Create an empty input map.
          */
         public Input() {
-            valuesMap = new TreeMap<>();
+            trie = new ExecutionIndexingTrie();
         }
 
         /**
@@ -682,7 +680,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @param toClone the input map to clone
          */
         public Input(Input toClone) {
-            valuesMap = new TreeMap<>(toClone.valuesMap);
+            trie = new ExecutionIndexingTrie(toClone.trie);
         }
 
         /**
@@ -699,13 +697,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 return -1;
             }
 
-            // Try to get existing values
-            Integer val = valuesMap.get(key);
-            // If not, generate a new random value
-            if (val == null) {
-                val = random.nextInt(256);
-                valuesMap.put(key, val);
-            }
+            // Otherwise get a new value from the trie or generate a fresh one
+            int val = trie.getValueOrGenerateFresh(key, () -> random.nextInt(256));
 
             // Mark this key as visited
             requiredKeys.add(key);
@@ -722,43 +715,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * deterministic).</p>
          */
         public void gc() {
-            SortedMap<ExecutionIndex, Integer> newMap = new TreeMap<>();
+            ExecutionIndexingTrie newTrie = new ExecutionIndexingTrie();
             for (ExecutionIndex key : requiredKeys) {
-                newMap.put(key, valuesMap.get(key));
+                newTrie.putValue(key, trie.getValue(key));
             }
-            valuesMap = newMap;
+            trie = newTrie;
         }
 
 
-        /**
-         * Performs a single contiguous mutation on the current input.
-         *
-         * <p>The size of the mutation is randomly sampled from a
-         * geometric distribution with mean
-         * {@link #MEAN_MUTATION_SIZE}.</p>
-         *
-         * @param random the PRNG
-         * @param mutation the unary operation to apply on an integer value
-         */
-        private void mutate(Random random, UnaryOperator<Integer> mutation) {
-            // Select a random offset and size
-            int idx = random.nextInt(valuesMap.size());
-            int mutationSize = sampleGeometric(MEAN_MUTATION_SIZE, random);
-
-            // Iterate over all entries in the value map
-            Iterator<Map.Entry<ExecutionIndex, Integer>> entryIterator
-                    = valuesMap.entrySet().iterator();
-            for (int i = 0; entryIterator.hasNext(); i++) {
-                Map.Entry<ExecutionIndex, Integer> e = entryIterator.next();
-                // Only mutate `mutationSize` contiguous entries from
-                // the randomly selected `idx`.
-                if (i >= idx && i < (idx + mutationSize)) {
-                    // Apply the provided mutation operation
-                    int mutatedValue = mutation.apply(e.getValue());
-                    e.setValue(mutatedValue);
-                }
-            }
-        }
 
         /**
          * Return a new input derived from this one with some values
@@ -778,7 +742,27 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             // Stack a bunch of mutations
             int numMutations = sampleGeometric(MEAN_MUTATION_COUNT, random);
             for (int i = 0; i < numMutations; i++) {
-                newInput.mutate(random, (x) -> random.nextInt(256));
+                // Select a random offset and size
+                int idx = random.nextInt(requiredKeys.size());
+                int mutationSize = sampleGeometric(MEAN_MUTATION_SIZE, random);
+
+                // Perform the contiguous mutation
+                for (int j = idx; j < idx + mutationSize; j++) {
+                    // Don't exceed bounds
+                    if (j >= requiredKeys.size()) {
+                        break;
+                    }
+
+                    // Choose the location to mutate value at
+                    ExecutionIndex ei = requiredKeys.get(j);
+
+                    // Generate a new value
+                    int mutatedValue = random.nextInt(256);
+
+                    // Replace value in the new input's trie
+                    newInput.trie.putValue(ei, mutatedValue);
+
+                }
             }
             return newInput;
         }
@@ -823,7 +807,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
             }
             if (value >= 0) {
-                valuesMap.put(key, value);
+                trie.putValue(key, value);
                 requiredKeys.add(key);
             }
             return value;
