@@ -44,11 +44,10 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
@@ -603,7 +602,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     public static class Input {
 
         /** A map from execution indexes to the byte (0-255) to be returned at that index. */
-        protected SortedMap<ExecutionIndex, Integer> valuesMap;
+        protected LinkedHashMap<ExecutionIndex, Integer> valuesMap;
 
         /**
          * A list of execution indexes that are actually requested by the test program when
@@ -673,7 +672,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * Create an empty input map.
          */
         public Input() {
-            valuesMap = new TreeMap<>();
+            valuesMap = new LinkedHashMap<>();
         }
 
         /**
@@ -682,7 +681,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @param toClone the input map to clone
          */
         public Input(Input toClone) {
-            valuesMap = new TreeMap<>(toClone.valuesMap);
+            valuesMap = new LinkedHashMap<>(toClone.valuesMap);
         }
 
         /**
@@ -722,7 +721,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * deterministic).</p>
          */
         public void gc() {
-            SortedMap<ExecutionIndex, Integer> newMap = new TreeMap<>();
+            LinkedHashMap<ExecutionIndex, Integer> newMap = new LinkedHashMap<>();
             for (ExecutionIndex key : requiredKeys) {
                 newMap.put(key, valuesMap.get(key));
             }
