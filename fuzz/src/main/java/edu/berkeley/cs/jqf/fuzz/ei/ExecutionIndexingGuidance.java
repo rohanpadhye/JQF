@@ -132,9 +132,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Number of cycles completed (i.e. how many times we've reset currentParentInputIdx to 0. */
     private int cyclesCompleted = 0;
 
-    /** Whether to use real execution indexes as opposed to flat numbering (debug option; manually edit). */
-    private final boolean realExecutionIndex = true;
-
     // ---------- LOGGING / STATS OUTPUT ------------
 
     /** Whether to print log statements to stderr (debug option; manually edit). */
@@ -157,8 +154,11 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     // ------------- FUZZING HEURISTICS ------------
 
+    /** Whether to use real execution indexes as opposed to flat numbering (debug option; manually edit). */
+    private static final boolean USE_EXECUTION_INDEXING = true;
+
     /** Max input size to generate. */
-    private static final int MAX_INPUT_SIZE = 10240; // TODO: Make this configurable
+    private static final int MAX_INPUT_SIZE = 1024; // TODO: Make this configurable
 
     /** Baseline number of mutated children to produce from a given parent input. */
     private static final int NUM_CHILDREN_BASELINE = 50;
@@ -167,10 +167,10 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     private static final int NUM_CHILDREN_MULTIPLIER_FAVORED = 20;
 
     /** Mean number of mutations to perform in each round. */
-    private static final double MEAN_MUTATION_COUNT = 1.2;
+    private static final double MEAN_MUTATION_COUNT = 8;
 
     /** Mean number of contiguous bytes to mutate in each mutation. */
-    private static final double MEAN_MUTATION_SIZE = 1.5; // Bytes
+    private static final double MEAN_MUTATION_SIZE = 4; // Bytes
 
     /** Whether to save inputs that only add new coverage bits (but no new responsibilities). */
     private static final boolean SAVE_NEW_COUNTS = true;
@@ -374,7 +374,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 }
 
                 // Get the execution index of the last event
-                ExecutionIndex executionIndex = realExecutionIndex ?
+                ExecutionIndex executionIndex = USE_EXECUTION_INDEXING ?
                         eiState.getExecutionIndex(lastEvent) :
                         new ExecutionIndex(new int[]{bytesRead});
 
