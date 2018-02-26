@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, University of California, Berkeley
+ * Copyright (c) 2018, University of California, Berkeley
  *
  * All rights reserved.
  *
@@ -31,67 +31,42 @@ package edu.berkeley.cs.jqf.fuzz.ei;
 import java.util.Arrays;
 
 /**
- * An execution index represents a unique point in a program's execution.
- *
- * <p>This class uses a call-stack-with-counts representation of execution
- * indexes, which was first introduced in the paper <em>A randomized dynamic
- * program analysis technique for detecting real deadlocks</em> by
- * Joshi et al. in PLDI 2009.</p>
- *
- * <p>The execution index is a basically a wrapper around an integer array
- * of even length, in which every pair of elements represents an IID of a
- * call site and its associated count.</p>
+ * A representation of an execution index sans the counts, equivalent to
+ * a call stack.
  *
  * @author Rohan Padhye
  */
-public class ExecutionIndex implements Comparable<ExecutionIndex> {
+public class ExecutionContext {
 
-    final int[] ei;
+    private final int[] ec;
 
-    public ExecutionIndex(int[] ei) {
-        if (ei.length == 0 || ei.length % 2 == 1) {
-            throw new IllegalArgumentException("Execution index must have non-zero even elements");
+    /**
+     * Create an execution context by extracting the call stack
+     * from an execution index.
+     *
+     * @param executionIndex the execution index to copy call sites from
+     */
+    public ExecutionContext(ExecutionIndex executionIndex) {
+        int[] ei = executionIndex.ei;
+
+        // Take every even element from the execution index
+        ec = new int[ei.length / 2];
+        for (int i = 0; i < ec.length; i++) {
+            ec[i] = ei[2*i];
         }
-        this.ei = ei;
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(ei);
+        return Arrays.hashCode(ec);
     }
 
     @Override
     public boolean equals(Object other) {
-        if (other != null && other instanceof ExecutionIndex) {
-            return Arrays.equals(ei, ((ExecutionIndex) other).ei);
+        if (other != null && other instanceof ExecutionContext) {
+            return Arrays.equals(ec, ((ExecutionContext) other).ec);
         } else {
             return false;
         }
     }
-
-    @Override
-    public int compareTo(ExecutionIndex other) {
-        int len1 = ei.length;
-        int len2 = other.ei.length;
-        int lim = Math.min(len1, len2);
-        int v1[] = ei;
-        int v2[] = other.ei;
-
-        int k = 0;
-        while (k < lim) {
-            int c1 = v1[k];
-            int c2 = v2[k];
-            if (c1 != c2) {
-                return c1 - c2;
-            }
-            k++;
-        }
-        return len1 - len2;
-    }
-
-    @Override
-    public String toString() {
-        return Arrays.toString(ei);
-    }
-
 }

@@ -38,6 +38,11 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
+ * A mutable state representing the current call stack with prefix counts,
+ * used to compute light-weight execution indexes.
+ *
+ * @see ExecutionIndex
+ *
  * @author Rohan Padhye
  */
 public class ExecutionIndexingState {

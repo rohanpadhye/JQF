@@ -50,12 +50,12 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
+import edu.berkeley.cs.jqf.fuzz.util.ProducerHashMap;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
@@ -102,18 +102,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** The directory where saved inputs are written. */
     private final File outputDirectory;
 
-    /** Cumulative coverage statistics. */
-    private Coverage totalCoverage = new Coverage();
-
-    /** Coverage statistics for a single run. */
-    private Coverage runCoverage = new Coverage();
-
-    /** A mapping of coverage keys to inputs that are responsible for them. */
-    private Map<Object, Input> responsibleInputs = new HashMap<>(totalCoverage.size());
-
-    /** The maximum number of keys covered by any single input found so far. */
-    private int maxCoverage = 0;
-
     /** Set of saved inputs to fuzz. */
     private ArrayList<Input> savedInputs = new ArrayList<>();
 
@@ -131,6 +119,26 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     /** Number of cycles completed (i.e. how many times we've reset currentParentInputIdx to 0. */
     private int cyclesCompleted = 0;
+
+    /** Coverage statistics for a single run. */
+    private Coverage runCoverage = new Coverage();
+
+    /** Cumulative coverage statistics. */
+    private Coverage totalCoverage = new Coverage();
+
+    /** The maximum number of keys covered by any single input found so far. */
+    private int maxCoverage = 0;
+
+    /** A mapping of coverage keys to inputs that are responsible for them. */
+    private Map<Object, Input> responsibleInputs = new HashMap<>(totalCoverage.size());
+
+    /**
+     * A map of execution contexts (call stacks) to locations in saved inputs with those contexts.
+     *
+     * This is a nifty data structure for quickly finding candidates for input splicing.
+     */
+    private Map<ExecutionContext, ArrayList<InputLocation>> ecToInputLoc
+            = new ProducerHashMap<>(() -> new ArrayList<>());
 
     // ---------- LOGGING / STATS OUTPUT ------------
 
@@ -167,13 +175,19 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     private static final int NUM_CHILDREN_MULTIPLIER_FAVORED = 20;
 
     /** Mean number of mutations to perform in each round. */
-    private static final double MEAN_MUTATION_COUNT = 8;
+    private static final double MEAN_MUTATION_COUNT = 8.0;
 
     /** Mean number of contiguous bytes to mutate in each mutation. */
-    private static final double MEAN_MUTATION_SIZE = 4; // Bytes
+    private static final double MEAN_MUTATION_SIZE = 4.0; // Bytes
+
+    /** Min number of inputs to be saved in the queue for the splicing stage to activate. */
+    private static final int MIN_SAVED_INPUTS_FOR_SPLICING = 4;
+
+    /** Max number of contiguous bytes to splice in from another input during the splicing stage. */
+    private static final int MAX_SPLICE_SIZE = 64; // Bytes
 
     /** Whether to save inputs that only add new coverage bits (but no new responsibilities). */
-    private static final boolean SAVE_NEW_COUNTS = true;
+    private static final boolean SAVE_NEW_COUNTS = false;
 
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
     private static final boolean STEAL_RESPONSIBILITY = true;
@@ -356,7 +370,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             Input parent = savedInputs.get(currentParentInputIdx);
 
             // Fuzz it to get a new input
-            currentInput = parent.fuzz(random);
+            currentInput = parent.fuzz(random, ecToInputLoc);
             numChildrenGeneratedForCurrentParentInput++;
         }
 
@@ -508,10 +522,10 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         // Second, save to disk
         int newInputIdx = savedInputs.size()-1;
-        String saveFileName = String.format("id:%06d,src:%06d", newInputIdx, currentParentInputIdx);
+        String saveFileName = String.format("id:%06d,%s", newInputIdx, currentInput.desc);
         File outputFile = new File(outputDirectory, saveFileName);
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile))) {
-            for (Object key : currentInput.requiredKeys) {
+            for (Object key : currentInput.orderedKeys) {
                 int b = currentInput.valuesMap.get(key);
                 assert (b >= 0 && b < 256);
                 out.write(b);
@@ -540,6 +554,13 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             }
             // We are now responsible
             responsibleInputs.put(b, currentInput);
+        }
+
+        // Fifth, map executions to input locations for splicing
+        for (int offset = 0; offset < currentInput.size(); offset++) {
+            ExecutionIndex ei = currentInput.orderedKeys.get(offset);
+            ExecutionContext ec = new ExecutionContext(ei);
+            ecToInputLoc.get(ec).add(new InputLocation(currentInput, offset));
         }
 
     }
@@ -613,7 +634,17 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * trace and can therefore be used to serialize the map into a sequence of bytes.</p>
          *
          */
-        protected Collection<ExecutionIndex> requiredKeys = new ArrayList<>();
+        protected ArrayList<ExecutionIndex> orderedKeys = new ArrayList<>();
+
+        /**
+         * Whether this input has been executed.
+         *
+         * When this field is {@code false}, the field {@link #orderedKeys}
+         * is not yet populated and must not be used. When this field is {@code true},
+         * the input should be considered immutable and neither {@link #orderedKeys} nor
+         * {@link #valuesMap} must be modified.
+         */
+        protected boolean executed = false;
 
         /**
          * The file where this input is saved.
@@ -628,6 +659,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * <p>This field is -1 for inputs that are not saved.</p>
          */
         private int id;
+
+        /**
+         * The description for this input.
+         *
+         * <p>This field is modified by the construction and mutation
+         * operations.</p>
+         */
+        private String desc;
 
         /**
          * The run coverage for this input, if the input is saved.
@@ -673,6 +712,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          */
         public Input() {
             valuesMap = new LinkedHashMap<>();
+            desc = "random";
         }
 
         /**
@@ -682,7 +722,61 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          */
         public Input(Input toClone) {
             valuesMap = new LinkedHashMap<>(toClone.valuesMap);
+            desc = String.format("src:%06d", toClone.id);
         }
+
+        /**
+         * Returns the size of this input, in terms of number of bytes
+         * in its value map.
+         *
+         * @return the size of this input
+         */
+        public final int size() {
+            return valuesMap.size();
+        }
+
+        /**
+         * Returns the byte mapped by this input at a given offset.
+         *
+         * @param offset the byte offset in the input
+         * @return the byte value at that offset
+         *
+         * @throws IndexOutOfBoundsException if the offset is negative or
+         *      larger than {@link #size()-1}
+         * @throws IllegalStateException if this method is called before the input
+         *                               has been executed
+         */
+        public final int getValueAtOffset(int offset) throws IndexOutOfBoundsException, IllegalStateException {
+            if (!executed) {
+                throw new IllegalStateException("Cannot get with offset before execution");
+            }
+
+            // Return the mapping for the execution index queried at the offset
+            ExecutionIndex ei = orderedKeys.get(offset);
+            return valuesMap.get(ei);
+        }
+
+
+        /**
+         * Returns the execution index mapped by this input at a given offset.
+         *
+         * @param offset the byte offset in the input
+         * @return the execution index value at that offset
+         *
+         * @throws IndexOutOfBoundsException if the offset is negative or
+         *      larger than {@link #size()-1}
+         * @throws IllegalStateException if this method is called before the input
+         *                               has been executed
+         */
+        public final ExecutionIndex getKeyAtOffset(int offset) throws IndexOutOfBoundsException, IllegalStateException {
+            if (!executed) {
+                throw new IllegalStateException("Cannot get with offset before execution");
+            }
+
+            // Return the execution index queried at the offset
+            return orderedKeys.get(offset);
+        }
+
 
         /**
          * Retrieve a value for an execution index if mapped, else generate
@@ -691,10 +785,16 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @param key    the execution index of the trace event requesting a new byte
          * @param random the PRNG
          * @return the value to return to the quickcheck-like generator
+         * @throws IllegalStateException if this method is called after the input
+         *                               has been executed
          */
-        public int getOrGenerateFresh(ExecutionIndex key, Random random) {
+        public int getOrGenerateFresh(ExecutionIndex key, Random random) throws IllegalStateException {
+            if (executed) {
+                throw new IllegalStateException("Cannot generate fresh values after execution");
+            }
+
             // If we reached a limit, then just return EOF
-            if (requiredKeys.size() >= MAX_INPUT_SIZE) {
+            if (orderedKeys.size() >= MAX_INPUT_SIZE) {
                 return -1;
             }
 
@@ -707,9 +807,42 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             }
 
             // Mark this key as visited
-            requiredKeys.add(key);
+            orderedKeys.add(key);
 
             return val;
+        }
+
+
+        /**
+         * Gets the byte mapped by this input at a given execution index.
+         *
+         * @param ei the execution index
+         * @return the value mapped for this index, or {@code null} if no such mapping exists
+         *
+         * @throws IndexOutOfBoundsException if the offset is negative or
+         *      larger than {@link #size()-1}
+         */
+        public final Integer getValueAtKey(ExecutionIndex ei) throws IndexOutOfBoundsException {
+            return valuesMap.get(ei);
+        }
+
+        /**
+         * Sets the byte mapped by this input at a given execution index.
+         *
+         * @param ei  the execution index at which to insert
+         * @param val the byte to insert
+         *
+         * @throws IndexOutOfBoundsException if the offset is negative or
+         *      larger than {@link #size()-1}
+         * @throws IllegalStateException if this method is called after the input
+         *                               has been executed
+         */
+        public final void setValueAtKey(ExecutionIndex ei, int val) throws IndexOutOfBoundsException, IllegalStateException {
+            if (executed) {
+                throw new IllegalStateException("Cannot set value before execution");
+            }
+
+            valuesMap.put(ei, val);
         }
 
         /**
@@ -722,64 +855,143 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          */
         public void gc() {
             LinkedHashMap<ExecutionIndex, Integer> newMap = new LinkedHashMap<>();
-            for (ExecutionIndex key : requiredKeys) {
+            for (ExecutionIndex key : orderedKeys) {
                 newMap.put(key, valuesMap.get(key));
             }
             valuesMap = newMap;
+
+            // Set the `executed` flag
+            executed = true;
         }
 
-
-        /**
-         * Performs a single contiguous mutation on the current input.
-         *
-         * <p>The size of the mutation is randomly sampled from a
-         * geometric distribution with mean
-         * {@link #MEAN_MUTATION_SIZE}.</p>
-         *
-         * @param random the PRNG
-         * @param mutation the unary operation to apply on an integer value
-         */
-        private void mutate(Random random, UnaryOperator<Integer> mutation) {
-            // Select a random offset and size
-            int idx = random.nextInt(valuesMap.size());
-            int mutationSize = sampleGeometric(MEAN_MUTATION_SIZE, random);
-
-            // Iterate over all entries in the value map
-            Iterator<Map.Entry<ExecutionIndex, Integer>> entryIterator
-                    = valuesMap.entrySet().iterator();
-            for (int i = 0; entryIterator.hasNext(); i++) {
-                Map.Entry<ExecutionIndex, Integer> e = entryIterator.next();
-                // Only mutate `mutationSize` contiguous entries from
-                // the randomly selected `idx`.
-                if (i >= idx && i < (idx + mutationSize)) {
-                    // Apply the provided mutation operation
-                    int mutatedValue = mutation.apply(e.getValue());
-                    e.setValue(mutatedValue);
-                }
-            }
-        }
 
         /**
          * Return a new input derived from this one with some values
          * mutated.
          *
-         * <p>This method performs multiple stacked mutations on
-         * the input map, where the number of mutations is randomly
-         * sampled from a geometric distribution with mean
-         * {@link #MEAN_MUTATION_COUNT}</p>
+         * <p>This method performs one or both of random mutations
+         * and splicing.</p>
+         *
+         * <p>Random mutations are done by performing M
+         * mutation operations each on a random contiguous sequence of N bytes,
+         * where M and N are sampled from a geometric distribution with mean
+         * {@link #MEAN_MUTATION_COUNT} and {@link #MEAN_MUTATION_SIZE}
+         * respectively.</p>
+         *
+         * <p>Splicing is performed by first randomly choosing a location and
+         * its corresponding execution context in this input's value map, and then
+         * copying a contiguous sequence of up to Z bytes from another input,
+         * starting with a location that also maps the same execution context.
+         * Here, Z is sampled from a uniform distribution from 0 to
+         * {@link #MAX_SPLICE_SIZE}.</p>
          *
          * @param random the PRNG
+         * @param ecToInputLoc a map of execution contexts to input locations
          * @return a newly fuzzed input
          */
-        public Input fuzz(Random random) {
+        public Input fuzz(Random random, Map<ExecutionContext, ArrayList<InputLocation>> ecToInputLoc) {
             // Derive new input from this object as source
             Input newInput = new Input(this);
-            // Stack a bunch of mutations
-            int numMutations = sampleGeometric(MEAN_MUTATION_COUNT, random);
-            for (int i = 0; i < numMutations; i++) {
-                newInput.mutate(random, (x) -> random.nextInt(256));
+
+            // Maybe try splicing
+            boolean splicingDone = false;
+
+
+            // Only splice if we have been provided the ecToInputLoc
+            if (ecToInputLoc != null) {
+
+                // TODO: Do we really want splicing to be this frequent?
+                if (random.nextBoolean()) {
+
+                    // Choose an execution context at which to splice at
+                    // Note: We get EI and value from `this` rather than `newInput`
+                    // because `this` has already been executed
+                    int targetOffset = random.nextInt(valuesMap.size());
+                    ExecutionIndex ei = this.getKeyAtOffset(targetOffset);
+                    ExecutionContext ec = new ExecutionContext(ei);
+                    int valueAtTarget = this.getValueAtOffset(targetOffset);
+
+                    // Find a suitable input location to splice from
+                    ArrayList<InputLocation> inputLocations = ecToInputLoc.get(ec);
+                    InputLocation inputLocation;
+
+                    // Try a bunch of times
+                    for (int attempt = 1; attempt <= 10; attempt++) {
+
+                        // Get a candidate source location with the same execution context
+                        inputLocation = inputLocations.get(random.nextInt(inputLocations.size()));
+                        Input sourceInput = inputLocation.input;
+                        int sourceOffset = inputLocation.offset;
+
+                        // Do not splice with ourselves
+                        if (sourceInput == this) {
+                            continue;
+                        }
+
+                        // Do not splice if the first value is the same in source and target
+                        if (sourceInput.getValueAtOffset(sourceOffset) == valueAtTarget) {
+                            continue;
+                        }
+
+                        // OK, this looks good. Let's splice!
+                        int spliceSize = 1 + random.nextInt(MAX_SPLICE_SIZE);
+                        int src = sourceOffset;
+                        int tgt = targetOffset;
+                        int splicedBytes = 0;
+                        int srcSize = sourceInput.size();
+                        int tgtSize = newInput.size();
+                        while (splicedBytes < spliceSize && src < srcSize && tgt < tgtSize) {
+                            int val = sourceInput.getValueAtOffset(src);
+                            ExecutionIndex key = this.getKeyAtOffset(tgt);
+                            newInput.setValueAtKey(key, val);
+
+                            splicedBytes++;
+                            src++;
+                            tgt++;
+                        }
+                        splicingDone = true;
+                        newInput.desc += String.format(",splice:%06d:%d@%d->%d", sourceInput.id, splicedBytes,
+                                sourceOffset, targetOffset);
+
+                        break; // Stop more splicing attempts!
+
+                    }
+                }
             }
+
+            // Maybe do random mutations
+            if (splicingDone == false || random.nextBoolean()) {
+
+                // Stack a bunch of mutations
+                int numMutations = sampleGeometric(random, MEAN_MUTATION_COUNT);
+                newInput.desc += ",havoc:"+numMutations;
+
+                for (int mutation = 1; mutation <= numMutations; mutation++) {
+
+                    // Select a random offset and size
+                    int offset = random.nextInt(newInput.valuesMap.size());
+                    int mutationSize = sampleGeometric(random, MEAN_MUTATION_SIZE);
+
+                    // desc += String.format(":%d@%d", mutationSize, idx);
+
+                    // Iterate over all entries in the value map
+                    Iterator<Map.Entry<ExecutionIndex, Integer>> entryIterator
+                            = newInput.valuesMap.entrySet().iterator();
+                    for (int i = 0; entryIterator.hasNext(); i++) {
+                        Map.Entry<ExecutionIndex, Integer> e = entryIterator.next();
+                        // Only mutate `mutationSize` contiguous entries from
+                        // the randomly selected `idx`.
+                        if (i >= offset && i < (offset + mutationSize)) {
+                            // Apply a random mutation
+                            int mutatedValue = random.nextInt(256);
+                            e.setValue(mutatedValue);
+                        }
+                    }
+                }
+            }
+
             return newInput;
+
         }
 
         /**
@@ -795,7 +1007,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             return responsibilities.size() > 0;
         }
 
-        private int sampleGeometric(double mean, Random random) {
+        private int sampleGeometric(Random random, double mean) {
             double p = 1 / mean;
             double uniform = random.nextDouble();
             return (int) ceil(log(1 - uniform) / log(1 - p));
@@ -823,7 +1035,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             }
             if (value >= 0) {
                 valuesMap.put(key, value);
-                requiredKeys.add(key);
+                orderedKeys.add(key);
             }
             return value;
         }
@@ -837,6 +1049,17 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             }
         }
 
+    }
+
+
+    static class InputLocation {
+        private final Input input;
+        private final int offset;
+
+        InputLocation(Input input, int offset) {
+            this.input = input;
+            this.offset = offset;
+        }
     }
 
 }
