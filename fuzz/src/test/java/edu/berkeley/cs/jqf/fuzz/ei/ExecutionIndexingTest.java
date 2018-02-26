@@ -34,18 +34,17 @@ import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex;
-import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingState;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import janala.logger.inst.INVOKESTATIC;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
+import static org.junit.Assume.assumeTrue;
 
 @RunWith(JUnitQuickcheck.class)
 public class ExecutionIndexingTest {
@@ -147,7 +146,7 @@ public class ExecutionIndexingTest {
 
     @Property
     public void validExecutionIndex(@InRange(minInt=1, maxInt=32) int @Size(min=2, max=48)[] expected) {
-        Assume.assumeTrue(expected.length % 2 == 0);
+        assumeTrue(expected.length % 2 == 0);
         ExecutionIndexingState e = new ExecutionIndexingState();
         int i;
         int[] ei = null;
@@ -171,6 +170,7 @@ public class ExecutionIndexingTest {
 
     @Property
     public void comparesEqual(int @Size(min=1, max=20)[] v1) {
+        assumeTrue(v1.length % 2 == 0);
         int[] v2 = Arrays.copyOf(v1, v1.length);
         ExecutionIndex e1 = new ExecutionIndex(v1);
         ExecutionIndex e2 = new ExecutionIndex(v2);
@@ -179,6 +179,7 @@ public class ExecutionIndexingTest {
 
     @Property
     public void comparesLexicographically(@InRange(minInt=1, maxInt=32) int @Size(min=1, max=20)[] v1) {
+        assumeTrue(v1.length % 2 == 0);
         int[] v2 = Arrays.copyOf(v1, v1.length);
         v2[v1.length/2]--; // Make v2 less than v1
 
@@ -190,8 +191,9 @@ public class ExecutionIndexingTest {
 
 
     @Property
-    public void comparesLength(@InRange(minInt=1, maxInt=32) int @Size(min=1, max=20)[] v1) {
-        int[] v2 = Arrays.copyOf(v1, v1.length-1); // v2 is smaller
+    public void comparesLength(@InRange(minInt=1, maxInt=32) int @Size(min=4, max=20)[] v1) {
+        assumeTrue(v1.length % 2 == 0);
+        int[] v2 = Arrays.copyOf(v1, v1.length-2); // v2 is smaller
 
         ExecutionIndex e1 = new ExecutionIndex(v1);
         ExecutionIndex e2 = new ExecutionIndex(v2);
