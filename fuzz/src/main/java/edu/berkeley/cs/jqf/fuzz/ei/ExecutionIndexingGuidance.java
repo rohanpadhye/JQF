@@ -171,10 +171,10 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     // ------------- FUZZING HEURISTICS ------------
 
     /** Whether to use real execution indexes as opposed to flat numbering (debug option; manually edit). */
-    private static final boolean USE_EXECUTION_INDEXING = true;
+    private static final boolean DISABLE_EXECUTION_INDEXING = Boolean.getBoolean("jqf.ei.DISABLE_EXECUTION_INDEXING");
 
     /** Max input size to generate. */
-    private static final int MAX_INPUT_SIZE = 1024; // TODO: Make this configurable
+    private static final int MAX_INPUT_SIZE = Integer.getInteger("jqf.ei.MAX_INPUT_SIZE", 1024);
 
     /** Baseline number of mutated children to produce from a given parent input. */
     private static final int NUM_CHILDREN_BASELINE = 50;
@@ -198,7 +198,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     private static final boolean SAVE_NEW_COUNTS = true;
 
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
-    private static final boolean STEAL_RESPONSIBILITY = true;
+    private static final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
 
 
     /**
@@ -423,9 +423,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 }
 
                 // Get the execution index of the last event
-                ExecutionIndex executionIndex = USE_EXECUTION_INDEXING ?
-                        eiState.getExecutionIndex(lastEvent) :
-                        new ExecutionIndex(new int[]{0, bytesRead});
+                ExecutionIndex executionIndex = DISABLE_EXECUTION_INDEXING ?
+                        new ExecutionIndex(new int[]{0, bytesRead}) :
+                        eiState.getExecutionIndex(lastEvent);
 
                 // Attempt to get a value from the map, or else generate a random value
                 int value = currentInput.getOrGenerateFresh(executionIndex, random);
@@ -620,7 +620,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         lastEvent = e;
 
         // Update execution indexing logic
-        if (USE_EXECUTION_INDEXING) {
+        if (!DISABLE_EXECUTION_INDEXING) {
             e.applyVisitor(this);
         }
 
