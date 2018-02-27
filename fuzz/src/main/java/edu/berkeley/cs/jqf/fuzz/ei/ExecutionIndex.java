@@ -94,4 +94,14 @@ public class ExecutionIndex implements Comparable<ExecutionIndex> {
         return Arrays.toString(ei);
     }
 
+    public int oneSuffixSize() {
+        int size = 0;
+        for (int i = ei.length-1; i >= 0; i -= 2) {
+            if (ei[i] == 1) {
+                size++;
+            }
+        }
+        return size;
+    }
+
 }

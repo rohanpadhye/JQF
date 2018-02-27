@@ -180,14 +180,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Mean number of contiguous bytes to mutate in each mutation. */
     private static final double MEAN_MUTATION_SIZE = 4.0; // Bytes
 
-    /** Min number of inputs to be saved in the queue for the splicing stage to activate. */
-    private static final int MIN_SAVED_INPUTS_FOR_SPLICING = 4;
-
     /** Max number of contiguous bytes to splice in from another input during the splicing stage. */
     private static final int MAX_SPLICE_SIZE = 64; // Bytes
 
+    /** Whether to splice only at/from locations with a 1-count suffix. */
+    private static final boolean ONLY_SPLICE_ONE_SUFFIX = false;
+
     /** Whether to save inputs that only add new coverage bits (but no new responsibilities). */
-    private static final boolean SAVE_NEW_COUNTS = false;
+    private static final boolean SAVE_NEW_COUNTS = true;
 
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
     private static final boolean STEAL_RESPONSIBILITY = true;
@@ -390,7 +390,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 // Get the execution index of the last event
                 ExecutionIndex executionIndex = USE_EXECUTION_INDEXING ?
                         eiState.getExecutionIndex(lastEvent) :
-                        new ExecutionIndex(new int[]{bytesRead});
+                        new ExecutionIndex(new int[]{0, bytesRead});
 
                 // Attempt to get a value from the map, or else generate a random value
                 int value = currentInput.getOrGenerateFresh(executionIndex, random);
@@ -560,6 +560,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         for (int offset = 0; offset < currentInput.size(); offset++) {
             ExecutionIndex ei = currentInput.orderedKeys.get(offset);
             ExecutionContext ec = new ExecutionContext(ei);
+            if (ONLY_SPLICE_ONE_SUFFIX && ei.oneSuffixSize() == 0) {
+                continue;
+            }
             ecToInputLoc.get(ec).add(new InputLocation(currentInput, offset));
         }
 
@@ -582,7 +585,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         lastEvent = e;
 
         // Update execution indexing logic
-        e.applyVisitor(this);
+        if (USE_EXECUTION_INDEXING) {
+            e.applyVisitor(this);
+        }
 
         // Collect totalCoverage
         runCoverage.handleEvent(e);
@@ -903,58 +908,73 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 // TODO: Do we really want splicing to be this frequent?
                 if (random.nextBoolean()) {
 
-                    // Choose an execution context at which to splice at
-                    // Note: We get EI and value from `this` rather than `newInput`
-                    // because `this` has already been executed
-                    int targetOffset = random.nextInt(valuesMap.size());
-                    ExecutionIndex ei = this.getKeyAtOffset(targetOffset);
-                    ExecutionContext ec = new ExecutionContext(ei);
-                    int valueAtTarget = this.getValueAtOffset(targetOffset);
+                    outer: for (int targetAttempt = 1; targetAttempt < 3; targetAttempt++) {
 
-                    // Find a suitable input location to splice from
-                    ArrayList<InputLocation> inputLocations = ecToInputLoc.get(ec);
-                    InputLocation inputLocation;
+                        // Choose an execution context at which to splice at
+                        // Note: We get EI and value from `this` rather than `newInput`
+                        // because `this` has already been executed
+                        int targetOffset = random.nextInt(valuesMap.size());
+                        ExecutionIndex ei = this.getKeyAtOffset(targetOffset);
 
-                    // Try a bunch of times
-                    for (int attempt = 1; attempt <= 10; attempt++) {
-
-                        // Get a candidate source location with the same execution context
-                        inputLocation = inputLocations.get(random.nextInt(inputLocations.size()));
-                        Input sourceInput = inputLocation.input;
-                        int sourceOffset = inputLocation.offset;
-
-                        // Do not splice with ourselves
-                        if (sourceInput == this) {
+                        // If only splicing EIs with a one-suffix, we may want to
+                        // skip this one
+                        if (ONLY_SPLICE_ONE_SUFFIX && ei.oneSuffixSize() == 0) {
                             continue;
                         }
 
-                        // Do not splice if the first value is the same in source and target
-                        if (sourceInput.getValueAtOffset(sourceOffset) == valueAtTarget) {
-                            continue;
+                        ExecutionContext ec = new ExecutionContext(ei);
+                        int valueAtTarget = this.getValueAtOffset(targetOffset);
+
+                        // Find a suitable input location to splice from
+                        ArrayList<InputLocation> inputLocations = ecToInputLoc.get(ec);
+
+                        // If this is a valid target location, it should also be a valid
+                        // source location and exist in the ecToInputLoc map
+                        assert (inputLocations.size() > 0);
+
+                        InputLocation inputLocation;
+
+                        // Try a bunch of times
+                        for (int attempt = 1; attempt <= 10; attempt++) {
+
+                            // Get a candidate source location with the same execution context
+                            inputLocation = inputLocations.get(random.nextInt(inputLocations.size()));
+                            Input sourceInput = inputLocation.input;
+                            int sourceOffset = inputLocation.offset;
+
+                            // Do not splice with ourselves
+                            if (sourceInput == this) {
+                                continue;
+                            }
+
+                            // Do not splice if the first value is the same in source and target
+                            if (sourceInput.getValueAtOffset(sourceOffset) == valueAtTarget) {
+                                continue;
+                            }
+
+                            // OK, this looks good. Let's splice!
+                            int spliceSize = 1 + random.nextInt(MAX_SPLICE_SIZE);
+                            int src = sourceOffset;
+                            int tgt = targetOffset;
+                            int splicedBytes = 0;
+                            int srcSize = sourceInput.size();
+                            int tgtSize = newInput.size();
+                            while (splicedBytes < spliceSize && src < srcSize && tgt < tgtSize) {
+                                int val = sourceInput.getValueAtOffset(src);
+                                ExecutionIndex key = this.getKeyAtOffset(tgt);
+                                newInput.setValueAtKey(key, val);
+
+                                splicedBytes++;
+                                src++;
+                                tgt++;
+                            }
+                            splicingDone = true;
+                            newInput.desc += String.format(",splice:%06d:%d@%d->%d", sourceInput.id, splicedBytes,
+                                    sourceOffset, targetOffset);
+
+                            break outer; // Stop more splicing attempts!
+
                         }
-
-                        // OK, this looks good. Let's splice!
-                        int spliceSize = 1 + random.nextInt(MAX_SPLICE_SIZE);
-                        int src = sourceOffset;
-                        int tgt = targetOffset;
-                        int splicedBytes = 0;
-                        int srcSize = sourceInput.size();
-                        int tgtSize = newInput.size();
-                        while (splicedBytes < spliceSize && src < srcSize && tgt < tgtSize) {
-                            int val = sourceInput.getValueAtOffset(src);
-                            ExecutionIndex key = this.getKeyAtOffset(tgt);
-                            newInput.setValueAtKey(key, val);
-
-                            splicedBytes++;
-                            src++;
-                            tgt++;
-                        }
-                        splicingDone = true;
-                        newInput.desc += String.format(",splice:%06d:%d@%d->%d", sourceInput.id, splicedBytes,
-                                sourceOffset, targetOffset);
-
-                        break; // Stop more splicing attempts!
-
                     }
                 }
             }
