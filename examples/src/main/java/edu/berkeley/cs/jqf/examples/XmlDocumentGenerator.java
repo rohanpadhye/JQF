@@ -70,9 +70,9 @@ public class XmlDocumentGenerator extends Generator<Document> {
     private static GeometricDistribution geometricDistribution =
             new GeometricDistribution();
 
-    private static double PROB_MORE_CHILDREN = 0.8;
-    private static double MEAN_NUM_CHILDREN = 2;
-    private static double MEAN_NUM_ATTRIBUTES = 1.2;
+    private static double PROB_MORE_CHILDREN = 0.85;
+    private static double MEAN_NUM_CHILDREN = 4;
+    private static double MEAN_NUM_ATTRIBUTES = 2;
 
     private int minDepth = 0;
     private int maxDepth = 12;
@@ -152,7 +152,7 @@ public class XmlDocumentGenerator extends Generator<Document> {
 
     private void populateElement(Document document, Element elem, SourceOfRandomness random, GenerationStatus status, int depth) {
         // Add attributes
-        int numAttributes = geometricDistribution.sampleWithMean(MEAN_NUM_ATTRIBUTES, random);
+        int numAttributes = Math.min(0, geometricDistribution.sampleWithMean(MEAN_NUM_ATTRIBUTES, random) - 1);
         for (int i = 0; i < numAttributes; i++) {
             elem.setAttribute(makeString(random, status), makeString(random, status));
         }
