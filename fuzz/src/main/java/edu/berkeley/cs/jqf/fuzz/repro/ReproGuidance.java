@@ -36,7 +36,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
@@ -62,6 +64,7 @@ public class ReproGuidance implements Guidance {
     private List<PrintStream> traceStreams = new ArrayList<>();
     private InputStream inputStream;
     private Coverage coverage = new Coverage();
+    private Set<String> branchesCovered;
 
     /**
      * Constructs an instance of ReproGuidance with a list of
@@ -76,6 +79,9 @@ public class ReproGuidance implements Guidance {
     public ReproGuidance(File[] inputFiles, File traceDir) {
         this.inputFiles = inputFiles;
         this.traceDir = traceDir;
+        if (Boolean.getBoolean("jqf.repro.logUniqueBranches")) {
+            branchesCovered = new HashSet<>();
+        }
     }
 
     /**
@@ -126,8 +132,14 @@ public class ReproGuidance implements Guidance {
     @Override
     public void handleResult(Result result, Throwable error) {
         // Print footer in log files
-        String footer = String.format("# End %s", inputFiles[nextFileIdx].toString());
-        traceStreams.forEach((out) -> out.println(footer));
+        String footer = String.format("# End %s\n", inputFiles[nextFileIdx].toString());
+        if (branchesCovered != null) {
+            for (String s : branchesCovered) {
+                footer += "# Covered: " + s + "\n";
+            }
+        }
+        final String finalFooter = footer;
+        traceStreams.forEach((out) -> out.print(finalFooter));
 
         // Close the open input file
         try {
@@ -177,9 +189,10 @@ public class ReproGuidance implements Guidance {
                 return (e) -> {
                     coverage.handleEvent(e);
                     out.println(e);
-                    if (e instanceof BranchEvent) {
+                    if (branchesCovered != null && e instanceof BranchEvent) {
                         BranchEvent b = (BranchEvent) e;
-                        // out.println(" -- hash="+ Hashing.hash1(b.getIid(), b.getArm(), AFLGuidance.COVERAGE_MAP_SIZE-1));
+                        String str = b.getContainingClass() + "#" + b.getContainingMethodName() + "():" + b.getLineNumber();
+                        branchesCovered.add(str);
                     }
                 };
             } catch (FileNotFoundException e) {
