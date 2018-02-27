@@ -798,7 +798,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     // Now instrument the branch target
     mv.visitLabel(intermediateBranchTarget);
     addBipushInsn(mv, 1); // Mark branch as taken
-    addValueReadInsn(mv, "B", "GETVALUE_"); // Send value to logger
+    addValueReadInsn(mv, "Z", "GETVALUE_"); // Send value to logger (Z for boolean)
     mv.visitInsn(POP);
     addBipushInsn(mv, iid);
     addBipushInsn(mv, lastLineNumber);
@@ -809,7 +809,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     // Now instrument the fall through
     mv.visitLabel(fallthrough);
     addBipushInsn(mv, 0); // Mark branch as not taken
-    addValueReadInsn(mv, "B", "GETVALUE_"); // Send value to logger
+    addValueReadInsn(mv, "Z", "GETVALUE_"); // Send value to logger (Z for boolean)
     mv.visitInsn(POP);
     addBipushInsn(mv, iid);
     addBipushInsn(mv, lastLineNumber);

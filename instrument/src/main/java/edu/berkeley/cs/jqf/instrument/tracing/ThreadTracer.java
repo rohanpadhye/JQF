@@ -157,28 +157,6 @@ public class ThreadTracer {
         private short shortValue;
     }
     
-    private void saveValue(GETVALUE gv) {
-        if (gv instanceof GETVALUE_int) {
-            values.intValue = ((GETVALUE_int) gv).v;
-        } else if (gv instanceof GETVALUE_boolean) {
-            values.booleanValue = ((GETVALUE_boolean) gv).v;
-        } else if (gv instanceof GETVALUE_byte) {
-            values.byteValue = ((GETVALUE_byte) gv).v;
-        } else if (gv instanceof GETVALUE_char) {
-            values.charValue = ((GETVALUE_char) gv).v;
-        } else if (gv instanceof GETVALUE_double) {
-            values.doubleValue = ((GETVALUE_double) gv).v;
-        } else if (gv instanceof GETVALUE_float) {
-            values.floatValue = ((GETVALUE_float) gv).v;
-        } else if (gv instanceof GETVALUE_long) {
-            values.longValue = ((GETVALUE_long) gv).v;
-        } else if (gv instanceof GETVALUE_short) {
-            values.shortValue = ((GETVALUE_short) gv).v;
-        } else if (gv instanceof GETVALUE_Object) {
-            values.objectValue = ((GETVALUE_Object) gv).v;
-        }
-    }
-    
     private static boolean sameNameDesc(MemberRef m1, MemberRef m2) {
         return m1 != null && m2 != null &&
                 m1.getName().equals(m2.getName()) &&

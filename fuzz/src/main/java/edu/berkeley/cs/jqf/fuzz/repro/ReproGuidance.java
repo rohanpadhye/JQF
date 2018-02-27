@@ -191,7 +191,8 @@ public class ReproGuidance implements Guidance {
                     out.println(e);
                     if (branchesCovered != null && e instanceof BranchEvent) {
                         BranchEvent b = (BranchEvent) e;
-                        String str = b.getContainingClass() + "#" + b.getContainingMethodName() + "():" + b.getLineNumber();
+                        String str = b.getContainingClass() + "#" + b.getContainingMethodName() + "():" + b.getLineNumber()
+                                + " [" + b.getArm() + "]";
                         branchesCovered.add(str);
                     }
                 };
