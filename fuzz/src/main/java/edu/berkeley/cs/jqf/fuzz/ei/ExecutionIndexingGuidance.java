@@ -34,8 +34,10 @@ import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -160,6 +162,12 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Minimum amount of time (in millis) between two stats refreshes. */
     private static final long STATS_REFRESH_TIME_PERIOD = 300;
 
+    /** The file where log data is written. */
+    private File logFile;
+
+    /** The file where saved plot data is written. */
+    private File statsFile;
+
     // ------------- FUZZING HEURISTICS ------------
 
     /** Whether to use real execution indexes as opposed to flat numbering (debug option; manually edit). */
@@ -232,12 +240,33 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             file.delete(); // We do not check if this was successful
         }
 
+        this.statsFile = new File(outputDirectory, "plot_data");
+        this.logFile = new File(outputDirectory, "ei.log");
+
+        appendLineToFile(statsFile,"# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
+                "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec");
+
+
+    }
+
+    private void appendLineToFile(File file, String line) throws GuidanceException {
+        try (PrintWriter out = new PrintWriter(new FileWriter(file, true))) {
+            out.println(line);
+        } catch (IOException e) {
+            throw new GuidanceException(e);
+        }
 
     }
 
     private void infoLog(String str, Object... args) {
         if (verbose) {
-            System.err.println(String.format(str, args));
+            String line = String.format(str, args);
+            if (logFile != null) {
+                appendLineToFile(logFile, line);
+
+            } else {
+                System.err.println(line);
+            }
         }
     }
 
@@ -252,6 +281,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         }
         long interlvalTrials = numTrials - lastNumTrials;
         long intervalExecsPerSec = interlvalTrials * 1000L / intervalMilliseconds;
+        double intervalExecsPerSecDouble = interlvalTrials * 1000.0 / intervalMilliseconds;
         lastRefreshTime = now;
         lastNumTrials = numTrials;
         long elapsedMilliseconds = now.getTime() - startTime.getTime();
@@ -284,6 +314,11 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         console.printf("Number of executions: %d\n", numTrials);
         console.printf("Execution speed:      %d/sec now | %d/sec overall\n", intervalExecsPerSec, execsPerSec);
         console.printf("Covered branches:     %d (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
+
+        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f",
+                TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
+                savedInputs.size(), 0, 0, nonZeroFraction, 0, 0, 0, intervalExecsPerSecDouble);
+        appendLineToFile(statsFile, plotData);
 
     }
 
