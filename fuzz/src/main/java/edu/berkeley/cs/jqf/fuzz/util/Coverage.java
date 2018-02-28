@@ -135,6 +135,20 @@ public class Coverage implements TraceEventVisitor {
         this.counter.clear();
     }
 
+    /** Computes the highest order bit */
+    private int hob(int num)
+    {
+        if (num == 0)
+            return 0;
+
+        int ret = 1;
+
+        while ((num >>= 1) != 0)
+            ret <<= 1;
+
+        return ret;
+    }
+
 
     /**
      * Updates this coverage with bits from the parameter.
@@ -148,7 +162,7 @@ public class Coverage implements TraceEventVisitor {
         boolean changed = false;
         for (int idx = 0; idx < COVERAGE_MAP_SIZE; idx++) {
             int before = this.counter.getAtIndex(idx);
-            int after = before | that.counter.getAtIndex(idx);
+            int after = before | hob(that.counter.getAtIndex(idx));
             if (after != before) {
                 this.counter.setAtIndex(idx, after);
                 changed = true;
