@@ -62,8 +62,8 @@ public class ThreadTracer {
     // Values set by GETVALUE_* instructions inserted by Janala
     private final Values values = new Values();
 
-    // Whether to instrument generators (TODO: Make this configurable)
-    private final boolean instrumentGenerators = true;
+    // Whether to instrument generators
+    private final boolean traceGenerators;
 
 
     /**
@@ -87,6 +87,7 @@ public class ThreadTracer {
             this.entryPointClass = null;
             this.entryPointMethod = null;
         }
+        this.traceGenerators = Boolean.getBoolean("jqf.traceGenerators");
         this.callback = callback;
         this.handlers.push(new BaseHandler());
     }
@@ -172,7 +173,7 @@ public class ThreadTracer {
             String clazz = begin.getOwner();
             String method = begin.getName();
             if ((clazz.equals(entryPointClass) && method.equals(entryPointMethod)) ||
-                    (instrumentGenerators && clazz.endsWith("Generator") && method.equals("generate")) ) {
+                    (traceGenerators && clazz.endsWith("Generator") && method.equals("generate")) ) {
                 emit(new CallEvent(0, null, 0, begin));
                 handlers.push(new TraceEventGeneratingHandler(begin, 0));
             } else {
