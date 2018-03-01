@@ -161,6 +161,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** A system console, which is non-null only if STDOUT is a console. */
     private final Console console = System.console();
 
+    /** The (optional) title to display on the status screen. */
+    private String title;
+
     /** Time since this guidance instance was created. */
     private final Date startTime = new Date();
 
@@ -203,7 +206,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     private static final int MAX_SPLICE_SIZE = 64; // Bytes
 
     /** Whether to splice only at/from locations with a 1-count suffix. */
-    private static final boolean ONLY_SPLICE_ONE_SUFFIX = false;
+    private static final boolean ONLY_SPLICE_ONE_SUFFIX = Boolean.getBoolean("jqf.ei.ONLY_SPLICE_ONE_SUFFIX");
 
     /** Whether to save inputs that only add new coverage bits (but no new responsibilities). */
     private static final boolean SAVE_NEW_COUNTS = true;
@@ -228,6 +231,10 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         for (File seedInputFile : seedInputFiles) {
             seedInputs.add(new SeedInput(seedInputFile));
         }
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     private void prepareOutputDirectory() throws IOException {
@@ -333,6 +340,13 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         console.printf("\033[H");
         console.printf("JQF: ExecutionIndexingGuidance\n");
         console.printf("------------------------------\n");
+        if (this.title != null) {
+            console.printf("Target:               %s\n", this.title);
+        }
+        console.printf("Config:               DISABLE_EXECUTION_INDEXING = %s,\n" +
+                       "                      STEAL_RESPONSIBILITY       = %s,\n" +
+                       "                      ONLY_SPLICE_ONE_SUFFIX     = %s\n\n",
+                DISABLE_EXECUTION_INDEXING, STEAL_RESPONSIBILITY, ONLY_SPLICE_ONE_SUFFIX);
         console.printf("Elapsed time:         %d min %d sec\n", elapsedMinutes, elapsedSeconds);
         console.printf("Cycles completed:     %d\n", cyclesCompleted);
         console.printf("Queue size:           %,d\n", savedInputs.size());

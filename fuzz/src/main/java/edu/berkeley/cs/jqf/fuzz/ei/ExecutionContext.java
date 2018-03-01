@@ -69,4 +69,9 @@ public class ExecutionContext {
             return false;
         }
     }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(ec);
+    }
 }

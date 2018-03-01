@@ -62,6 +62,8 @@ public class ExecutionIndexingDriver {
                     new ExecutionIndexingGuidance(Long.MAX_VALUE, outputDirectory, seedFiles) :
                     new ExecutionIndexingGuidance(Long.MAX_VALUE, outputDirectory);
 
+            guidance.setTitle(testClassName+"#"+testMethodName);
+
             // Ensure that generators are being traced
             System.setProperty("jqf.traceGenerators", "true");
 
