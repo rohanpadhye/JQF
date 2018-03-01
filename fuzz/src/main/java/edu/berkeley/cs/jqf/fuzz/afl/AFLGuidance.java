@@ -40,8 +40,6 @@ import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
@@ -50,7 +48,6 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.util.Hashing;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
-import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 
@@ -90,27 +87,6 @@ public class AFLGuidance implements Guidance {
 
     /** A temporary holding the opened input file stream during a run. */
     private InputStream inputFileStream;
-
-    /**
-     * A call stack to keep track of which method we are in.
-     *
-     * <p>Note: We assume there is only a single app thread running.
-     * For supporting multiple threads, we would have to store
-     * a map from threads to call stacks.
-     */
-    private Deque<CallEvent> callStack = new ArrayDeque<>();
-
-    /**
-     * Whether the above call stack is empty.
-     *
-     * <p>We use a separate
-     * volatile field rather than rely on callStack.isEmpty()
-     * returning a synced value, since the stack is manipulated by
-     * the app thread(s).
-     *
-     * <p>Note: Same assumption on single-threaded app applies.
-     */
-    private volatile boolean callStackEmpty = true;
 
     private static final int FEEDBACK_BUFFER_SIZE = 1 << 17;
     private static final byte[] FEEDBACK_ZEROS = new byte[FEEDBACK_BUFFER_SIZE];
@@ -177,9 +153,6 @@ public class AFLGuidance implements Guidance {
      */
     @Override
     public InputStream getInput() throws IllegalStateException, GuidanceException {
-        // Sanity check
-        assert(callStackEmpty);
-
         // Should not be here if hasInput() returned false
         if (!everything_ok) {
             throw new IllegalStateException("Fuzzing should have been stopped.");
@@ -240,9 +213,6 @@ public class AFLGuidance implements Guidance {
      */
     @Override
     public void handleResult(Result result, Throwable error) {
-        // Wait for all events to be handled by the app thread
-        while(!callStackEmpty);
-
         // Close the open input file
         try {
             if (inputFileStream != null) {
@@ -313,22 +283,18 @@ public class AFLGuidance implements Guidance {
     }
 
     /**
-     * Returns a callback to handle trace events
+     * Returns a callback to handle trace events.
      *
-     * <p>For the main thread, this returns a reference to
-     * {@link #handleEvent(TraceEvent)}. For other threads,
-     * this returns a callback that does nothing, since AFL
-     * is not equipped to handle multi-threaded applications.</p>
+     * <p>The call back is the same for all threads.
+     * This guidance does not use any synchronization and
+     * hence the feedback is not guaranteed to be reliable
+     * when multiple threads are used.</p>
      *
      * @param thread the thread whose events to handle
      * @return a callback to handle trace events
      */
     public Consumer<TraceEvent> generateCallBack(Thread thread) {
-        if (thread.getName().equals("main")) {
-            return this::handleEvent;
-        } else {
-            return (e) -> { /* Ignore */ };
-        }
+        return this::handleEvent;
     }
 
     /**
@@ -347,12 +313,6 @@ public class AFLGuidance implements Guidance {
             // Increment the 8-bit branch counter
             incrementTraceBits(edgeId);
         } else if (e instanceof CallEvent) {
-            // Add a call event to the stack
-            callStack.push((CallEvent) e);
-            // Mark the volatile indicator to non-empty
-            if (callStackEmpty) {
-                callStackEmpty = false;
-            }
 
             // Map IID to [1, MAP_SIZE]; the odd bound also reduces collisions
             int edgeId = 1 + Hashing.hash(e.getIid(), COVERAGE_MAP_SIZE-1);
@@ -361,13 +321,6 @@ public class AFLGuidance implements Guidance {
             incrementTraceBits(edgeId);
 
 
-        } else if (e instanceof ReturnEvent) {
-            // Remove call event from the stack
-            callStack.pop();
-            // Mark the volatile indicator to empty if the stack is empty
-            if (callStack.isEmpty()) {
-                callStackEmpty = true;
-            }
         }
     }
 
