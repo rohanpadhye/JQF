@@ -40,6 +40,7 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Deque;
@@ -47,6 +48,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -101,8 +103,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** The number of trials completed. */
     private long numTrials = 0;
 
-    /** The directory where saved inputs are written. */
+    /** The directory where fuzzing results are written. */
     private final File outputDirectory;
+
+    /** The directory where saved inputs are written. */
+    private File savedInputsDirectory;
+
+    /** The directory where saved inputs are written. */
+    private File savedFailuresDirectory;
 
     /** Set of saved inputs to fuzz. */
     private ArrayList<Input> savedInputs = new ArrayList<>();
@@ -133,6 +141,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     /** A mapping of coverage keys to inputs that are responsible for them. */
     private Map<Object, Input> responsibleInputs = new HashMap<>(totalCoverage.size());
+
+    /** The set of unique failures found so far. */
+    Set<List<StackTraceElement>> uniqueFailures = new HashSet<>();
 
     /**
      * A map of execution contexts (call stacks) to locations in saved inputs with those contexts.
@@ -235,13 +246,28 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                     outputDirectory.getAbsolutePath());
         }
 
-        // Delete everything in the output directory (for cases where we re-use an existing dir)
-        for (File file : outputDirectory.listFiles()) {
-            file.delete(); // We do not check if this was successful
-        }
-
+        // Name files and directories after AFL
+        this.savedInputsDirectory = new File(outputDirectory, "queue");
+        this.savedInputsDirectory.mkdirs();
+        this.savedFailuresDirectory = new File(outputDirectory, "crashes");
+        this.savedFailuresDirectory.mkdirs();
         this.statsFile = new File(outputDirectory, "plot_data");
         this.logFile = new File(outputDirectory, "ei.log");
+
+
+
+        // Delete everything that we may have created in a previous run.
+        // Trying to stay away from recursive delete of parent output directory in case there was a
+        // typo and that was not a directory we wanted to nuke.
+        // We also do not check if the deletes are actually successful.
+        statsFile.delete();
+        logFile.delete();
+        for (File file : savedInputsDirectory.listFiles()) {
+            file.delete();
+        }
+        for (File file : savedFailuresDirectory.listFiles()) {
+            file.delete();
+        }
 
         appendLineToFile(statsFile,"# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
                 "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec");
@@ -309,15 +335,16 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         console.printf("------------------------------\n");
         console.printf("Elapsed time:         %d min %d sec\n", elapsedMinutes, elapsedSeconds);
         console.printf("Cycles completed:     %d\n", cyclesCompleted);
-        console.printf("Queue size:           %d\n", savedInputs.size());
+        console.printf("Queue size:           %,d\n", savedInputs.size());
+        console.printf("Unique failures:      %,d\n", uniqueFailures.size());
+        console.printf("Number of executions: %,d\n", numTrials);
         console.printf("Current parent input: %s\n", currentParentInputDesc);
-        console.printf("Number of executions: %d\n", numTrials);
-        console.printf("Execution speed:      %d/sec now | %d/sec overall\n", intervalExecsPerSec, execsPerSec);
-        console.printf("Covered branches:     %d (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
+        console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
+        console.printf("Covered branches:     %,d (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
 
         String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f",
                 TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
-                savedInputs.size(), 0, 0, nonZeroFraction, 0, 0, 0, intervalExecsPerSecDouble);
+                savedInputs.size(), 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble);
         appendLineToFile(statsFile, plotData);
 
     }
@@ -381,7 +408,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         } else if (savedInputs.isEmpty()) {
             // If no seeds given try to start with something random
-            if (numTrials > 100) {
+            if (numTrials > 100_000) {
                 throw new GuidanceException("Too many trials without coverage; " +
                         "likely all assumption violations");
             }
@@ -491,7 +518,28 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             }
         } else if (result == Result.FAILURE) {
             String msg = error.getMessage();
-            infoLog("Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
+
+            // Get the root cause of the failure
+            Throwable rootCause = error;
+            while (rootCause.getCause() != null) {
+                rootCause = rootCause.getCause();
+            }
+
+            // Attempt to add this to the set of unique failures
+            if (uniqueFailures.add(Arrays.asList(rootCause.getStackTrace()))) {
+
+                // Save crash to disk
+                try {
+                    int crashIdx = uniqueFailures.size()-1;
+                    String saveFileName = String.format("id:%06d,%s", crashIdx, currentInput.desc);
+                    File saveFile = new File(savedFailuresDirectory, saveFileName);
+                    writeCurrentInputToFile(saveFile);
+                } catch (IOException e) {
+                    throw new GuidanceException(e);
+                }
+
+                infoLog("Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
+            }
         }
 
         if (console != null) {
@@ -551,15 +599,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         return result;
     }
 
-    private void saveCurrentInput(Set<Object> responsibilities) throws IOException {
-        // First, save to queue
-        savedInputs.add(currentInput);
-
-        // Second, save to disk
-        int newInputIdx = savedInputs.size()-1;
-        String saveFileName = String.format("id:%06d,%s", newInputIdx, currentInput.desc);
-        File outputFile = new File(outputDirectory, saveFileName);
-        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+    private void writeCurrentInputToFile(File saveFile) throws IOException {
+        try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(saveFile))) {
             for (Object key : currentInput.orderedKeys) {
                 int b = currentInput.valuesMap.get(key);
                 assert (b >= 0 && b < 256);
@@ -567,9 +608,21 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             }
         }
 
+    }
+
+    private void saveCurrentInput(Set<Object> responsibilities) throws IOException {
+        // First, save to queue
+        savedInputs.add(currentInput);
+
+        // Second, save to disk
+        int newInputIdx = savedInputs.size()-1;
+        String saveFileName = String.format("id:%06d,%s", newInputIdx, currentInput.desc);
+        File saveFile = new File(savedInputsDirectory, saveFileName);
+        writeCurrentInputToFile(saveFile);
+
         // Third, store basic book-keeping data
         currentInput.id = newInputIdx;
-        currentInput.saveFile = outputFile;
+        currentInput.saveFile = saveFile;
         currentInput.coverage = new Coverage(runCoverage);
         currentInput.nonZeroCoverage = runCoverage.getNonZeroCount();
         currentInput.offspring = 0;
