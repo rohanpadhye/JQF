@@ -29,6 +29,7 @@
 
 package edu.berkeley.cs.jqf.instrument.tracing;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.function.Consumer;
@@ -106,9 +107,16 @@ public final class SingleSnoop {
 
     public static void REGISTER_THREAD(Thread thread) {
         // Mark entry point as run()
-        entryPoints.put(thread, "run");
-        // Mark thread for unblocking when we snoop its first instruction
-        threadsToUnblock.synchronizedAddFirst(thread);
+        try {
+            Method runMethod = thread.getClass().getMethod("run");
+            String entryPoint = runMethod.getDeclaringClass().getName() + "#run";
+            entryPoints.put(thread, entryPoint);
+            // Mark thread for unblocking when we snoop its first instruction
+            threadsToUnblock.synchronizedAddFirst(thread);
+        } catch (NoSuchMethodException e) {
+            // Print error and keep going
+            e.printStackTrace();
+        }
     }
 
     public static void LDC(int iid, int mid, int c) {
