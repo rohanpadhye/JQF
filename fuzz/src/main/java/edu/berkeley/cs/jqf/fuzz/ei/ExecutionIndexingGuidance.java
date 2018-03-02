@@ -205,8 +205,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Max number of contiguous bytes to splice in from another input during the splicing stage. */
     private static final int MAX_SPLICE_SIZE = 64; // Bytes
 
-    /** Whether to splice only at/from locations with a 1-count suffix. */
-    private static final boolean ONLY_SPLICE_ONE_SUFFIX = Boolean.getBoolean("jqf.ei.ONLY_SPLICE_ONE_SUFFIX");
+    /** Whether to splice only in the same sub-tree */
+    private static final boolean SPLICE_SUBTREE = Boolean.getBoolean("jqf.ei.SPLICE_SUBTREE");
 
     /** Whether to save inputs that only add new coverage bits (but no new responsibilities). */
     private static final boolean SAVE_NEW_COUNTS = true;
@@ -345,8 +345,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         }
         console.printf("Config:               DISABLE_EXECUTION_INDEXING = %s,\n" +
                        "                      STEAL_RESPONSIBILITY       = %s,\n" +
-                       "                      ONLY_SPLICE_ONE_SUFFIX     = %s\n\n",
-                DISABLE_EXECUTION_INDEXING, STEAL_RESPONSIBILITY, ONLY_SPLICE_ONE_SUFFIX);
+                       "                      SPLICE_SUBTREE             = %s\n\n",
+                DISABLE_EXECUTION_INDEXING, STEAL_RESPONSIBILITY, SPLICE_SUBTREE);
         console.printf("Elapsed time:         %d min %d sec\n", elapsedMinutes, elapsedSeconds);
         console.printf("Cycles completed:     %d\n", cyclesCompleted);
         console.printf("Queue size:           %,d\n", savedInputs.size());
@@ -662,9 +662,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         for (int offset = 0; offset < currentInput.size(); offset++) {
             ExecutionIndex ei = currentInput.orderedKeys.get(offset);
             ExecutionContext ec = new ExecutionContext(ei);
-            if (ONLY_SPLICE_ONE_SUFFIX && ei.oneSuffixSize() == 0) {
-                continue;
-            }
             ecToInputLoc.get(ec).add(new InputLocation(currentInput, offset));
         }
 
@@ -1015,20 +1012,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                         // Choose an execution context at which to splice at
                         // Note: We get EI and value from `this` rather than `newInput`
                         // because `this` has already been executed
-                        int targetOffset = random.nextInt(valuesMap.size());
-                        ExecutionIndex ei = this.getKeyAtOffset(targetOffset);
+                        int targetOffset = random.nextInt(newInput.valuesMap.size());
+                        ExecutionIndex targetEi = this.getKeyAtOffset(targetOffset);
 
-                        // If only splicing EIs with a one-suffix, we may want to
-                        // skip this one
-                        if (ONLY_SPLICE_ONE_SUFFIX && ei.oneSuffixSize() == 0) {
-                            continue;
-                        }
-
-                        ExecutionContext ec = new ExecutionContext(ei);
+                        ExecutionContext targetEc = new ExecutionContext(targetEi);
                         int valueAtTarget = this.getValueAtOffset(targetOffset);
 
                         // Find a suitable input location to splice from
-                        ArrayList<InputLocation> inputLocations = ecToInputLoc.get(ec);
+                        ArrayList<InputLocation> inputLocations = ecToInputLoc.get(targetEc);
 
                         // If this is a valid target location, it should also be a valid
                         // source location and exist in the ecToInputLoc map
@@ -1044,6 +1035,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                             Input sourceInput = inputLocation.input;
                             int sourceOffset = inputLocation.offset;
 
+
                             // Do not splice with ourselves
                             if (sourceInput == this) {
                                 continue;
@@ -1054,22 +1046,54 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                                 continue;
                             }
 
-                            // OK, this looks good. Let's splice!
-                            int spliceSize = 1 + random.nextInt(MAX_SPLICE_SIZE);
-                            int src = sourceOffset;
-                            int tgt = targetOffset;
                             int splicedBytes = 0;
-                            int srcSize = sourceInput.size();
-                            int tgtSize = newInput.size();
-                            while (splicedBytes < spliceSize && src < srcSize && tgt < tgtSize) {
-                                int val = sourceInput.getValueAtOffset(src);
-                                ExecutionIndex key = this.getKeyAtOffset(tgt);
-                                newInput.setValueAtKey(key, val);
+                            if (!DISABLE_EXECUTION_INDEXING && SPLICE_SUBTREE) {
+                                // Do not splice if there is no common suffix between EI of source and target
+                                ExecutionIndex sourceEi = sourceInput.getKeyAtOffset(sourceOffset);
+                                ExecutionIndex.Suffix suffix = targetEi.getCommonSuffix(sourceEi);
+                                if (suffix.size() == 0) {
+                                    continue;
+                                }
 
-                                splicedBytes++;
-                                src++;
-                                tgt++;
+                                // Extract the source and target prefixes
+                                ExecutionIndex.Prefix sourcePrefix = sourceEi.getPrefixOfSuffix(suffix);
+                                ExecutionIndex.Prefix targetPrefix = targetEi.getPrefixOfSuffix(suffix);
+                                assert (sourcePrefix.size() == targetPrefix.size());
+
+                                // OK, this looks good. Let's splice!
+                                int srcIdx = sourceOffset;
+                                while (srcIdx < sourceInput.size()) {
+                                    ExecutionIndex candidateEi = sourceInput.getKeyAtOffset(srcIdx);
+                                    if (candidateEi.hasPrefix(sourcePrefix) == false) {
+                                        // We are no more in the same sub-tree as sourceEi
+                                        break;
+                                    }
+                                    ExecutionIndex.Suffix spliceSuffix = candidateEi.getSuffixOfPrefix(sourcePrefix);
+                                    ExecutionIndex spliceEi = new ExecutionIndex(targetPrefix, spliceSuffix);
+                                    newInput.valuesMap.put(spliceEi, sourceInput.valuesMap.get(candidateEi));
+
+                                    srcIdx++;
+                                }
+                                splicedBytes = srcIdx - sourceOffset;
+                            } else {
+
+                                int spliceSize = 1 + random.nextInt(MAX_SPLICE_SIZE);
+                                int src = sourceOffset;
+                                int tgt = targetOffset;
+                                int srcSize = sourceInput.size();
+                                int tgtSize = newInput.size();
+                                while (splicedBytes < spliceSize && src < srcSize && tgt < tgtSize) {
+                                    int val = sourceInput.getValueAtOffset(src);
+                                    ExecutionIndex key = this.getKeyAtOffset(tgt);
+                                    newInput.setValueAtKey(key, val);
+
+                                    splicedBytes++;
+                                    src++;
+                                    tgt++;
+                                }
                             }
+
+                            // Complete splicing
                             splicingDone = true;
                             newInput.desc += String.format(",splice:%06d:%d@%d->%d", sourceInput.id, splicedBytes,
                                     sourceOffset, targetOffset);

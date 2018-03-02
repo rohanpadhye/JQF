@@ -200,4 +200,31 @@ public class ExecutionIndexingTest {
         assertThat(e1.compareTo(e2), greaterThan(0));
         assertThat(e2.compareTo(e1), lessThan(0));
     }
+
+
+    @Property
+    public void hasOwnPrefixAndSuffix(@InRange(minInt=1, maxInt=32) int @Size(min=4, max=20)[] v) {
+        assumeTrue(v.length % 2 == 0);
+        ExecutionIndex e = new ExecutionIndex(v);
+
+        ExecutionIndex.Suffix selfCommonSuffix = e.getCommonSuffix(e);
+        ExecutionIndex.Prefix suffixMinusPrefix = e.getPrefixOfSuffix(selfCommonSuffix);
+
+        assertEquals(v.length/2, selfCommonSuffix.size());
+        assertEquals(0, suffixMinusPrefix.size());
+        assertEquals(true, e.hasPrefix(suffixMinusPrefix));
+    }
+
+    @Property
+    public void splitsAndJoinsPrefixSuffix(@InRange(minInt=1, maxInt=32) int @Size(min=20, max=20)[] v,
+                                           @InRange(minInt=0, maxInt=10) int offset) {
+        assumeTrue(v.length % 2 == 0);
+        ExecutionIndex e = new ExecutionIndex(v);
+
+        ExecutionIndex.Prefix prefix = new ExecutionIndex.Prefix(e, offset);
+        ExecutionIndex.Suffix suffix = e.getSuffixOfPrefix(prefix);
+
+        assertEquals(e, new ExecutionIndex(prefix, suffix));
+
+    }
 }

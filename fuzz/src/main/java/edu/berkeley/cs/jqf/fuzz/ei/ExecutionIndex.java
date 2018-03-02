@@ -55,6 +55,25 @@ public class ExecutionIndex implements Comparable<ExecutionIndex> {
         this.ei = ei;
     }
 
+    public ExecutionIndex(Prefix prefix, Suffix suffix) {
+        // Prefix must end where suffix begins
+        if (prefix.length != suffix.offset) {
+            throw new IllegalArgumentException("Invalid prefix/suffix combo");
+        }
+
+        // The size of this EI is the same as the size of the owner of suffix
+        int size = suffix.ei.ei.length;
+        this.ei = new int[size];
+        int[] prefixEi = prefix.ei.ei;
+        for (int i = 0; i < prefix.length; i++) {
+            this.ei[i] = prefixEi[i];
+        }
+        int[] suffixEi = suffix.ei.ei;
+        for (int i = suffix.offset; i < size; i++) {
+            this.ei[i] = suffixEi[i];
+        }
+    }
+
     @Override
     public int hashCode() {
         return Arrays.hashCode(ei);
@@ -102,6 +121,73 @@ public class ExecutionIndex implements Comparable<ExecutionIndex> {
             }
         }
         return size;
+    }
+
+    public Suffix getCommonSuffix(ExecutionIndex other) {
+        // Do an inexpensive check of ExecutionContext(this) == ExecutionContext(other)
+        if (this.ei.length != other.ei.length) {
+            throw new IllegalArgumentException("Common suffix can only be computed on " +
+                    "execution indexes with same execution contexts");
+        }
+
+        int offset = ei.length;
+        while (offset > 0) {
+            if (this.ei[offset-2] == other.ei[offset-2] && this.ei[offset-1] == other.ei[offset-1]) {
+                offset -= 2;
+            } else {
+                break;
+            }
+        }
+        return new Suffix(this, offset);
+
+    }
+
+    public Prefix getPrefixOfSuffix(Suffix suffix) {
+        // prefix length = suffix offset
+        return new Prefix(this, suffix.offset);
+    }
+
+    public Suffix getSuffixOfPrefix(Prefix prefix) {
+        // suffix offset = prefix length
+        return new Suffix(this, prefix.length);
+    }
+
+    public boolean hasPrefix(Prefix prefix) {
+        int[] cmpEi = prefix.ei.ei;
+        for (int i = 0; i < prefix.length; i++) {
+            if (ei[i] != cmpEi[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static class Prefix {
+        private final ExecutionIndex ei;
+        private final int length;
+
+        public Prefix(ExecutionIndex ei, int length) {
+            this.ei = ei;
+            this.length = length;
+        }
+
+        public int size() {
+            return length/2;
+        }
+    }
+
+    public static class Suffix {
+        private final ExecutionIndex ei;
+        private final int offset;
+
+        public Suffix(ExecutionIndex ei, int offset) {
+            this.ei = ei;
+            this.offset = offset;
+        }
+
+        public int size() {
+            return (ei.ei.length - offset)/2;
+        }
     }
 
 }
