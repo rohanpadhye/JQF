@@ -135,8 +135,10 @@ public class Coverage implements TraceEventVisitor {
         this.counter.clear();
     }
 
+    private static int[] HOB_CACHE = new int[1024];
+
     /** Computes the highest order bit */
-    private int hob(int num)
+    private static int computeHob(int num)
     {
         if (num == 0)
             return 0;
@@ -147,6 +149,22 @@ public class Coverage implements TraceEventVisitor {
             ret <<= 1;
 
         return ret;
+    }
+
+    /** Populates the HOB cache. */
+    static {
+        for (int i = 0; i < HOB_CACHE.length; i++) {
+            HOB_CACHE[i] = computeHob(i);
+        }
+    }
+
+    /** Returns the highest order bit (perhaps using the cache) */
+    private static int hob(int num) {
+        if (num < HOB_CACHE.length) {
+            return HOB_CACHE[num];
+        } else {
+            return computeHob(num);
+        }
     }
 
 
