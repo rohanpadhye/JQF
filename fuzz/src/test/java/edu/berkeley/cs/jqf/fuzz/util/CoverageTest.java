@@ -28,7 +28,6 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
-import edu.berkeley.cs.jqf.fuzz.util.Coverage;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
@@ -84,6 +83,7 @@ public class CoverageTest {
     public void testCoverageUpdateBits1() {
         Coverage c1 = new Coverage();
         Coverage c2 = new Coverage();
+        Coverage total = new Coverage();
         TraceEvent[] baseEvents = { callEvent(1), callEvent(2), branchEvent(3, 1) };
         TraceEvent[] newEvents = { callEvent(4) };
 
@@ -96,16 +96,18 @@ public class CoverageTest {
             c2.handleEvent(e);
         }
 
-        boolean changed = c1.updateBits(c2);
+        total.updateBits(c1);
+        boolean changed = total.updateBits(c2);
 
         Assert.assertTrue(changed);
-        Assert.assertEquals(c2.getNonZeroCount(), c1.getNonZeroCount());
+        Assert.assertEquals(c2.getNonZeroCount(), total.getNonZeroCount());
     }
 
     @Test
     public void testCoverageUpdateBits2() {
         Coverage c1 = new Coverage();
         Coverage c2 = new Coverage();
+        Coverage total = new Coverage();
         TraceEvent[] baseEvents = { callEvent(1), callEvent(1), callEvent(2), branchEvent(3, 1) };
         TraceEvent[] newEvents = { callEvent(1) };
 
@@ -118,10 +120,11 @@ public class CoverageTest {
             c2.handleEvent(e);
         }
 
-        boolean changed = c1.updateBits(c2);
+        total.updateBits(c1);
+        boolean changed = total.updateBits(c2);
 
-        Assert.assertTrue(changed);
-        Assert.assertEquals(c2.getNonZeroCount(), c1.getNonZeroCount());
+        Assert.assertFalse(changed); // Because hob(2) and hob(3) are the same
+        Assert.assertEquals(c2.getNonZeroCount(), total.getNonZeroCount());
     }
 
 
@@ -129,6 +132,7 @@ public class CoverageTest {
     public void testCoverageUpdateBits3() {
         Coverage c1 = new Coverage();
         Coverage c2 = new Coverage();
+        Coverage total = new Coverage();
         TraceEvent[] baseEvents = { callEvent(1), callEvent(1), callEvent(1), callEvent(2), branchEvent(3, 1) };
         TraceEvent[] newEvents = { };
 
@@ -141,10 +145,11 @@ public class CoverageTest {
             c2.handleEvent(e);
         }
 
-        boolean changed = c1.updateBits(c2);
+        total.updateBits(c1);
+        boolean changed = total.updateBits(c2);
 
         Assert.assertFalse(changed);
-        Assert.assertEquals(c2.getNonZeroCount(), c1.getNonZeroCount());
+        Assert.assertEquals(c2.getNonZeroCount(), total.getNonZeroCount());
     }
 
 
@@ -153,6 +158,7 @@ public class CoverageTest {
     public void testCoverageUpdateBits4() {
         Coverage c1 = new Coverage();
         Coverage c2 = new Coverage();
+        Coverage total = new Coverage();
         TraceEvent[] baseEvents = { callEvent(1), callEvent(2), branchEvent(3, 1) };
         TraceEvent[] newEvents = { callEvent(1), callEvent(1) };
 
@@ -165,9 +171,10 @@ public class CoverageTest {
             c2.handleEvent(e);
         }
 
-        boolean changed = c2.updateBits(c1);
+        total.updateBits(c2);
+        boolean changed = total.updateBits(c1);
 
-        Assert.assertFalse(changed); // Because 3 union 1 doesnt change bits
-        Assert.assertEquals(c2.getNonZeroCount(), c1.getNonZeroCount());
+        Assert.assertTrue(changed); // Because hob(3) and hob(1) are different
+        Assert.assertEquals(c2.getNonZeroCount(), total.getNonZeroCount());
     }
 }
