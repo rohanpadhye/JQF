@@ -46,6 +46,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
@@ -189,11 +190,18 @@ public class ReproGuidance implements Guidance {
                 return (e) -> {
                     coverage.handleEvent(e);
                     out.println(e);
-                    if (branchesCovered != null && e instanceof BranchEvent) {
-                        BranchEvent b = (BranchEvent) e;
-                        String str = String.format("(%09d) %s#%s():%d [%d]", b.getIid(), b.getContainingClass(), b.getContainingMethodName(),
-                                b.getLineNumber(), b.getArm());
-                        branchesCovered.add(str);
+                    if (branchesCovered != null) {
+                        if (e instanceof BranchEvent) {
+                            BranchEvent b = (BranchEvent) e;
+                            String str = String.format("(%09d) %s#%s():%d [%d]", b.getIid(), b.getContainingClass(), b.getContainingMethodName(),
+                                    b.getLineNumber(), b.getArm());
+                            branchesCovered.add(str);
+                        } else if (e instanceof CallEvent) {
+                            CallEvent c = (CallEvent) e;
+                            String str = String.format("(%09d) %s#%s():%d --> %s", c.getIid(), c.getContainingClass(), c.getContainingMethodName(),
+                                    c.getLineNumber(), c.getInvokedMethodName());
+                            branchesCovered.add(str);
+                        }
                     }
                 };
             } catch (FileNotFoundException e) {
