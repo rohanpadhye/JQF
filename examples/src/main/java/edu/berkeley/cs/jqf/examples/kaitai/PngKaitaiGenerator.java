@@ -545,13 +545,13 @@ public class PngKaitaiGenerator extends AbstractKaitaiGenerator {
             }
 
             private void _write() {
-                this.width = this._io.writeU4be();
-                this.height = this._io.writeU4be();
+                this.width = this._io.writeU4be(0, this._io.buf.remaining());
+                this.height = this._io.writeU4be(0, this._io.buf.remaining());
                 this.bitDepth = this._io.writeU1OneOf(1, 2, 4, 8, 16);
                 this.colorType = ColorType.byId(this._io.writeU1OneOf(ColorType.ids()));
-                this.compressionMethod = this._io.writeU1();
-                this.filterMethod = this._io.writeU1();
-                this.interlaceMethod = this._io.writeU1();
+                this.compressionMethod = this._io.writeU1OneOf(0);
+                this.filterMethod = this._io.writeU1value((byte) 0);
+                this.interlaceMethod = this._io.writeU1value((byte) 0);
             }
 
             private long width;

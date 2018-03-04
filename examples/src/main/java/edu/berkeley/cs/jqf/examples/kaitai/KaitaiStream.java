@@ -73,7 +73,7 @@ public class KaitaiStream {
         return buf.position() == buf.capacity();
     }
 
-    private byte writeU1value(byte val) {
+    public byte writeU1value(byte val) {
         buf.put(val);
         return val;
 
@@ -90,7 +90,7 @@ public class KaitaiStream {
         return writeU1value(choice);
     }
 
-    private int writeIntvalue(int val) {
+    public int writeIntvalue(int val) {
         buf.putInt(val);
         return val;
     }
@@ -171,17 +171,16 @@ public class KaitaiStream {
         if (eosError == false) {
             throw new UnsupportedOperationException("eosError MUST be true");
         }
-        int size = random.nextInt(0, 128); // TODO: Use geometric distribution
+        int size = buf.remaining() > 0 ? random.nextInt(buf.remaining()) : 0; // Do not generate more than we can write
         byte[] bytes = new byte[size+1];
         int i = 0;
         boolean terminated = false;
         while (i < size) {
             int c = random.nextInt(0, 255);
             if (c == term) {
+                // Always write terminator
+                bytes[i++] = (byte) c;
                 terminated = true;
-                if (includeTerm) {
-                    bytes[i++] = (byte) c;
-                }
                 break;
             }
             bytes[i++] = (byte) c;

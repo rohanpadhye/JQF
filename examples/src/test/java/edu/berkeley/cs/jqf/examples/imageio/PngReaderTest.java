@@ -31,6 +31,7 @@ package edu.berkeley.cs.jqf.examples.imageio;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -92,6 +93,45 @@ public class PngReaderTest {
         reader.setInput(input);
         int height = reader.getHeight(0);
         System.out.println(height);
+    }
+
+    @Fuzz
+    public void debugKaitai(@From(PngKaitaiGenerator.class) @Size(max = 256) InputStream input)  {
+        try (FileOutputStream out = new FileOutputStream("kaitai.png")) {
+            int val;
+            while ((val = input.read()) != -1) {
+                out.write(val);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    @Fuzz
+    public void fuzzValidMetadata(@From(PngKaitaiGenerator.class) @Size(max = 256) InputStream input)  {
+        // Decode image from input stream
+        try {
+            reader.setInput(ImageIO.createImageInputStream(input));
+            reader.getImageMetadata(0);
+        } catch (IOException e) {
+            Assume.assumeNoException(e);
+        }
+
+    }
+
+    @Fuzz
+    public void fuzzValidImage(@From(PngKaitaiGenerator.class) @Size(max = 2048) InputStream input)  {
+        // Decode image from input stream
+        try {
+            reader.setInput(ImageIO.createImageInputStream(input));
+            reader.getImageMetadata(0);
+            Assume.assumeTrue(reader.getHeight(0) < 1024);
+            Assume.assumeTrue(reader.getWidth(0)  < 1024);
+        } catch (IOException e) {
+            Assume.assumeNoException(e);
+        }
+
     }
 
     @Fuzz

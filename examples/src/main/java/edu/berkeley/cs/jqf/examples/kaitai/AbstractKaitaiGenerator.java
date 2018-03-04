@@ -37,7 +37,6 @@ import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import org.junit.AssumptionViolatedException;
 
 /**
  * @author Rohan Padhye
@@ -62,16 +61,17 @@ public abstract class AbstractKaitaiGenerator extends Generator<InputStream> {
         try {
             // Populate byte buffer
             populate(random);
-            // Return the bytes as an inputstream
-            int len = buf.position();
-            buf.rewind();
-            byte[] bytes = new byte[len];
-            buf.get(bytes);
-            return new ByteArrayInputStream(bytes);
 
         } catch (BufferOverflowException e) {
-            throw new AssumptionViolatedException("Generated input is too large");
+            // throw new AssumptionViolatedException("Generated input is too large", e);
         }
+
+        // Return the bytes as an inputstream
+        int len = buf.position();
+        buf.rewind();
+        byte[] bytes = new byte[len];
+        buf.get(bytes);
+        return new ByteArrayInputStream(bytes);
     }
 
 
