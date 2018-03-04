@@ -55,6 +55,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Prefix;
+import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Suffix;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
@@ -129,6 +131,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     /** Number of cycles completed (i.e. how many times we've reset currentParentInputIdx to 0. */
     private int cyclesCompleted = 0;
+
+    /** Number of favored inputs in the last cycle. */
+    private int numFavoredLastCycle = 0;
 
     /** Coverage statistics for a single run. */
     private Coverage runCoverage = new Coverage();
@@ -213,6 +218,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
     private static final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
+
+    /** Probability of splicing in getOrGenerateFresh() */
+    private static final double DEMAND_DRIVEN_SPLICING_PROBABILITY = 0;
 
 
     /**
@@ -349,7 +357,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 DISABLE_EXECUTION_INDEXING, STEAL_RESPONSIBILITY, SPLICE_SUBTREE);
         console.printf("Elapsed time:         %d min %d sec\n", elapsedMinutes, elapsedSeconds);
         console.printf("Cycles completed:     %d\n", cyclesCompleted);
-        console.printf("Queue size:           %,d\n", savedInputs.size());
+        console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
         console.printf("Unique failures:      %,d\n", uniqueFailures.size());
         console.printf("Number of executions: %,d\n", numTrials);
         console.printf("Current parent input: %s\n", currentParentInputDesc);
@@ -388,11 +396,13 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         // Go over all inputs and do a sanity check (plus log)
         infoLog("Here is a list of favored inputs:");
         int sumResponsibilities = 0;
+        numFavoredLastCycle = 0;
         for (Input input : savedInputs) {
             if (input.isFavored()) {
                 int responsibleFor = input.responsibilities.size();
                 infoLog("Input %d is responsible for %d branches", input.id, responsibleFor);
                 sumResponsibilities += responsibleFor;
+                numFavoredLastCycle++;
             }
         }
         int totalCoverageCount = totalCoverage.getNonZeroCount();
@@ -811,6 +821,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          */
         private Set<Object> responsibilities = null;
 
+        private List<InputPrefixMapping> demandDrivenSpliceMap = new ArrayList<>();
+
         /**
          * Create an empty input map.
          */
@@ -881,6 +893,15 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             return orderedKeys.get(offset);
         }
 
+        private InputPrefixMapping getInputPrefixMapping(ExecutionIndex ei) {
+            for (InputPrefixMapping ipm : demandDrivenSpliceMap) {
+                if (ei.hasPrefix(ipm.targetPrefix)) {
+                    return ipm;
+                }
+            }
+            return null;
+        }
+
 
         /**
          * Retrieve a value for an execution index if mapped, else generate
@@ -904,9 +925,38 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
             // Try to get existing values
             Integer val = valuesMap.get(key);
-            // If not, generate a new random value
+
+            // If not, generate a new value
             if (val == null) {
-                val = random.nextInt(256);
+                InputPrefixMapping ipm;
+
+                // If we have an input prefix mapping for this execution index,
+                // then splice from the source input
+                if ((ipm = getInputPrefixMapping(key)) != null) {
+                    Prefix sourcePrefix = ipm.sourcePrefix;
+                    Suffix sourceSuffix = ipm.sourcePrefix.getEi().getSuffixOfPrefix(sourcePrefix);
+                    ExecutionIndex sourceEi = new ExecutionIndex(sourcePrefix, sourceSuffix);
+                    // The value can be taken from the source
+                    val = ipm.sourceInput.getValueAtKey(sourceEi);
+                }
+
+                // If we could not splice or were unsuccessful, try to generate a new input
+                if (val == null) {
+                    if (random.nextDouble() < DEMAND_DRIVEN_SPLICING_PROBABILITY) {
+                        // TODO: Find a random inputLocation with same EC,
+                        // extract common suffix of sourceEi and targetEi,
+                        // and map targetPrefix to sourcePrefix in the IPM
+
+
+                    } else {
+                        // Just generate a random input
+                        val = random.nextInt(256);
+                    }
+                }
+
+                // Put the new value into the map
+                assert (val != null);
+
                 valuesMap.put(key, val);
             }
 
@@ -1050,14 +1100,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                             if (!DISABLE_EXECUTION_INDEXING && SPLICE_SUBTREE) {
                                 // Do not splice if there is no common suffix between EI of source and target
                                 ExecutionIndex sourceEi = sourceInput.getKeyAtOffset(sourceOffset);
-                                ExecutionIndex.Suffix suffix = targetEi.getCommonSuffix(sourceEi);
+                                Suffix suffix = targetEi.getCommonSuffix(sourceEi);
                                 if (suffix.size() == 0) {
                                     continue;
                                 }
 
                                 // Extract the source and target prefixes
-                                ExecutionIndex.Prefix sourcePrefix = sourceEi.getPrefixOfSuffix(suffix);
-                                ExecutionIndex.Prefix targetPrefix = targetEi.getPrefixOfSuffix(suffix);
+                                Prefix sourcePrefix = sourceEi.getPrefixOfSuffix(suffix);
+                                Prefix targetPrefix = targetEi.getPrefixOfSuffix(suffix);
                                 assert (sourcePrefix.size() == targetPrefix.size());
 
                                 // OK, this looks good. Let's splice!
@@ -1068,7 +1118,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                                         // We are no more in the same sub-tree as sourceEi
                                         break;
                                     }
-                                    ExecutionIndex.Suffix spliceSuffix = candidateEi.getSuffixOfPrefix(sourcePrefix);
+                                    Suffix spliceSuffix = candidateEi.getSuffixOfPrefix(sourcePrefix);
                                     ExecutionIndex spliceEi = new ExecutionIndex(targetPrefix, spliceSuffix);
                                     newInput.valuesMap.put(spliceEi, sourceInput.valuesMap.get(candidateEi));
 
@@ -1112,6 +1162,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 int numMutations = sampleGeometric(random, MEAN_MUTATION_COUNT);
                 newInput.desc += ",havoc:"+numMutations;
 
+                boolean setToZero = random.nextDouble() < 0.1; // one out of 10 times
+
                 for (int mutation = 1; mutation <= numMutations; mutation++) {
 
                     // Select a random offset and size
@@ -1129,7 +1181,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                         // the randomly selected `idx`.
                         if (i >= offset && i < (offset + mutationSize)) {
                             // Apply a random mutation
-                            int mutatedValue = random.nextInt(256);
+                            int mutatedValue = setToZero ? 0 : random.nextInt(256);
                             e.setValue(mutatedValue);
                         }
                     }
@@ -1205,6 +1257,18 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         InputLocation(Input input, int offset) {
             this.input = input;
             this.offset = offset;
+        }
+    }
+
+    static class InputPrefixMapping {
+        private final Input sourceInput;
+        private final Prefix sourcePrefix;
+        private final Prefix targetPrefix;
+
+        InputPrefixMapping(Input sourceInput, Prefix sourcePrefix, Prefix targetPrefix) {
+            this.sourceInput = sourceInput;
+            this.sourcePrefix = sourcePrefix;
+            this.targetPrefix = targetPrefix;
         }
     }
 

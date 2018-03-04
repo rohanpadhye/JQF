@@ -174,6 +174,10 @@ public class ExecutionIndex implements Comparable<ExecutionIndex> {
         public int size() {
             return length/2;
         }
+
+        public ExecutionIndex getEi() {
+            return ei;
+        }
     }
 
     public static class Suffix {
@@ -187,6 +191,10 @@ public class ExecutionIndex implements Comparable<ExecutionIndex> {
 
         public int size() {
             return (ei.ei.length - offset)/2;
+        }
+
+        public ExecutionIndex getEi() {
+            return ei;
         }
     }
 
