@@ -9,9 +9,9 @@ popd > /dev/null
 ROOT_DIR=`dirname $SCRIPT_DIR`
 
 # Create classpath
-cp="$ROOT_DIR/examples/target/classes:$ROOT_DIR/examples/target/test-classes"
+cp="$ROOT_DIR/fuzz/target/classes:$ROOT_DIR/fuzz/target/test-classes"
 
-for jar in $ROOT_DIR/examples/target/dependency/*.jar; do
+for jar in $ROOT_DIR/fuzz/target/dependency/*.jar; do
   cp="$cp:$jar"
 done
 
