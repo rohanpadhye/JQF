@@ -411,6 +411,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             throw new AssertionError("Responsibilty mistmatch");
         }
 
+        // Refresh ecToInputLoc so that subsequent splices are only from favored inputs
+        ecToInputLoc.clear();
+        for (Input input : savedInputs) {
+            if (input.isFavored()) {
+                mapEcToInputLoc(input);
+            }
+        }
+
         // Break log after cycle
         infoLog("\n\n\n");
     }
@@ -499,6 +507,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         // Increment run count
         this.numTrials++;
 
+        // Trim input (remove unused keys)
+        currentInput.gc();
+
         if (result == Result.SUCCESS) {
 
             // Compute a list of keys for which this input can assume responsiblity.
@@ -517,8 +528,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
             // Possibly save input
             if (responsibilities.size() > 0 || (SAVE_NEW_COUNTS && coverageBitsUpdated)) {
-                // Trim input (remove unused keys)
-                currentInput.gc();
 
                 // It must still be non-empty
                 assert(currentInput.valuesMap.size() > 0);
@@ -586,37 +595,39 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         // Perhaps it can also steal responsibility from other inputs
         if (STEAL_RESPONSIBILITY) {
             int currentNonZeroCoverage = runCoverage.getNonZeroCount();
+            int currentInputSize = currentInput.size();
             Set<?> covered = new HashSet<>(runCoverage.getCovered());
+
+            // Search for a candidate to steal responsibility from
+            candidate_search:
             for (Input candidate : savedInputs) {
                 Set<?> responsibilities = candidate.responsibilities;
 
                 // Candidates with no responsibility are not interesting
                 if (responsibilities.isEmpty()) {
-                    continue;
+                    continue candidate_search;
                 }
 
-                // To avoid thrashing, only consider candidates with strictly
-                // smaller total coverage (implying that responsibility can only
-                // be stolen by an input that covers a larger set).
-                if (candidate.nonZeroCoverage >= currentNonZeroCoverage) {
-                    continue;
-                }
+                // To avoid thrashing, only consider candidates with either
+                // (1) strictly smaller total coverage or
+                // (2) same total coverage but strictly larger size
+                if (candidate.nonZeroCoverage < currentNonZeroCoverage ||
+                        (candidate.nonZeroCoverage == currentNonZeroCoverage &&
+                                currentInputSize < candidate.size())) {
 
-                // Check if we can steal all responsibilities from candidate
-                boolean canSteal = true;
-                for (Object b : responsibilities) {
-                    if (covered.contains(b) == false) {
-                        // Cannot steal if this input does not cover something
-                        // that the candidate is responsible for
-                        canSteal = false;
-                        break;
+                    // Check if we can steal all responsibilities from candidate
+                    for (Object b : responsibilities) {
+                        if (covered.contains(b) == false) {
+                            // Cannot steal if this input does not cover something
+                            // that the candidate is responsible for
+                            continue candidate_search;
+                        }
                     }
-                }
-                // If all of candidate's responsibilities are covered by the
-                // current input, then it can completely subsume the candidate
-                if (canSteal) {
+                    // If all of candidate's responsibilities are covered by the
+                    // current input, then it can completely subsume the candidate
                     result.addAll(responsibilities);
                 }
+
             }
         }
 
@@ -669,10 +680,15 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         }
 
         // Fifth, map executions to input locations for splicing
-        for (int offset = 0; offset < currentInput.size(); offset++) {
-            ExecutionIndex ei = currentInput.orderedKeys.get(offset);
+        mapEcToInputLoc(currentInput);
+
+    }
+
+    private void mapEcToInputLoc(Input input) {
+        for (int offset = 0; offset < input.size(); offset++) {
+            ExecutionIndex ei = input.orderedKeys.get(offset);
             ExecutionContext ec = new ExecutionContext(ei);
-            ecToInputLoc.get(ec).add(new InputLocation(currentInput, offset));
+            ecToInputLoc.get(ec).add(new InputLocation(input, offset));
         }
 
     }
@@ -1056,8 +1072,12 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
                 // TODO: Do we really want splicing to be this frequent?
                 if (random.nextBoolean()) {
+                    final int MIN_TARGET_ATTEMPTS = 3;
+                    final int MAX_TARGET_ATTEMPTS = 6;
 
-                    outer: for (int targetAttempt = 1; targetAttempt < 3; targetAttempt++) {
+                    int targetAttempts = MIN_TARGET_ATTEMPTS;
+
+                    outer: for (int targetAttempt = 1; targetAttempt < targetAttempts; targetAttempt++) {
 
                         // Choose an execution context at which to splice at
                         // Note: We get EI and value from `this` rather than `newInput`
@@ -1071,9 +1091,12 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                         // Find a suitable input location to splice from
                         ArrayList<InputLocation> inputLocations = ecToInputLoc.get(targetEc);
 
-                        // If this is a valid target location, it should also be a valid
-                        // source location and exist in the ecToInputLoc map
-                        assert (inputLocations.size() > 0);
+                        // If this was a bad choice of target, try again without penalty if possible
+                        if (inputLocations.size() == 0) {
+                            // Try to increase the loop bound a little bit to get another chance
+                            targetAttempts = Math.min(targetAttempts+1, MAX_TARGET_ATTEMPTS);
+                            continue;
+                        }
 
                         InputLocation inputLocation;
 
