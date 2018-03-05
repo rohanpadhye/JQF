@@ -45,7 +45,7 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
  */
 public class NonTrackingGenerationStatus implements GenerationStatus {
 
-    public static final int MEAN_SIZE = 40;
+    public static final int MEAN_SIZE = 10;
 
     private final SourceOfRandomness random;
     private final Map<Key<?>, Object> contextValues = new HashMap<>();
