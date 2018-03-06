@@ -105,6 +105,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** The number of trials completed. */
     private long numTrials = 0;
 
+    /** The number of valid inputs. */
+    private long numValid = 0;
+
     /** The directory where fuzzing results are written. */
     private final File outputDirectory;
 
@@ -189,38 +192,41 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     // ------------- FUZZING HEURISTICS ------------
 
+    /** Turn this on to disable all guidance (i.e. no mutations, only random fuzzing) */
+    static final boolean TOTALLY_RANDOM = Boolean.getBoolean("jqf.ei.TOTALLY_RANDOM");
+
     /** Whether to use real execution indexes as opposed to flat numbering. */
-    public static final boolean DISABLE_EXECUTION_INDEXING = !Boolean.getBoolean("jqf.ei.ENABLE_EXECUTION_INDEXING");
+    static final boolean DISABLE_EXECUTION_INDEXING = !Boolean.getBoolean("jqf.ei.ENABLE_EXECUTION_INDEXING");
 
     /** Max input size to generate. */
-    private static final int MAX_INPUT_SIZE = Integer.getInteger("jqf.ei.MAX_INPUT_SIZE", 1024);
+    static final int MAX_INPUT_SIZE = Integer.getInteger("jqf.ei.MAX_INPUT_SIZE", 1024);
 
     /** Baseline number of mutated children to produce from a given parent input. */
-    private static final int NUM_CHILDREN_BASELINE = 50;
+    static final int NUM_CHILDREN_BASELINE = 50;
 
     /** Multiplication factor for number of children to produce for favored inputs. */
-    private static final int NUM_CHILDREN_MULTIPLIER_FAVORED = 20;
+    static final int NUM_CHILDREN_MULTIPLIER_FAVORED = 20;
 
     /** Mean number of mutations to perform in each round. */
-    private static final double MEAN_MUTATION_COUNT = 8.0;
+    static final double MEAN_MUTATION_COUNT = 8.0;
 
     /** Mean number of contiguous bytes to mutate in each mutation. */
-    private static final double MEAN_MUTATION_SIZE = 4.0; // Bytes
+    static final double MEAN_MUTATION_SIZE = 4.0; // Bytes
 
     /** Max number of contiguous bytes to splice in from another input during the splicing stage. */
-    private static final int MAX_SPLICE_SIZE = 64; // Bytes
+    static final int MAX_SPLICE_SIZE = 64; // Bytes
 
     /** Whether to splice only in the same sub-tree */
-    private static final boolean SPLICE_SUBTREE = Boolean.getBoolean("jqf.ei.SPLICE_SUBTREE");
+    static final boolean SPLICE_SUBTREE = Boolean.getBoolean("jqf.ei.SPLICE_SUBTREE");
 
     /** Whether to save inputs that only add new coverage bits (but no new responsibilities). */
-    private static final boolean SAVE_NEW_COUNTS = true;
+    static final boolean SAVE_NEW_COUNTS = true;
 
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
-    private static final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
+    static final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
 
     /** Probability of splicing in getOrGenerateFresh() */
-    private static final double DEMAND_DRIVEN_SPLICING_PROBABILITY = 0;
+    static final double DEMAND_DRIVEN_SPLICING_PROBABILITY = 0;
 
 
     /**
@@ -356,10 +362,11 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                        "                      SPLICE_SUBTREE             = %s\n\n",
                 DISABLE_EXECUTION_INDEXING, STEAL_RESPONSIBILITY, SPLICE_SUBTREE);
         console.printf("Elapsed time:         %d min %d sec\n", elapsedMinutes, elapsedSeconds);
-        console.printf("Cycles completed:     %d\n", cyclesCompleted);
-        console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
-        console.printf("Unique failures:      %,d\n", uniqueFailures.size());
         console.printf("Number of executions: %,d\n", numTrials);
+        console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid*100.0/numTrials);
+        console.printf("Cycles completed:     %d\n", cyclesCompleted);
+        console.printf("Unique failures:      %,d\n", uniqueFailures.size());
+        console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
         console.printf("Current parent input: %s\n", currentParentInputDesc);
         console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
         console.printf("Covered branches:     %,d (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
@@ -440,7 +447,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         } else if (savedInputs.isEmpty()) {
             // If no seeds given try to start with something random
-            if (numTrials > 100_000) {
+            if (!TOTALLY_RANDOM && numTrials > 100_000) {
                 throw new GuidanceException("Too many trials without coverage; " +
                         "likely all assumption violations");
             }
@@ -507,8 +514,13 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         // Increment run count
         this.numTrials++;
 
-        // Trim input (remove unused keys)
-        currentInput.gc();
+        if (result != Result.INVALID) {
+            // Trim input (remove unused keys)
+            currentInput.gc();
+
+            // Increment valid counter
+            numValid++;
+        }
 
         if (result == Result.SUCCESS) {
 
@@ -646,14 +658,20 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     }
 
     private void saveCurrentInput(Set<Object> responsibilities) throws IOException {
-        // First, save to queue
-        savedInputs.add(currentInput);
 
-        // Second, save to disk
+        // First, save to disk
         int newInputIdx = savedInputs.size()-1;
         String saveFileName = String.format("id:%06d,%s", newInputIdx, currentInput.desc);
         File saveFile = new File(savedInputsDirectory, saveFileName);
         writeCurrentInputToFile(saveFile);
+
+        // If not using guidance, do nothing else
+        if (TOTALLY_RANDOM) {
+            return;
+        }
+
+        // Second, save to queue
+        savedInputs.add(currentInput);
 
         // Third, store basic book-keeping data
         currentInput.id = newInputIdx;
