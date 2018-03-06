@@ -61,6 +61,8 @@ public class JavaScriptCodeGenerator extends Generator<String> {
     private static final int MAX_STATEMENT_DEPTH = 4;
     private static final float NEW_IDENTIFIER_PROB = 0.1f;
     private static Set<String> identifiers;
+    private int statementDepth;
+    private int expressionDepth;
 
 
     private static final TokenType[] UNARY_TOKENS = {
@@ -99,7 +101,7 @@ public class JavaScriptCodeGenerator extends Generator<String> {
             TokenType.ASSIGN,
             TokenType.EQ,
             TokenType.EQ_STRICT,
-            TokenType.BIND,
+            //TokenType.BIND,
             TokenType.GT,
             TokenType.GE,
             TokenType.SAR,
@@ -120,6 +122,8 @@ public class JavaScriptCodeGenerator extends Generator<String> {
     public String generate(SourceOfRandomness random, GenerationStatus status) {
         this.status = status;
         this.identifiers = new HashSet<>();
+        this.statementDepth = 0;
+        this.expressionDepth = 0;
         return generateStatement(random).toString();
     }
 
@@ -139,7 +143,6 @@ public class JavaScriptCodeGenerator extends Generator<String> {
         return items;
     }
 
-    private int expressionDepth = 0;
     private String generateExpression(SourceOfRandomness random) {
         expressionDepth++;
         // Choose between terminal or non-terminal
@@ -164,7 +167,6 @@ public class JavaScriptCodeGenerator extends Generator<String> {
         return "(" + result + ")";
     }
 
-    private int statementDepth = 0;
     private String generateStatement(SourceOfRandomness random) {
         statementDepth++;
         String result;
