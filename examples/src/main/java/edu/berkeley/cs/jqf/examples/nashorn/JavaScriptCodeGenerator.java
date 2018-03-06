@@ -170,30 +170,26 @@ public class JavaScriptCodeGenerator extends Generator<String> {
     private String generateStatement(SourceOfRandomness random) {
         statementDepth++;
         String result;
-        if (random.nextBoolean()) {
-            result = generateExpressionStatement(random);
+        if (statementDepth >= MAX_STATEMENT_DEPTH || random.nextBoolean()) {
+            result = random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
+                    this::generateExpressionStatement,
+                    this::generateBreakNode,
+                    this::generateContinueNode,
+                    this::generateReturnNode,
+                    this::generateThrowNode,
+                    this::generateVarNode,
+                    this::generateEmptyNode
+            )).apply(random);
         } else {
-            if (statementDepth >= MAX_STATEMENT_DEPTH || random.nextBoolean()) {
-                result = random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
-                        this::generateExpressionStatement,
-                        this::generateBreakNode,
-                        this::generateContinueNode,
-                        this::generateReturnNode,
-                        this::generateThrowNode,
-                        this::generateVarNode,
-                        this::generateEmptyNode
-                )).apply(random);
-            } else {
-                result = random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
-                        this::generateIfNode,
-                        this::generateForNode,
-                        this::generateWhileNode,
-                        this::generateNamedFunctionNode,
-                        this::generateSwitchNode,
-                        this::generateTryNode,
-                        this::generateBlockStatement
-                )).apply(random);
-            }
+            result = random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
+                    this::generateIfNode,
+                    this::generateForNode,
+                    this::generateWhileNode,
+                    this::generateNamedFunctionNode,
+                    this::generateSwitchNode,
+                    this::generateTryNode,
+                    this::generateBlockStatement
+            )).apply(random);
         }
         statementDepth--;
         return result;
@@ -272,11 +268,11 @@ public class JavaScriptCodeGenerator extends Generator<String> {
     }
 
     private String generateFunctionNode(SourceOfRandomness random) {
-        return "function(" + generateItems(this::generateIdentNode, random, 5) + ")" + generateBlock(random);
+        return "function(" + String.join(", ", generateItems(this::generateIdentNode, random, 5)) + ")" + generateBlock(random);
     }
 
     private String generateNamedFunctionNode(SourceOfRandomness random) {
-        return "function " + generateIdentNode(random) + "(" + generateItems(this::generateIdentNode, random, 5) + ")" + generateBlock(random);
+        return "function " + generateIdentNode(random) + "(" + String.join(", ", generateItems(this::generateIdentNode, random, 5)) + ")" + generateBlock(random);
     }
 
 
@@ -304,14 +300,30 @@ public class JavaScriptCodeGenerator extends Generator<String> {
         return generateExpression(random) + "[" + generateExpression(random) + "]";
     }
 
+    private String generateObjectProperty(SourceOfRandomness random) {
+        return generateIdentNode(random) + ": " + generateExpression(random);
+    }
+
     private String generateLiteralNode(SourceOfRandomness random) {
-        return random.choose(Arrays.<Supplier<String>>asList(
-                () -> String.valueOf(random.nextInt(-10, 1000)),
-                () -> String.valueOf(random.nextBoolean()),
-                () -> new AsciiStringGenerator().generate(random, status),
-                () -> "undefined",
-                () -> "null"
-        )).get();
+        if (expressionDepth < MAX_EXPRESSION_DEPTH && random.nextFloat() < 0.2) {
+            if (random.nextBoolean()) {
+                // Array literal
+                return "[" + String.join(", ", generateItems(this::generateExpression, random, 3)) + "]";
+            } else {
+                // Object literal
+                return "{" + String.join(", ", generateItems(this::generateObjectProperty, random, 3)) + "}";
+
+            }
+        } else {
+            return random.choose(Arrays.<Supplier<String>>asList(
+                    () -> String.valueOf(random.nextInt(-10, 1000)),
+                    () -> String.valueOf(random.nextBoolean()),
+                    () -> '"' + new AsciiStringGenerator().generate(random, status) + '"',
+                    () -> "undefined",
+                    () -> "null",
+                    () -> "this"
+            )).get();
+        }
     }
 
     private String generateObjectNode(SourceOfRandomness random) {
@@ -328,7 +340,7 @@ public class JavaScriptCodeGenerator extends Generator<String> {
 
     private String generateSwitchNode(SourceOfRandomness random) {
         return "switch(" + generateExpression(random) + ") {"
-                + generateItems(this::generateCaseNode, random, 2) + "}";
+                + String.join(" ", generateItems(this::generateCaseNode, random, 2)) + "}";
     }
 
     private String generateTernaryNode(SourceOfRandomness random) {

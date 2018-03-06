@@ -32,8 +32,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.logging.LogManager;
 
 import com.google.common.base.Charsets;
+import com.google.javascript.jscomp.CompilationLevel;
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.jscomp.Result;
@@ -51,6 +53,10 @@ import org.junit.runner.RunWith;
 @RunWith(JQF.class)
 public class CompilerTest {
 
+    static {
+        // Disable all logging by Closure passes
+        LogManager.getLogManager().reset();
+    }
 
     private Compiler compiler = new Compiler(new PrintStream(new ByteArrayOutputStream(), false));
     private CompilerOptions options = new CompilerOptions();
@@ -58,10 +64,12 @@ public class CompilerTest {
 
     @Before
     public void initCompiler() {
+        // Don't use threads
         compiler.disableThreads();
-        options.setLanguageIn(CompilerOptions.LanguageMode.ECMASCRIPT_2017);
-        options.setLanguageOut(CompilerOptions.LanguageMode.ECMASCRIPT5);
-        options.setFoldConstants(true);
+        // Don't print things
+        options.setPrintConfig(false);
+        // Enable all safe optimizations
+        CompilationLevel.SIMPLE_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
     }
 
     private void doCompile(SourceFile input) {
