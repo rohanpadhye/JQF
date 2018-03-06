@@ -38,7 +38,6 @@ import java.util.function.Supplier;
 
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
-import com.pholser.junit.quickcheck.internal.GeometricDistribution;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
 import jdk.nashorn.internal.parser.TokenType;
@@ -55,14 +54,13 @@ public class JavaScriptCodeGenerator extends Generator<String> {
     }
 
     private GenerationStatus status;
-    private GeometricDistribution geometric = new GeometricDistribution();
 
 
     private static final int MAX_IDENTIFIERS = 100;
     private static final int MAX_EXPRESSION_DEPTH = 10;
     private static final int MAX_STATEMENT_DEPTH = 4;
     private static final float NEW_IDENTIFIER_PROB = 0.1f;
-    private static final Set<String> identifiers = new HashSet<>();
+    private static Set<String> identifiers;
 
 
     private static final TokenType[] UNARY_TOKENS = {
@@ -121,6 +119,7 @@ public class JavaScriptCodeGenerator extends Generator<String> {
     @Override
     public String generate(SourceOfRandomness random, GenerationStatus status) {
         this.status = status;
+        this.identifiers = new HashSet<>();
         return generateStatement(random).toString();
     }
 
