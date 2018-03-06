@@ -78,6 +78,12 @@
             <artifactId>maven-model-builder</artifactId>
             <version>3.5.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.javascript</groupId>
+            <artifactId>closure-compiler</artifactId>
+            <version>v20180204</version>
+        </dependency>
+
     </dependencies>
 
     <build>

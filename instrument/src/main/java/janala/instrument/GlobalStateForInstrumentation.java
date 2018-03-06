@@ -10,9 +10,9 @@ public class GlobalStateForInstrumentation {
 
   // When one gets the id, she gets the result of merging all three ids.
   // NOTE: Beaware of truncation errors.
-  private final static int CBITS = 10; // CID occupies the upper 10 bits
-  private final static int MBITS = 8;  // MID occupies the next 8 bits
-  private final static int IBITS = 32 - CBITS - MBITS;  // MID occupies the next 8 bits
+  private final static int CBITS = 10;  // CID occupies the upper 10 bits
+  private final static int MBITS = 10;  // MID occupies the next 10 bits
+  private final static int IBITS = 32 - CBITS - MBITS;  // MID occupies the remaining 12 bits
 
   public int incAndGetId() {
     iid++;
