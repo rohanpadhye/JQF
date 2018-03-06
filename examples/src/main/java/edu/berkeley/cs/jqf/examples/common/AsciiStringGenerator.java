@@ -38,7 +38,7 @@ public class AsciiStringGenerator extends AbstractStringGenerator {
 
     @Override
     protected int nextCodePoint(SourceOfRandomness sourceOfRandomness) {
-        return sourceOfRandomness.nextByte((byte) 1, (byte) 127);
+        return sourceOfRandomness.nextByte((byte) 0, (byte) 127);
     }
 
     @Override
