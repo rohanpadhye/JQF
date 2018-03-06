@@ -83,7 +83,11 @@
             <artifactId>closure-compiler</artifactId>
             <version>v20180204</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.mozilla</groupId>
+            <artifactId>rhino</artifactId>
+            <version>1.7.8</version>
+        </dependency>
     </dependencies>
 
     <build>

@@ -26,80 +26,74 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.examples.closure;
+package edu.berkeley.cs.jqf.examples.rhino;
 
-import java.io.ByteArrayOutputStream;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.util.logging.LogManager;
 
-import com.google.javascript.jscomp.CompilationLevel;
-import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.Result;
-import com.google.javascript.jscomp.SourceFile;
 import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
 import edu.berkeley.cs.jqf.examples.nashorn.JavaScriptCodeGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.apache.commons.io.IOUtils;
+import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.EvaluatorException;
+import org.mozilla.javascript.Script;
 
 @RunWith(JQF.class)
 public class CompilerTest {
 
-    static {
-        // Disable all logging by Closure passes
-        LogManager.getLogManager().reset();
-    }
-
-    private Compiler compiler = new Compiler(new PrintStream(new ByteArrayOutputStream(), false));
-    private CompilerOptions options = new CompilerOptions();
-    private SourceFile externs = SourceFile.fromCode("externs", "");
+    private Context context;
 
     @Before
-    public void initCompiler() {
-        // Don't use threads
-        compiler.disableThreads();
-        // Don't print things
-        options.setPrintConfig(false);
-        // Enable all safe optimizations
-        CompilationLevel.SIMPLE_OPTIMIZATIONS.setOptionsForCompilationLevel(options);
+    public void initContext() {
+        context = Context.enter();
     }
 
-    private void doCompile(SourceFile input) {
-        Result result = compiler.compile(externs, input, options);
-        Assume.assumeTrue(result.success);
+    @After
+    public void exitContext() {
+        context.exit();
     }
 
     @Fuzz
-    public void testWithString(@From(AsciiStringGenerator.class) String code) {
-        SourceFile input = SourceFile.fromCode("input", code);
-        doCompile(input);
+    public void testWithString(@From(AsciiStringGenerator.class) String input) {
+        try {
+            Script script = context.compileString(input, "input", 0, null);
+        } catch (EvaluatorException e) {
+            Assume.assumeNoException(e);
+        }
+
     }
 
     @Fuzz
     public void debugWithString(@From(AsciiStringGenerator.class) String code) {
         System.out.println("\nInput:  " + code);
         testWithString(code);
-        System.out.println("Output: " + compiler.toSource());
+        System.out.println("Success!");
     }
 
     @Test
     public void smallTest() {
-        debugWithString("x <<= undefined");
+        testWithString("x = 3 + 4");
+        testWithString("x <<= undefined");
     }
 
     @Fuzz
     public void testWithInputStream(InputStream in) throws IOException {
-        SourceFile input = SourceFile.fromInputStream("input", in, StandardCharsets.UTF_8);
-        doCompile(input);
+        try {
+            Script script = context.compileReader(new InputStreamReader(in), "input", 0, null);
+        } catch (EvaluatorException e) {
+            Assume.assumeNoException(e);
+        }
     }
 
     @Fuzz
@@ -117,4 +111,7 @@ public class CompilerTest {
     public void debugWithGenerator(@From(JavaScriptCodeGenerator.class) String code) {
         debugWithString(code);
     }
+
+
+
 }
