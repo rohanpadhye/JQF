@@ -571,7 +571,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                     throw new GuidanceException(e);
                 }
 
-                infoLog("Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
+                infoLog("%s","Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
             }
         }
 
