@@ -56,6 +56,7 @@ public class NoGuidance implements Guidance {
     private final PrintStream out;
     private Random random = new Random();
     private Coverage coverage = new Coverage();
+    private static boolean KEEP_GOING_ON_ERROR = true;
 
     /**
      * Creates a NoGuidance instance that will run a maximum number
@@ -106,7 +107,7 @@ public class NoGuidance implements Guidance {
             if (out != null) {
                 error.printStackTrace(out);
             }
-            this.keepGoing = false;
+            this.keepGoing = KEEP_GOING_ON_ERROR;
         }
 
         // Keep track of discards

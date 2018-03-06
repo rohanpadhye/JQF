@@ -189,8 +189,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     // ------------- FUZZING HEURISTICS ------------
 
-    /** Whether to use real execution indexes as opposed to flat numbering (debug option; manually edit). */
-    private static final boolean DISABLE_EXECUTION_INDEXING = Boolean.getBoolean("jqf.ei.DISABLE_EXECUTION_INDEXING");
+    /** Whether to use real execution indexes as opposed to flat numbering. */
+    public static final boolean DISABLE_EXECUTION_INDEXING = !Boolean.getBoolean("jqf.ei.ENABLE_EXECUTION_INDEXING");
 
     /** Max input size to generate. */
     private static final int MAX_INPUT_SIZE = Integer.getInteger("jqf.ei.MAX_INPUT_SIZE", 1024);

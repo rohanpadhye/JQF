@@ -65,7 +65,9 @@ public class ExecutionIndexingDriver {
             guidance.setTitle(testClassName+"#"+testMethodName);
 
             // Ensure that generators are being traced
-            System.setProperty("jqf.traceGenerators", "true");
+            if (!ExecutionIndexingGuidance.DISABLE_EXECUTION_INDEXING) {
+                System.setProperty("jqf.traceGenerators", "true");
+            }
 
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
