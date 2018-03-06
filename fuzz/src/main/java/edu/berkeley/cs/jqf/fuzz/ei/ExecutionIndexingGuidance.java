@@ -477,7 +477,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             public int read() throws IOException {
 
                 // lastEvent must not be null
-                if (lastEvent == null) {
+                if (DISABLE_EXECUTION_INDEXING == false && lastEvent == null) {
                     throw new IOException("Could not compute execution index; no instrumentation?");
                 }
 
