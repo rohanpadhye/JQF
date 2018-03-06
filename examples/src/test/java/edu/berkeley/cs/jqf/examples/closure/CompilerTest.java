@@ -40,7 +40,7 @@ import com.google.javascript.jscomp.Result;
 import com.google.javascript.jscomp.SourceFile;
 import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
-import edu.berkeley.cs.jqf.examples.nashorn.JavaScriptGenerator;
+import edu.berkeley.cs.jqf.examples.nashorn.JavaScriptCodeGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.junit.Assume;
@@ -83,18 +83,23 @@ public class CompilerTest {
 
     @Test
     public void smallTest() {
-        debugWithString("x = 3 + 4;");
+        debugWithString("x <<= undefined");
     }
 
     @Fuzz
     public void debugWithString(@From(AsciiStringGenerator.class) String code) {
-        System.out.println(code);
+        System.out.println("\nInput:  " + code);
         testWithString(code);
-        System.out.println(compiler.toSource());
+        System.out.println("Output: " + compiler.toSource());
     }
 
     @Fuzz
-    public void testWithGenerator(@From(JavaScriptGenerator.class) String code) {
+    public void testWithGenerator(@From(JavaScriptCodeGenerator.class) String code) {
+        testWithString(code);
+    }
+
+    @Fuzz
+    public void debugWithGenerator(@From(JavaScriptCodeGenerator.class) String code) {
         debugWithString(code);
     }
 }

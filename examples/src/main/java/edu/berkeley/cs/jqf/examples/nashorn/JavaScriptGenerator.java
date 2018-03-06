@@ -28,19 +28,26 @@
  */
 package edu.berkeley.cs.jqf.examples.nashorn;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
+import com.pholser.junit.quickcheck.internal.GeometricDistribution;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
 import jdk.nashorn.internal.ir.*;
 import jdk.nashorn.internal.parser.TokenType;
 import jdk.nashorn.internal.runtime.Undefined;
+import org.junit.Assume;
+
+import static java.lang.Math.ceil;
+import static java.lang.Math.log;
 
 /**
  * @author Rohan Padhye
@@ -51,11 +58,16 @@ public class JavaScriptGenerator extends Generator<String> {
     }
 
     private GenerationStatus status;
+    private GeometricDistribution geometric = new GeometricDistribution();
 
 
-    static final int MAX_IDENTIFIERS = 100;
-    static final float NEW_IDENTIFIER_PROB = 0.1f;
-    static final Set<String> identifiers = new HashSet<>();
+    private static final int MAX_IDENTIFIERS = 100;
+    private static final int MAX_EXPRESSION_DEPTH = 10;
+    private static final int MAX_STATEMENT_DEPTH = 4;
+    private static final float NEW_IDENTIFIER_PROB = 0.1f;
+    private static final Set<String> identifiers = new HashSet<>();
+
+    private LexicalContext lc = null;
 
     @Override
     public String generate(SourceOfRandomness random, GenerationStatus status) {
@@ -63,25 +75,65 @@ public class JavaScriptGenerator extends Generator<String> {
         return generateStatement(random).toString(false);
     }
 
-    private Expression generateExpression(SourceOfRandomness random) {
+    private static int sampleGeometric(SourceOfRandomness random, double mean) {
+        double p = 1 / mean;
+        double uniform = random.nextDouble();
+        return (int) ceil(log(1 - uniform) / log(1 - p));
+    }
 
-        // Choose between terminal or non-terminal (TODO: Add some depth bounding)
-        if (random.nextBoolean()) {
-            return random.choose(Arrays.<Function<SourceOfRandomness, Expression>>asList(
+    private static <T> List<T> generateItems(Function<SourceOfRandomness, T> generator, SourceOfRandomness random,
+                                             double mean) {
+        int len = sampleGeometric(random, mean);
+        List<T> items = new ArrayList<>(len);
+        for (int i = 0; i < len; i++) {
+            items.add(generator.apply(random));
+        }
+        return items;
+    }
+
+    private int expressionDepth = 0;
+    private Expression generateExpression(SourceOfRandomness random) {
+        expressionDepth++;
+        // Choose between terminal or non-terminal
+        Expression result;
+        if (expressionDepth >= MAX_EXPRESSION_DEPTH || random.nextFloat() < 0.8) {
+            result = random.choose(Arrays.<Function<SourceOfRandomness, Expression>>asList(
                     this::generateLiteralNode,
                     this::generateIdentNode
             )).apply(random);
         } else {
-            return random.choose(Arrays.<Function<SourceOfRandomness, Expression>>asList(
-                    this::generateBinaryNode
+            result = random.choose(Arrays.<Function<SourceOfRandomness, Expression>>asList(
+                    this::generateBinaryNode,
+                    this::generateCallNode
             )).apply(random);
         }
+        expressionDepth--;
+        return result;
     }
 
+    private int statementDepth = 0;
     private Statement generateStatement(SourceOfRandomness random) {
-        return random.choose(Arrays.<Function<SourceOfRandomness, Statement>>asList(
-                this::generateExpressionStatement
-        )).apply(random);
+        statementDepth++;
+        Statement result;
+        if (random.nextBoolean()) {
+            result = generateExpressionStatement(random);
+        } else {
+            if (statementDepth >= MAX_STATEMENT_DEPTH || random.nextFloat() < 0.8) {
+                result = random.choose(Arrays.<Function<SourceOfRandomness, Statement>>asList(
+                        this::generateExpressionStatement,
+                        this::generateBreakNode,
+                        this::generateContinueNode,
+                        this::generateEmptyNode
+                )).apply(random);
+            } else {
+                result = random.choose(Arrays.<Function<SourceOfRandomness, Statement>>asList(
+                        this::generateForNode,
+                        this::generateBlockStatement
+                )).apply(random);
+            }
+        }
+        statementDepth--;
+        return result;
     }
 
     private AccessNode generateAccessNode(SourceOfRandomness random) {
@@ -89,12 +141,13 @@ public class JavaScriptGenerator extends Generator<String> {
     }
 
     private BinaryNode generateBinaryNode(SourceOfRandomness random) {
-        TokenType token = random.choose(Arrays.asList(TokenType.NE,
+        TokenType[] tokens = {
+                TokenType.NE,
                 TokenType.NE_STRICT,
                 TokenType.MOD,
                 TokenType.ASSIGN_MOD,
                 TokenType.BIT_AND,
-                //TokenType.AND,
+                TokenType.AND,
                 TokenType.ASSIGN_BIT_AND,
                 TokenType.MUL,
                 TokenType.ASSIGN_MUL,
@@ -126,42 +179,55 @@ public class JavaScriptGenerator extends Generator<String> {
                 TokenType.ASSIGN_BIT_XOR,
                 TokenType.BIT_OR,
                 TokenType.ASSIGN_BIT_OR,
-                //TokenType.OR,
+                TokenType.OR,
                 TokenType.IN,
-                TokenType.INSTANCEOF));
-        return new BinaryNode(token.ordinal(), generateExpression(random), generateExpression(random));
+                TokenType.INSTANCEOF
+        };
+        TokenType token = random.choose(tokens);
+        Expression lhs = (token == TokenType.OR || token == TokenType.AND) ?
+                generateJoinPredecessorExpression(random) :
+                generateExpression(random);
+        Expression rhs = generateExpression(random);
+
+        // Write an assumption to ensure assertion in BinaryNode() does not fail
+        Assume.assumeTrue(lhs instanceof JoinPredecessorExpression ||
+                (token != TokenType.OR && token != TokenType.AND));
+        return new BinaryNode(token.ordinal(),lhs, rhs);
     }
 
     private Block generateBlock(SourceOfRandomness random) {
-        return null;
+        return new Block(0, 0, generateItems(this::generateStatement, random, 4));
     }
 
     private BlockStatement generateBlockStatement(SourceOfRandomness random) {
-        return null;
+        return new BlockStatement(-1, generateBlock(random));
     }
 
     private BreakNode generateBreakNode(SourceOfRandomness random) {
-        return null;
+        return new BreakNode(-1, 0, 0, null);
     }
 
     private CallNode generateCallNode(SourceOfRandomness random) {
-        return null;
+        return new CallNode(-1, 0, 0, generateExpression(random),
+                generateItems(this::generateExpression, random, 3), random.nextBoolean());
     }
 
     private CaseNode generateCaseNode(SourceOfRandomness random) {
-        return null;
+        return new CaseNode(0, 0, generateExpression(random), generateBlock(random));
     }
 
     private CatchNode generateCatchNode(SourceOfRandomness random) {
-        return null;
+        return new CatchNode(-1, 0, 0,
+                generateIdentNode(random), generateExpression(random),
+                generateBlock(random), false);
     }
 
     private ContinueNode generateContinueNode(SourceOfRandomness random) {
-        return null;
+        return new ContinueNode(-1, 0, 0, null);
     }
 
     private EmptyNode generateEmptyNode(SourceOfRandomness random) {
-        return null;
+        return new EmptyNode(-1, 0, 0);
     }
 
     private ExpressionStatement generateExpressionStatement(SourceOfRandomness random) {
@@ -169,7 +235,18 @@ public class JavaScriptGenerator extends Generator<String> {
     }
 
     private ForNode generateForNode(SourceOfRandomness random) {
-        return null;
+        // TODO: Generate flags for for-in/for-each
+        ForNode forNode = new ForNode(-1, 0, 0, generateBlock(random), 0);
+        if (random.nextBoolean()) {
+            forNode = forNode.setInit(lc, generateExpression(random));
+        }
+        if (random.nextBoolean()) {
+            forNode = forNode.setTest(lc, generateJoinPredecessorExpression(random));
+        }
+        if (random.nextBoolean()) {
+            forNode = forNode.setModify(lc, generateJoinPredecessorExpression(random));
+        }
+        return forNode;
     }
 
     private FunctionNode generateFunctionNode(SourceOfRandomness random) {
@@ -194,7 +271,10 @@ public class JavaScriptGenerator extends Generator<String> {
     }
 
     private IfNode generateIfNode(SourceOfRandomness random) {
-        return null;
+        return new IfNode(-1, 0, 0,
+                generateExpression(random),
+                generateBlock(random),
+                random.nextBoolean() ? generateBlock(random) : null);
     }
 
     private IndexNode generateIndexNode(SourceOfRandomness random) {
@@ -202,7 +282,7 @@ public class JavaScriptGenerator extends Generator<String> {
     }
 
     private JoinPredecessorExpression generateJoinPredecessorExpression(SourceOfRandomness random) {
-        return null;
+        return new JoinPredecessorExpression(generateExpression(random));
     }
 
     private JumpToInlinedFinally generateJumpToInlinedFinally(SourceOfRandomness random) {
@@ -210,10 +290,6 @@ public class JavaScriptGenerator extends Generator<String> {
     }
 
     private LabelNode generateLabelNode(SourceOfRandomness random) {
-        return null;
-    }
-
-    private LexicalContext generateLexicalContext(SourceOfRandomness random) {
         return null;
     }
 
