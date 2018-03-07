@@ -291,7 +291,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         }
 
         appendLineToFile(statsFile,"# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
-                "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec");
+                "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs");
 
 
     }
@@ -375,9 +375,10 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
         console.printf("Covered branches:     %,d (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
 
-        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f",
+        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d",
                 TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
-                savedInputs.size(), 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble);
+                savedInputs.size(), 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
+                numValid, numTrials-numValid);
         appendLineToFile(statsFile, plotData);
 
     }

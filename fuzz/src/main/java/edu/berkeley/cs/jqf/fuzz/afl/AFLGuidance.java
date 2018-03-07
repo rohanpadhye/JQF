@@ -239,14 +239,16 @@ public class AFLGuidance implements Guidance {
                 break;
             }
             case FAILURE: {
-                // For failure, the exit value is non-zero
+                // For failure, the exit value is non-zero in LSB to
+                // simulate exit with signal
                 status = 1;
                 break;
             }
             case INVALID: {
-                // For invalid inputs, we don't send a non-zero
-                // status to prevent AFL from marking this as a "crash"
-                status = 0;
+                // For invalid inputs, we send a non-zero return status
+                // in the second smallest byte, which is the program's return status
+                // for programs that exit successfully
+                status = 1 << 8;
 
 
                 // However, we clear trace-bits so that AFL does not
