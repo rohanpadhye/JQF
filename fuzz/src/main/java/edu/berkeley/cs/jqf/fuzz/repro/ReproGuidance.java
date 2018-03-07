@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -66,6 +67,8 @@ public class ReproGuidance implements Guidance {
     private InputStream inputStream;
     private Coverage coverage = new Coverage();
     Set<String> branchesCovered;
+    HashMap<Integer, String> branchDescCache = new HashMap<>();
+
 
     /**
      * Constructs an instance of ReproGuidance with a list of
@@ -185,13 +188,21 @@ public class ReproGuidance implements Guidance {
                     if (branchesCovered != null) {
                         if (e instanceof BranchEvent) {
                             BranchEvent b = (BranchEvent) e;
-                            String str = String.format("(%09d) %s#%s():%d [%d]", b.getIid(), b.getContainingClass(), b.getContainingMethodName(),
-                                    b.getLineNumber(), b.getArm());
+                            String str = branchDescCache.get(b.getIid());
+                            if (str == null) {
+                                str = String.format("(%09d) %s#%s():%d [%d]", b.getIid(), b.getContainingClass(), b.getContainingMethodName(),
+                                        b.getLineNumber(), b.getArm());
+                                branchDescCache.put(b.getIid(), str);
+                            }
                             branchesCovered.add(str);
                         } else if (e instanceof CallEvent) {
                             CallEvent c = (CallEvent) e;
-                            String str = String.format("(%09d) %s#%s():%d --> %s", c.getIid(), c.getContainingClass(), c.getContainingMethodName(),
-                                    c.getLineNumber(), c.getInvokedMethodName());
+                            String str = branchDescCache.get(c.getIid());
+                            if (str == null) {
+                                str = String.format("(%09d) %s#%s():%d --> %s", c.getIid(), c.getContainingClass(), c.getContainingMethodName(),
+                                        c.getLineNumber(), c.getInvokedMethodName());
+                                branchDescCache.put(c.getIid(), str);
+                            }
                             branchesCovered.add(str);
                         }
                     } else {
