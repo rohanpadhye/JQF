@@ -673,7 +673,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         // First, save to disk
         int newInputIdx = numSavedInputs++;
-        String saveFileName = String.format("id:%06d,%s", newInputIdx, currentInput.desc);
+        String saveFileName = String.format("id:%06d,%s%s", newInputIdx,
+                currentInput.desc, responsibilities.isEmpty() ? "" : ",+cov");
         File saveFile = new File(savedInputsDirectory, saveFileName);
         writeCurrentInputToFile(saveFile);
 
