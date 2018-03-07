@@ -188,11 +188,12 @@ public class ReproGuidance implements Guidance {
                     if (branchesCovered != null) {
                         if (e instanceof BranchEvent) {
                             BranchEvent b = (BranchEvent) e;
-                            String str = branchDescCache.get(b.getIid());
+                            int hash = b.getIid() * 31 + b.getArm();
+                            String str = branchDescCache.get(hash);
                             if (str == null) {
                                 str = String.format("(%09d) %s#%s():%d [%d]", b.getIid(), b.getContainingClass(), b.getContainingMethodName(),
                                         b.getLineNumber(), b.getArm());
-                                branchDescCache.put(b.getIid(), str);
+                                branchDescCache.put(hash, str);
                             }
                             branchesCovered.add(str);
                         } else if (e instanceof CallEvent) {
