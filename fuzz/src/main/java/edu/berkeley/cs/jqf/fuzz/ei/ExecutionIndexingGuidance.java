@@ -138,6 +138,13 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Number of favored inputs in the last cycle. */
     private int numFavoredLastCycle = 0;
 
+    /** Number of saved inputs.
+     *
+     * This is usually the same as savedInputs.size(),
+     * but we do not really save inputs in TOTALLY_RANDOM mode.
+     */
+    private int numSavedInputs = 0;
+
     /** Coverage statistics for a single run. */
     private Coverage runCoverage = new Coverage();
 
@@ -665,7 +672,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     private void saveCurrentInput(Set<Object> responsibilities) throws IOException {
 
         // First, save to disk
-        int newInputIdx = savedInputs.size()-1;
+        int newInputIdx = numSavedInputs++;
         String saveFileName = String.format("id:%06d,%s", newInputIdx, currentInput.desc);
         File saveFile = new File(savedInputsDirectory, saveFileName);
         writeCurrentInputToFile(saveFile);
