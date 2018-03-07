@@ -63,6 +63,19 @@ public class ReproDriver {
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
 
+
+
+            if (Boolean.getBoolean("jqf.repro.logUniqueBranches")) {
+                String cov = "";
+                if (guidance.branchesCovered != null) {
+                    for (String s : guidance.branchesCovered) {
+                        cov += "# Covered: " + s + "\n";
+                    }
+                }
+                final String finalFooter = cov;
+                System.out.println(finalFooter);
+            }
+
             if (Boolean.getBoolean("jqf.logCoverage")) {
                 System.out.println(String.format("Covered %d edges.",
                         guidance.getCoverage().getNonZeroCount()));

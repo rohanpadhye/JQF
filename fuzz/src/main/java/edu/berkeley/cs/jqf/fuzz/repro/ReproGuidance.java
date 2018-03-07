@@ -65,7 +65,7 @@ public class ReproGuidance implements Guidance {
     private List<PrintStream> traceStreams = new ArrayList<>();
     private InputStream inputStream;
     private Coverage coverage = new Coverage();
-    private Set<String> branchesCovered;
+    Set<String> branchesCovered;
 
     /**
      * Constructs an instance of ReproGuidance with a list of
@@ -134,13 +134,6 @@ public class ReproGuidance implements Guidance {
     public void handleResult(Result result, Throwable error) {
         // Print footer in log files
         String footer = String.format("# End %s\n", inputFiles[nextFileIdx].toString());
-        if (branchesCovered != null) {
-            for (String s : branchesCovered) {
-                footer += "# Covered: " + s + "\n";
-            }
-        }
-        final String finalFooter = footer;
-        traceStreams.forEach((out) -> out.print(finalFooter));
 
         // Close the open input file
         try {
@@ -189,7 +182,6 @@ public class ReproGuidance implements Guidance {
                 // Return an event logging callback
                 return (e) -> {
                     coverage.handleEvent(e);
-                    out.println(e);
                     if (branchesCovered != null) {
                         if (e instanceof BranchEvent) {
                             BranchEvent b = (BranchEvent) e;
@@ -202,6 +194,8 @@ public class ReproGuidance implements Guidance {
                                     c.getLineNumber(), c.getInvokedMethodName());
                             branchesCovered.add(str);
                         }
+                    } else {
+                        out.println(e);
                     }
                 };
             } catch (FileNotFoundException e) {
