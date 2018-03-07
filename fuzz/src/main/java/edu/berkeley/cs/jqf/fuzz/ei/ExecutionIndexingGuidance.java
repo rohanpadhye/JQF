@@ -357,10 +357,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         if (this.title != null) {
             console.printf("Target:               %s\n", this.title);
         }
-        console.printf("Config:               DISABLE_EXECUTION_INDEXING = %s,\n" +
-                       "                      STEAL_RESPONSIBILITY       = %s,\n" +
-                       "                      SPLICE_SUBTREE             = %s\n\n",
-                DISABLE_EXECUTION_INDEXING, STEAL_RESPONSIBILITY, SPLICE_SUBTREE);
+        if (TOTALLY_RANDOM) {
+            console.printf("Config:               TOTALLY_RANDOM\n");
+        } else {
+            console.printf("Config:               DISABLE_EXECUTION_INDEXING = %s,\n" +
+                            "                      STEAL_RESPONSIBILITY       = %s,\n" +
+                            "                      SPLICE_SUBTREE             = %s\n\n",
+                    DISABLE_EXECUTION_INDEXING, STEAL_RESPONSIBILITY, SPLICE_SUBTREE);
+        }
         console.printf("Elapsed time:         %d min %d sec\n", elapsedMinutes, elapsedSeconds);
         console.printf("Number of executions: %,d\n", numTrials);
         console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid*100.0/numTrials);
