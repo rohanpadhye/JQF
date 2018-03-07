@@ -66,7 +66,7 @@ public class DictionaryBackedStringGenerator extends Generator<String> {
 
     @Override
     public String generate(SourceOfRandomness random, GenerationStatus status) {
-        if (random.nextBoolean()) {
+        if (true) {
             int choice = random.nextInt(dictionary.size());
             return dictionary.get(choice);
         } else {

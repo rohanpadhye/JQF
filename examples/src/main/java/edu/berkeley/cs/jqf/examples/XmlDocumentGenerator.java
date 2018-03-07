@@ -75,7 +75,7 @@ public class XmlDocumentGenerator extends Generator<Document> {
     private static double MEAN_NUM_ATTRIBUTES = 2;
 
     private int minDepth = 0;
-    private int maxDepth = 12;
+    private int maxDepth = 4;
 
     private Generator<String> stringGenerator = new AlphaStringGenerator();
 
@@ -152,13 +152,13 @@ public class XmlDocumentGenerator extends Generator<Document> {
 
     private void populateElement(Document document, Element elem, SourceOfRandomness random, GenerationStatus status, int depth) {
         // Add attributes
-        int numAttributes = Math.min(0, geometricDistribution.sampleWithMean(MEAN_NUM_ATTRIBUTES, random) - 1);
+        int numAttributes = Math.max(0, geometricDistribution.sampleWithMean(MEAN_NUM_ATTRIBUTES, random)-1);
         for (int i = 0; i < numAttributes; i++) {
             elem.setAttribute(makeString(random, status), makeString(random, status));
         }
         // Make children
         if (depth < minDepth || (depth < maxDepth && random.nextFloat() < PROB_MORE_CHILDREN)) {
-            int numChildren = geometricDistribution.sampleWithMean(MEAN_NUM_CHILDREN, random);
+            int numChildren = Math.max(0, geometricDistribution.sampleWithMean(MEAN_NUM_CHILDREN, random)-1);
             for (int i = 0; i < numChildren; i++) {
                 Element child = document.createElement(makeString(random, status));
                 populateElement(document, child, random, status, depth+1);
