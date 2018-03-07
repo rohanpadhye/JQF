@@ -30,6 +30,7 @@ package edu.berkeley.cs.jqf.examples.maven;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 
 import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.examples.XmlDocumentGenerator;
@@ -41,6 +42,7 @@ import org.apache.maven.model.io.DefaultModelReader;
 import org.apache.maven.model.io.ModelReader;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.Document;
 
@@ -48,25 +50,41 @@ import org.w3c.dom.Document;
 public class ModelReaderTest {
 
     @Fuzz
-    public void testWithInputStream(InputStream in) throws IOException {
+    public void testWithInputStream(InputStream in) {
         ModelReader reader = new DefaultModelReader();
+        try {
             Model model = reader.read(in, null);
             Assert.assertNotNull(model);
-    }
-
-    @Fuzz
-    public void testWithGenerator(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/maven-model.dict") Document dom) {
-        try {
-            testWithInputStream(XmlDocumentGenerator.documentToInputStream(dom));
         } catch (IOException e) {
             Assume.assumeNoException(e);
         }
     }
 
     @Fuzz
+    public void testWithGenerator(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/maven-model.dict") Document dom) {
+        testWithInputStream(XmlDocumentGenerator.documentToInputStream(dom));
+    }
+
+    @Fuzz
     public void debugWithGenerator(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/maven-model.dict") Document dom) {
         System.out.println(XmlDocumentGenerator.documentToString(dom));
         testWithGenerator(dom);
+    }
+
+    @Fuzz
+    public void testWithString(String input){
+        try {
+            ModelReader reader = new DefaultModelReader();
+            Model model = reader.read(new StringReader(input), null);
+            Assert.assertNotNull(model);
+        } catch (IOException e) {
+            Assume.assumeNoException(e);
+        }
+    }
+
+    @Test
+    public void testSmall() {
+        testWithString("<Y");
     }
 
 }
