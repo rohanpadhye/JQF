@@ -58,8 +58,7 @@ public class JavaScriptCodeGenerator extends Generator<String> {
 
     private static final int MAX_IDENTIFIERS = 100;
     private static final int MAX_EXPRESSION_DEPTH = 10;
-    private static final int MAX_STATEMENT_DEPTH = 4;
-    private static final float NEW_IDENTIFIER_PROB = 0.1f;
+    private static final int MAX_STATEMENT_DEPTH = 6;
     private static Set<String> identifiers;
     private int statementDepth;
     private int expressionDepth;
@@ -147,7 +146,7 @@ public class JavaScriptCodeGenerator extends Generator<String> {
         expressionDepth++;
         // Choose between terminal or non-terminal
         String result;
-        if (expressionDepth >= MAX_EXPRESSION_DEPTH || random.nextFloat() < 0.6) {
+        if (expressionDepth >= MAX_EXPRESSION_DEPTH || random.nextBoolean()) {
             result = random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
                     this::generateLiteralNode,
                     this::generateIdentNode
@@ -279,7 +278,7 @@ public class JavaScriptCodeGenerator extends Generator<String> {
     private String generateIdentNode(SourceOfRandomness random) {
         // Either generate a new identifier or use an existing one
         String identifier;
-        if (identifiers.isEmpty() || (identifiers.size() < MAX_IDENTIFIERS && random.nextFloat() < NEW_IDENTIFIER_PROB)) {
+        if (identifiers.isEmpty() || (identifiers.size() < MAX_IDENTIFIERS && random.nextBoolean())) {
             identifier = random.nextChar('a', 'z') + "_" + identifiers.size();
             identifiers.add(identifier);
         } else {
@@ -305,7 +304,7 @@ public class JavaScriptCodeGenerator extends Generator<String> {
     }
 
     private String generateLiteralNode(SourceOfRandomness random) {
-        if (expressionDepth < MAX_EXPRESSION_DEPTH && random.nextFloat() < 0.2) {
+        if (expressionDepth < MAX_EXPRESSION_DEPTH && random.nextBoolean()) {
             if (random.nextBoolean()) {
                 // Array literal
                 return "[" + String.join(", ", generateItems(this::generateExpression, random, 3)) + "]";
