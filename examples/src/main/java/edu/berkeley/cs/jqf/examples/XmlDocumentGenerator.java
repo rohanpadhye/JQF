@@ -70,7 +70,6 @@ public class XmlDocumentGenerator extends Generator<Document> {
     private static GeometricDistribution geometricDistribution =
             new GeometricDistribution();
 
-    private static double PROB_MORE_CHILDREN = 0.85;
     private static double MEAN_NUM_CHILDREN = 4;
     private static double MEAN_NUM_ATTRIBUTES = 2;
 
@@ -157,7 +156,7 @@ public class XmlDocumentGenerator extends Generator<Document> {
             elem.setAttribute(makeString(random, status), makeString(random, status));
         }
         // Make children
-        if (depth < minDepth || (depth < maxDepth && random.nextFloat() < PROB_MORE_CHILDREN)) {
+        if (depth < minDepth || (depth < maxDepth && random.nextBoolean())) {
             int numChildren = Math.max(0, geometricDistribution.sampleWithMean(MEAN_NUM_CHILDREN, random)-1);
             for (int i = 0; i < numChildren; i++) {
                 Element child = document.createElement(makeString(random, status));
