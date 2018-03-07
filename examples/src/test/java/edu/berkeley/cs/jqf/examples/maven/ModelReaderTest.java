@@ -28,9 +28,9 @@
  */
 package edu.berkeley.cs.jqf.examples.maven;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 
 import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.examples.XmlDocumentGenerator;
@@ -73,13 +73,7 @@ public class ModelReaderTest {
 
     @Fuzz
     public void testWithString(String input){
-        try {
-            ModelReader reader = new DefaultModelReader();
-            Model model = reader.read(new StringReader(input), null);
-            Assert.assertNotNull(model);
-        } catch (IOException e) {
-            Assume.assumeNoException(e);
-        }
+        testWithInputStream(new ByteArrayInputStream(input.getBytes()));
     }
 
     @Test
