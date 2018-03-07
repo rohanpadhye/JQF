@@ -46,7 +46,6 @@ import edu.berkeley.cs.jqf.examples.nashorn.JavaScriptCodeGenerator;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.apache.commons.io.IOUtils;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -75,7 +74,8 @@ public class CompilerTest {
 
     private void doCompile(SourceFile input) {
         Result result = compiler.compile(externs, input, options);
-        Assume.assumeTrue(result.success);
+        // allow failures
+        // Assume.assumeTrue(result.success);
     }
 
     @Fuzz

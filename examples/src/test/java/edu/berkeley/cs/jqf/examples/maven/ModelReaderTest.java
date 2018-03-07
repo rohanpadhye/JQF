@@ -41,7 +41,6 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.io.DefaultModelReader;
 import org.apache.maven.model.io.ModelReader;
 import org.junit.Assert;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.Document;
@@ -56,28 +55,31 @@ public class ModelReaderTest {
             Model model = reader.read(in, null);
             Assert.assertNotNull(model);
         } catch (IOException e) {
-            Assume.assumeNoException(e);
+            // allow it
+            // Assume.assumeNoException(e);
         }
     }
 
     @Fuzz
-    public void testWithGenerator(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/maven-model.dict") Document dom) {
+    public void testWithGenerator(@From(XmlDocumentGenerator.class)
+                                      @Dictionary("dictionaries/maven-model.dict") Document dom) {
         testWithInputStream(XmlDocumentGenerator.documentToInputStream(dom));
     }
 
     @Fuzz
-    public void debugWithGenerator(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/maven-model.dict") Document dom) {
+    public void debugWithGenerator(@From(XmlDocumentGenerator.class)
+                                       @Dictionary("dictionaries/maven-model.dict") Document dom) {
         System.out.println(XmlDocumentGenerator.documentToString(dom));
         testWithGenerator(dom);
     }
 
     @Fuzz
-    public void testWithString(String input){
+    public void testWithString(String input) {
         testWithInputStream(new ByteArrayInputStream(input.getBytes()));
     }
 
     @Test
-    public void testSmall() {
+    public void testSmall() throws IOException {
         testWithString("<Y");
     }
 

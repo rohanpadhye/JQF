@@ -44,7 +44,6 @@ import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.helper.ProjectHelperImpl;
-import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.Document;
@@ -72,29 +71,31 @@ public class ProjectBuilderTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (BuildException e) {
-            Assume.assumeNoException(e);
+            // allow it
+            // Assume.assumeNoException(e);
         }
-
     }
 
     @Fuzz
-    public void testWithGenerator(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/ant-project.dict") Document dom) {
+    public void testWithGenerator(@From(XmlDocumentGenerator.class)
+                                      @Dictionary("dictionaries/ant-project.dict") Document dom) {
         testWithInputStream(XmlDocumentGenerator.documentToInputStream(dom));
     }
 
     @Fuzz
-    public void debugWithGenerator(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/ant-project.dict") Document dom) {
+    public void debugWithGenerator(@From(XmlDocumentGenerator.class)
+                                       @Dictionary("dictionaries/ant-project.dict") Document dom) {
         System.out.println(XmlDocumentGenerator.documentToString(dom));
         testWithGenerator(dom);
     }
 
     @Fuzz
-    public void testWithString(String input){
+    public void testWithString(String input) throws BuildException {
         testWithInputStream(new ByteArrayInputStream(input.getBytes()));
     }
 
     @Test
-    public void testSmall() {
+    public void testSmall() throws BuildException {
         testWithString("<project default='s' />");
     }
 }
