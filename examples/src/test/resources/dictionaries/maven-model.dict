@@ -1,18 +1,3 @@
-Duplicated tag: \'
-Duplicated tag: \'project\'
-Expected root element \'project\' but found \'
-Expected root element \'project\' but found no element at all: invalid XML document
-Missing required value for attribute \'
-Unable to parse element \'
-Unknown attribute \'
-Unrecognised tag: \'
-\'
-\' for tag \'
-\', must be a byte
-\', must be a floating point number
-\', must be a long integer
-\', must be a short integer
-\', must be an integer
 activation
 activeByDefault
 address
@@ -154,4 +139,3 @@ url
 value
 version
 xmlns
-yyyy-MM-dd\'T\'HH:mm:ss.SSS

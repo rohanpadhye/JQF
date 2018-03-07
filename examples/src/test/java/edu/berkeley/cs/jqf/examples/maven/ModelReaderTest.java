@@ -48,7 +48,7 @@ import org.w3c.dom.Document;
 public class ModelReaderTest {
 
     @Fuzz
-    public void testWithSequence(InputStream in) throws IOException {
+    public void testWithInputStream(InputStream in) throws IOException {
         ModelReader reader = new DefaultModelReader();
             Model model = reader.read(in, null);
             Assert.assertNotNull(model);
@@ -57,14 +57,14 @@ public class ModelReaderTest {
     @Fuzz
     public void testWithGenerator(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/maven-model.dict") Document dom) {
         try {
-            testWithSequence(XmlDocumentGenerator.documentToInputStream(dom));
+            testWithInputStream(XmlDocumentGenerator.documentToInputStream(dom));
         } catch (IOException e) {
             Assume.assumeNoException(e);
         }
     }
 
     @Fuzz
-    public void debug(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/maven-model.dict") Document dom) {
+    public void debugWithGenerator(@From(XmlDocumentGenerator.class) @Dictionary("dictionaries/maven-model.dict") Document dom) {
         System.out.println(XmlDocumentGenerator.documentToString(dom));
         testWithGenerator(dom);
     }
