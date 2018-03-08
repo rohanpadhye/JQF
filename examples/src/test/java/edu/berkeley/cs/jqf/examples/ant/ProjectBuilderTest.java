@@ -64,8 +64,9 @@ public class ProjectBuilderTest {
 
     @Fuzz
     public void testWithInputStream(InputStream in) {
+        File buildXml = null;
         try {
-            File buildXml = serializeInputStream(in);
+            buildXml = serializeInputStream(in);
             ProjectHelperImpl p = new ProjectHelperImpl();
             p.parse(new Project(), buildXml);
         } catch (IOException e) {
@@ -73,6 +74,10 @@ public class ProjectBuilderTest {
         } catch (BuildException e) {
             // allow it
             // Assume.assumeNoException(e);
+        } finally {
+            if (buildXml != null) {
+                buildXml.delete();
+            }
         }
     }
 
