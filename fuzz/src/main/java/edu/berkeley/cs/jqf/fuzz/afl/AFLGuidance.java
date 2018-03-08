@@ -250,6 +250,7 @@ public class AFLGuidance implements Guidance {
                 // for programs that exit successfully
                 status = 1 << 8;
 
+/*
 
                 // However, we clear trace-bits so that AFL does not
                 // ever consider such an input as interesting enough to
@@ -257,6 +258,7 @@ public class AFLGuidance implements Guidance {
                 for (int i = 1; i < COVERAGE_MAP_SIZE; i++) {
                     traceBits[i] = 0;
                 }
+*/
 
                 break;
             }
