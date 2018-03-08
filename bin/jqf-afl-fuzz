@@ -147,5 +147,5 @@ fi
 echo "  Pilot run success! Launching AFL now..."
 
 # Ready to go
-exec "$AFL_FUZZ" $afl_options "$target" $target_options -a "$class" "$method" @@
+exec "$AFL_FUZZ" $afl_options "$target" $target_options "$class" "$method" @@
 
