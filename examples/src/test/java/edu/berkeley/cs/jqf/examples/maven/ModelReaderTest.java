@@ -41,6 +41,7 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.io.DefaultModelReader;
 import org.apache.maven.model.io.ModelReader;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.Document;
@@ -55,8 +56,7 @@ public class ModelReaderTest {
             Model model = reader.read(in, null);
             Assert.assertNotNull(model);
         } catch (IOException e) {
-            // allow it
-            // Assume.assumeNoException(e);
+            Assume.assumeNoException(e);
         }
     }
 

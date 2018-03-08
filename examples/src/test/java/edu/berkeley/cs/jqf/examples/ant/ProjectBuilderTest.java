@@ -44,6 +44,7 @@ import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.helper.ProjectHelperImpl;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.w3c.dom.Document;
@@ -72,8 +73,7 @@ public class ProjectBuilderTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (BuildException e) {
-            // allow it
-            // Assume.assumeNoException(e);
+            Assume.assumeNoException(e);
         } finally {
             if (buildXml != null) {
                 buildXml.delete();

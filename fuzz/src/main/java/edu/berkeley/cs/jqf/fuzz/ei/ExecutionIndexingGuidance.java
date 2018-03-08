@@ -151,6 +151,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Cumulative coverage statistics. */
     private Coverage totalCoverage = new Coverage();
 
+    /** Cumulative coverage for valid inputs. */
+    private Coverage validCoverage = new Coverage();
+
     /** The maximum number of keys covered by any single input found so far. */
     private int maxCoverage = 0;
 
@@ -298,7 +301,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         }
 
         appendLineToFile(statsFile,"# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
-                "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs");
+                "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov");
 
 
     }
@@ -356,6 +359,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         int nonZeroCount = totalCoverage.getNonZeroCount();
         double nonZeroFraction = nonZeroCount * 100.0 / totalCoverage.size();
+        int nonZeroValidCount = validCoverage.getNonZeroCount();
+        double nonZeroValidFraction = nonZeroValidCount * 100.0 / validCoverage.size();
 
         console.printf("\033[2J");
         console.printf("\033[H");
@@ -380,12 +385,13 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
         console.printf("Current parent input: %s\n", currentParentInputDesc);
         console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
-        console.printf("Covered branches:     %,d (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
+        console.printf("Total coverage:       %,d (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
+        console.printf("Valid coverage:       %,d (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
 
-        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d",
+        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%",
                 TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
                 savedInputs.size(), 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
-                numValid, numTrials-numValid);
+                numValid, numTrials-numValid, nonZeroValidFraction);
         appendLineToFile(statsFile, plotData);
 
     }
@@ -526,35 +532,71 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         // Increment run count
         this.numTrials++;
 
-        if (result != Result.INVALID) {
-            // Trim input (remove unused keys)
-            currentInput.gc();
+        // Trim input (remove unused keys)
+        currentInput.gc();
 
+        // It must still be non-empty
+        assert(currentInput.valuesMap.size() > 0);
+
+        boolean valid = result == Result.SUCCESS;
+
+        if (valid) {
             // Increment valid counter
             numValid++;
         }
 
-        if (result == Result.SUCCESS) {
+        if (result == Result.SUCCESS || result == Result.INVALID) {
+
+            // Coverage before
+            int nonZeroBefore = totalCoverage.getNonZeroCount();
+            int validNonZeroBefore = validCoverage.getNonZeroCount();
 
             // Compute a list of keys for which this input can assume responsiblity.
             // Newly covered branches are always included.
             // Existing branches *may* be included, depending on the heuristics used.
-            Set<Object> responsibilities = computeResponsibilities();
+            // A valid input will steal responsibility from invalid inputs
+            Set<Object> responsibilities = computeResponsibilities(valid);
 
             // Update total coverage
             boolean coverageBitsUpdated = totalCoverage.updateBits(runCoverage);
+            if (valid) {
+                validCoverage.updateBits(runCoverage);
+            }
 
             // Coverage after
             int nonZeroAfter = totalCoverage.getNonZeroCount();
             if (nonZeroAfter > maxCoverage) {
                 maxCoverage = nonZeroAfter;
             }
+            int validNonZeroAfter = validCoverage.getNonZeroCount();
 
             // Possibly save input
-            if (responsibilities.size() > 0 || (SAVE_NEW_COUNTS && coverageBitsUpdated)) {
+            boolean toSave = false;
+            String why = "";
 
-                // It must still be non-empty
-                assert(currentInput.valuesMap.size() > 0);
+
+            if (SAVE_NEW_COUNTS && coverageBitsUpdated) {
+                toSave = true;
+                why = why + ",+count";
+            }
+
+            // Save if new total coverage found
+            if (nonZeroAfter > nonZeroBefore) {
+                // Must be responsible for some branch
+                assert(responsibilities.size() > 0);
+                toSave = true;
+                why = why + ",+cov";
+            }
+
+            if (validNonZeroAfter > validNonZeroBefore) {
+                // Must be responsible for some branch
+                assert(responsibilities.size() > 0);
+                currentInput.valid = true;
+                toSave = true;
+                why = why + ",+valid";
+            }
+
+            if (toSave) {
 
                 infoLog("Saving new input (at run %d): " +
                                 "input #%d " +
@@ -567,7 +609,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
                 // Save input to queue and to disk
                 try {
-                    saveCurrentInput(responsibilities);
+                    saveCurrentInput(responsibilities, why);
                 } catch (IOException e) {
                     throw new GuidanceException(e);
                 }
@@ -607,13 +649,21 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
 
     // Compute a set of branches for which the current input may assume responsibility
-    private Set<Object> computeResponsibilities() {
+    private Set<Object> computeResponsibilities(boolean valid) {
         Set<Object> result = new HashSet<>();
 
         // This input is responsible for all new coverage
         Collection<?> newCoverage = runCoverage.computeNewCoverage(totalCoverage);
         if (newCoverage.size() > 0) {
             result.addAll(newCoverage);
+        }
+
+        // If valid, this input is responsible for all new valid coverage
+        if (valid) {
+            Collection<?> newValidCoverage = runCoverage.computeNewCoverage(validCoverage);
+            if (newValidCoverage.size() > 0) {
+                result.addAll(newValidCoverage);
+            }
         }
 
         // Perhaps it can also steal responsibility from other inputs
@@ -669,12 +719,12 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     }
 
-    private void saveCurrentInput(Set<Object> responsibilities) throws IOException {
+    private void saveCurrentInput(Set<Object> responsibilities, String why) throws IOException {
 
         // First, save to disk
         int newInputIdx = numSavedInputs++;
         String saveFileName = String.format("id:%06d,%s%s", newInputIdx,
-                currentInput.desc, responsibilities.isEmpty() ? "" : ",+cov");
+                currentInput.desc, why);
         File saveFile = new File(savedInputsDirectory, saveFileName);
         writeCurrentInputToFile(saveFile);
 
@@ -827,7 +877,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * <p>This field is modified by the construction and mutation
          * operations.</p>
          */
-        private String desc;
+        protected String desc;
 
         /**
          * The run coverage for this input, if the input is saved.
@@ -854,6 +904,11 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * <p>This field is -1 for inputs that are not saved.</p>
          */
         private int offspring = -1;
+
+        /**
+         * Whether this input resulted in a valid run.
+         */
+        private boolean valid = false;
 
         /**
          * The set of coverage keys for which this input is
@@ -1250,8 +1305,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * Returns whether this input should be favored for fuzzing.
          *
          * <p>An input is favored if it is responsible for covering
-         * at least one branch, or if it has helped produce usable
-         * offspring in the past.</p>
+         * at least one branch.</p>
          *
          * @return
          */
@@ -1274,6 +1328,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         public SeedInput(File seedFile) throws IOException {
             this.seedFile = seedFile;
             this.in = new BufferedInputStream(new FileInputStream(seedFile));
+            this.desc = "seed";
         }
 
         @Override

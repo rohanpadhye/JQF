@@ -69,8 +69,7 @@ public class CompilerTest {
         try {
             Script script = context.compileString(input, "input", 0, null);
         } catch (EvaluatorException e) {
-            // allow it
-            // Assume.assumeNoException(e);
+            Assume.assumeNoException(e);
         }
 
     }
