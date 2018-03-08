@@ -132,6 +132,8 @@ export CLASSPATH="$classpath"
 # Set environment variables for AFL
 export AFL_SKIP_BIN_CHECK=1
 export AFL_NO_AFFINITY=1
+export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
+export AFL_SKIP_CPUFREQ=1
 
 # Do a pilot run to make sure that the class/method are JQF fuzz targets
 echo -n "Performing pilot run...."
