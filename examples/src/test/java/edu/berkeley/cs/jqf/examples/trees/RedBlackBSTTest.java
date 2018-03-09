@@ -31,8 +31,10 @@ package edu.berkeley.cs.jqf.examples.trees;
 
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.generator.InRange;
+import com.pholser.junit.quickcheck.generator.Size;
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import org.junit.Assume;
 import org.junit.runner.RunWith;
 
 
@@ -44,9 +46,14 @@ public class RedBlackBSTTest {
 
 
     @Fuzz
-    public void isRBT(@InRange(minInt=10, maxInt=30)
-                          @From(RedBlackBSTGenerator.class)
+    public void testGen( @InRange(minInt=5, maxInt = 64) @From(RedBlackBSTGenerator.class)
                                   RedBlackBST<Integer, Integer> tree) {
-        tree.check();
+        Assume.assumeTrue(tree.check());
+        tree.min();
+        tree.max();
+        tree.rank(tree.floor(17));
+        tree.rank(tree.ceiling(17));
+        tree.put(17, 17);
+        tree.get(17);
     }
 }
