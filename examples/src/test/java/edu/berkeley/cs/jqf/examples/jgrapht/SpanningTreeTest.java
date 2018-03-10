@@ -28,15 +28,17 @@
  */
 package edu.berkeley.cs.jqf.examples.jgrapht;
 
-import com.jgraph.layout.JGraphFacade;
-import com.jgraph.layout.JGraphLayout;
-import com.jgraph.layout.hierarchical.JGraphHierarchicalLayout;
+import java.util.HashSet;
+import java.util.Set;
+
 import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
-import org.jgraph.JGraph;
 import org.jgrapht.DirectedGraph;
-import org.jgrapht.alg.CycleDetector;
-import org.jgrapht.ext.JGraphModelAdapter;
+import org.jgrapht.alg.ConnectivityInspector;
+import org.jgrapht.alg.interfaces.SpanningTreeAlgorithm;
+import org.jgrapht.alg.spanning.PrimMinimumSpanningTree;
+import org.jgrapht.graph.DefaultEdge;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.runner.RunWith;
 
@@ -44,19 +46,25 @@ import org.junit.runner.RunWith;
  * @author Rohan Padhye
  */
 @RunWith(JQF.class)
-public class LayoutTest {
+public class SpanningTreeTest {
 
     @Fuzz
-    public void testWithGenerator(@GraphModel(nodes=10, edges=25) DirectedGraph graph) {
-        JGraphModelAdapter adapter = new JGraphModelAdapter(graph);
+    public void testPrim(@GraphModel(nodes=10, edges=20) DirectedGraph graph) {
 
-        Assume.assumeFalse(new CycleDetector<>(graph).detectCycles());
+        int graphSize = graph.vertexSet().size();
 
-        JGraph jgraph = new JGraph(adapter);
+        Assume.assumeFalse(new ConnectivityInspector(graph).isGraphConnected());
 
+        SpanningTreeAlgorithm.SpanningTree tree = new PrimMinimumSpanningTree<>(graph)
+                .getSpanningTree();
 
-        JGraphLayout layout = new JGraphHierarchicalLayout();
-        JGraphFacade facade = new JGraphFacade(jgraph);
-        layout.run(facade);
+        Set<Object> nodes = new HashSet<>();
+        Set<DefaultEdge> edges = tree.getEdges();
+        for (DefaultEdge e : edges) {
+            nodes.add(graph.getEdgeSource(e));
+            nodes.add(graph.getEdgeTarget(e));
+        }
+
+        Assert.assertEquals(graphSize, nodes.size());
     }
 }
