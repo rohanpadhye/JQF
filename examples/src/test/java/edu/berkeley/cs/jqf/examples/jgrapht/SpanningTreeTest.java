@@ -49,11 +49,11 @@ import org.junit.runner.RunWith;
 public class SpanningTreeTest {
 
     @Fuzz
-    public void testPrim(@GraphModel(nodes=10, edges=20) DirectedGraph graph) {
+    public void testPrim(@GraphModel(nodes=10, edges=10) DirectedGraph graph) {
 
         int graphSize = graph.vertexSet().size();
 
-        Assume.assumeFalse(new ConnectivityInspector(graph).isGraphConnected());
+        Assume.assumeTrue(new ConnectivityInspector(graph).isGraphConnected());
 
         SpanningTreeAlgorithm.SpanningTree tree = new PrimMinimumSpanningTree<>(graph)
                 .getSpanningTree();
