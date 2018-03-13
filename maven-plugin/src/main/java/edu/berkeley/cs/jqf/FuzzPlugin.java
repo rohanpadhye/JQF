@@ -68,9 +68,27 @@ public class FuzzPlugin extends AbstractMojo {
     @Parameter(defaultValue="${project.build.directory}", readonly=true)
     private File target;
 
+    /**
+     * The fully-qualified name of the test class containing methods
+     * to fuzz.
+     *
+     * <p>This class will be loaded using the Maven project's test
+     * classpath. It must be annotated with {@code @RunWith(JQF.class}</p>
+     */
     @Parameter(property="class", required=true)
     private String testClassName;
 
+    /**
+     * The name of the method to fuzz.
+     *
+     * <p>This method must be annotated with {@code @Fuzz}, and take
+     * one or more arguments (with optional junit-quickcheck
+     * annotations) whose values will be fuzzed by JQF.</p>
+     *
+     * <p>If more than one method of this name exists in the
+     * test class or if the method is not declared
+     * {@code public void}, then the fuzzer will not launch.</p>
+     */
     @Parameter(property="method", required=true)
     private String testMethod;
 
