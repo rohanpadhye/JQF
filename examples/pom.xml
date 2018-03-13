@@ -140,6 +140,10 @@
                     <skipTests>true</skipTests>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>edu.berkeley.cs</groupId>
+                <artifactId>jqf-maven-plugin</artifactId>
+            </plugin>
         </plugins>
     </build>
 
