@@ -10,9 +10,7 @@
 	    <version>1.0-SNAPSHOT</version>
 	</parent>
 
-    <groupId>edu.berkeley.cs</groupId>
     <artifactId>jqf-instrument</artifactId>
-    <version>1.0-SNAPSHOT</version>
 
     <name>jqf-instrument</name>
     <description>JQF: Feedback-directed Quickcheck for Java - Instrumentation and event generation module</description>

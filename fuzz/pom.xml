@@ -10,9 +10,7 @@
 	    <version>1.0-SNAPSHOT</version>
 	</parent>
 
-    <groupId>edu.berkeley.cs</groupId>
     <artifactId>jqf-fuzz</artifactId>
-    <version>1.0-SNAPSHOT</version>
 
     <name>jqf-fuzz</name>
     <description>JQF: Feedback-directed Quickcheck for Java - Guided fuzzing interface</description>
@@ -22,22 +20,18 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.12</version>
         </dependency>
         <dependency>
             <groupId>com.pholser</groupId>
             <artifactId>junit-quickcheck-core</artifactId>
-            <version>0.8-alpha-7</version>
         </dependency>
         <dependency>
             <groupId>com.pholser</groupId>
             <artifactId>junit-quickcheck-generators</artifactId>
-            <version>0.8-alpha-7</version>
         </dependency>
         <dependency>
             <groupId>edu.berkeley.cs</groupId>
     		<artifactId>jqf-instrument</artifactId>
-    		<version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
@@ -72,7 +66,7 @@
             </plugin>
             <plugin> 
 		        <groupId>org.apache.maven.plugins</groupId> 
-		        <artifactId>maven-dependency-plugin</artifactId> 
+		        <artifactId>maven-dependency-plugin</artifactId>
 		        <executions> 
 		                <execution> 
 		                        <id>copy-dependencies</id> 
@@ -86,7 +80,7 @@
 		                        </configuration> 
 		                </execution> 
 		        </executions> 
-			</plugin> 
+			</plugin>
         </plugins>
     </build>
 
