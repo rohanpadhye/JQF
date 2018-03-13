@@ -46,14 +46,12 @@ import org.objectweb.asm.Opcodes;
  */
 public class SafeClassWriter extends ClassWriter {
 
-    private ClassLoader l = getClass().getClassLoader();
+    private final ClassLoader loader;
 
-    public SafeClassWriter(final int flags) {
-        super(flags);
-    }
     
-    public SafeClassWriter(ClassReader cr, final int flags) {
+    public SafeClassWriter(ClassReader cr, ClassLoader loader, final int flags) {
         super(cr, flags);
+        this.loader = loader;
     }
 
     @Override
@@ -175,7 +173,10 @@ public class SafeClassWriter extends ClassWriter {
      */
     private ClassReader typeInfo(final String type) throws IOException {
         String resource = type + ".class";
-        InputStream is = l != null ? l.getResourceAsStream(resource) : ClassLoader.getSystemResourceAsStream(resource);
+        InputStream is = loader.getResourceAsStream(resource);
+        if (is == null) {
+            throw new IOException("Cannot create ClassReader for type " + type);
+        }
         try {
             return new ClassReader(is);
         } finally {

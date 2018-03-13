@@ -22,15 +22,13 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
   private static final boolean verbose = Config.instance.verbose;
   
   private static String[] banned = {"[", "java/lang", "janala", "org/objectweb/asm", "sun", "jdk", "java/util/function"};
-  private static String[] excludes;
-  private static String[] includes;
+  private static String[] excludes = Config.instance.excludeInst;;
+  private static String[] includes = Config.instance.includeInst;
   
   public static void premain(String agentArgs, Instrumentation inst) throws ClassNotFoundException {
 
     preloadClasses();
 
-    excludes = Config.instance.excludeInst;
-    includes = Config.instance.includeInst;
     inst.addTransformer(new SnoopInstructionTransformer(), true);
     if (inst.isRetransformClassesSupported()) {
       for (Class clazz : inst.getAllLoadedClasses()) {
@@ -126,7 +124,8 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
 
 
       ClassReader cr = new ClassReader(cbuf);
-      ClassWriter cw = new SafeClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+      ClassWriter cw = new SafeClassWriter(cr,  loader,
+              ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
       ClassVisitor cv = new SnoopInstructionClassAdapter(cw, cname);
 
       try {

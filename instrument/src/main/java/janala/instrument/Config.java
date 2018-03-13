@@ -26,7 +26,7 @@ class Config {
           properties.load(propStream);
       } catch (IOException e) {
           // Swallow exception and continue with defaults
-          e.printStackTrace();
+          // System.err.println("Warning: No janala.conf file found");
       }
 
       // Let JVM command-line properties override these
