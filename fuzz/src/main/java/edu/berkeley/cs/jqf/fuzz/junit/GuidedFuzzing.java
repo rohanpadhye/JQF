@@ -64,7 +64,8 @@ public class GuidedFuzzing {
 
 
     /**
-     * Runs the guided fuzzing loop.
+     * Runs the guided fuzzing loop, using the system class loader to load
+     * test-application classes.
      *
      * <p>The test class must be annotated with <tt>@RunWith(JQF.class)</tt>
      * and the test method must be annotated with <tt>@Fuzz</tt>.</p>
@@ -84,8 +85,37 @@ public class GuidedFuzzing {
      */
     public synchronized static void run(String testClassName, String testMethod,
                                         Guidance guidance, PrintStream out) throws ClassNotFoundException, IllegalStateException {
+
+        // Run with the system class loader
+        run(testClassName, testMethod, ClassLoader.getSystemClassLoader(), guidance, out);
+
+    }
+
+    /**
+     * Runs the guided fuzzing loop, using a provided classloader to load
+     * test-application classes.
+     *
+     * <p>The test class must be annotated with <tt>@RunWith(JQF.class)</tt>
+     * and the test method must be annotated with <tt>@Fuzz</tt>.</p>
+     *
+     * <p>Once this method is invoked, the guided fuzzing loop runs continuously
+     * until the guidance instance decides to stop by returning <tt>false</tt>
+     * for {@link Guidance#hasInput()}. Until the fuzzing stops, this method
+     * cannot be invoked again (i.e. at most one guided fuzzing can be running
+     * at any time in a single JVM instance).</p>
+     *
+     * @param testClassName the test class containing the test method
+     * @param testMethod    the test method to execute in the fuzzing loop
+     * @param guidance      the fuzzing guidance
+     * @param out           an output stream to log Junit messages
+     * @throws ClassNotFoundException if testClassName cannot be loaded
+     * @throws IllegalStateException if a guided fuzzing run is currently executing
+     */
+    public synchronized static void run(String testClassName, String testMethod,
+                                        ClassLoader loader,
+                                        Guidance guidance, PrintStream out) throws ClassNotFoundException, IllegalStateException {
         Class<?> testClass =
-        java.lang.Class.forName(testClassName, true, ClassLoader.getSystemClassLoader());
+                java.lang.Class.forName(testClassName, true, loader);
 
         run(testClass, testMethod, guidance, out);
 
@@ -93,7 +123,7 @@ public class GuidedFuzzing {
 
 
     /**
-     * Runs the guided fuzzing loop.
+     * Runs the guided fuzzing loop for a resolved class.
      *
      * <p>The test class must be annotated with <tt>@RunWith(JQF.class)</tt>
      * and the test method must be annotated with <tt>@Fuzz</tt>.</p>
