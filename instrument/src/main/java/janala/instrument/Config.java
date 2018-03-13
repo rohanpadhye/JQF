@@ -35,7 +35,7 @@ class Config {
       verbose = Boolean.parseBoolean(properties.getProperty("janala.verbose", "false"));
 
       analysisClass =
-              properties.getProperty("janala.snoopClass", "janala.instrument.SnoopLogger")
+              properties.getProperty("janala.snoopClass", "edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop")
                       .replace('.', '/');
 
 

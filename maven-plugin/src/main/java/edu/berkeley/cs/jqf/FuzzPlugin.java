@@ -85,7 +85,6 @@ public class FuzzPlugin extends AbstractMojo {
         // TODO: Configure these with @Parameter
         System.setProperty("janala.excludes", "java/,com/sun/proxy/,com/intellij/,edu/berkeley/cs/jqf/,org/junit/,com/pholser/junit/quickcheck/,ru/vyarus/java/generics/resolver/,org/javaruntype/,ognl,org/hamcrest/,org/omg/,org/netbeans/,org/mozilla/javascript/gen");
         System.setProperty("janala.includes", "edu/berkeley/cs/jqf/examples");
-        System.setProperty("janala.snoopClass", "edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop");
 
         try {
             List<String> classpathElements = project.getTestClasspathElements();
