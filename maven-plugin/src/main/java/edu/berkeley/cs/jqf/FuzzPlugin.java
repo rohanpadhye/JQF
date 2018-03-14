@@ -53,11 +53,10 @@ import org.apache.maven.project.MavenProject;
 import org.junit.runner.Result;
 
 /**
- * The main Mojo for the JQF Maven plugin.
+ * Maven plugin for feedback-directed fuzzing using JQF.
  *
- * <p>This is the entry point for fuzzing via Maven.</p>
- *
- * <p>Enables "mvn jqf:fuzz".</p>
+ * <p>Performs code-coverage-guided generator-based fuzz testing
+ * using a provided entry point.</p>
  *
  * @author Rohan Padhye
  */
@@ -77,7 +76,7 @@ public class FuzzPlugin extends AbstractMojo {
      * to fuzz.
      *
      * <p>This class will be loaded using the Maven project's test
-     * classpath. It must be annotated with {@code @RunWith(JQF.class}</p>
+     * classpath. It must be annotated with {@code @RunWith(JQF.class)}</p>
      */
     @Parameter(property="class", required=true)
     private String testClassName;
