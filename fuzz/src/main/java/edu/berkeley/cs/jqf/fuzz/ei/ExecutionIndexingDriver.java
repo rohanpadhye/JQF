@@ -58,11 +58,10 @@ public class ExecutionIndexingDriver {
 
         try {
             // Load the guidance
+            String title = testClassName+"#"+testMethodName;
             ExecutionIndexingGuidance guidance = seedFiles != null ?
-                    new ExecutionIndexingGuidance(Long.MAX_VALUE, outputDirectory, seedFiles) :
-                    new ExecutionIndexingGuidance(Long.MAX_VALUE, outputDirectory);
-
-            guidance.setTitle(testClassName+"#"+testMethodName);
+                    new ExecutionIndexingGuidance(title, null, outputDirectory, seedFiles) :
+                    new ExecutionIndexingGuidance(title, null, outputDirectory);
 
             // Ensure that generators are being traced
             if (!ExecutionIndexingGuidance.DISABLE_EXECUTION_INDEXING) {

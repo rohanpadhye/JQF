@@ -38,6 +38,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -97,10 +98,13 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** A pseudo-random number generator for generating fresh values. */
     private Random random = new Random();
 
+    /** The name of the test for display purposes. */
+    private final String testName;
+
     // ------------ ALGORITHM BOOKKEEPING ------------
 
-    /** The total number of trials to run. */
-    private final long maxTrials;
+    /** The max amount of time to run for, in milli-seconds */
+    private final long maxDurationMillis;
 
     /** The number of trials completed. */
     private long numTrials = 0;
@@ -179,9 +183,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** A system console, which is non-null only if STDOUT is a console. */
     private final Console console = System.console();
 
-    /** The (optional) title to display on the status screen. */
-    private String title;
-
     /** Time since this guidance instance was created. */
     private final Date startTime = new Date();
 
@@ -199,6 +200,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     /** The file where saved plot data is written. */
     private File statsFile;
+
+    /** Whether to print the fuzz config to the stats screen. */
+    private static boolean SHOW_CONFIG = false;
 
     // ------------- FUZZING HEURISTICS ------------
 
@@ -240,25 +244,34 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
 
     /**
+     * @param testName the name of test to display on the status screen
      * Creates a new execution-index-parametric guidance.
      *
-     * @param maxTrials the max number of trials to run
+     * @param duration the amount of time to run fuzzing for, where
+     *                 {@code null} indicates unlimited time.
+     * @param outputDirectory the directory where fuzzing results will be written
+     * @throws IOException if the output directory could not be prepared
      */
-    public ExecutionIndexingGuidance(long maxTrials, File outputDirectory) throws IOException {
-        this.maxTrials = maxTrials;
+    public ExecutionIndexingGuidance(String testName, Duration duration, File outputDirectory) throws IOException {
+        this.testName = testName;
+        this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
         this.outputDirectory = outputDirectory;
         prepareOutputDirectory();
     }
 
-    public ExecutionIndexingGuidance(long maxTrials, File outputDirectory, File... seedInputFiles) throws IOException {
-        this(maxTrials, outputDirectory);
+    /**
+     * @param testName the name of test to display on the status screen
+     * @param duration the amount of time to run fuzzing for, where
+     *                 {@code null} indicates unlimited time.
+     * @param outputDirectory the directory where fuzzing results will be written
+     * @param seedInputFiles one or more input files to be used as initial inputs
+     * @throws IOException if the output directory could not be prepared
+     */
+    public ExecutionIndexingGuidance(String testName, Duration duration, File outputDirectory, File... seedInputFiles) throws IOException {
+        this(testName, duration, outputDirectory);
         for (File seedInputFile : seedInputFiles) {
             seedInputs.add(new SeedInput(seedInputFile));
         }
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
     }
 
     private void prepareOutputDirectory() throws IOException {
@@ -283,8 +296,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         this.savedFailuresDirectory = new File(outputDirectory, "crashes");
         this.savedFailuresDirectory.mkdirs();
         this.statsFile = new File(outputDirectory, "plot_data");
-        this.logFile = new File(outputDirectory, "ei.log");
-
+        this.logFile = new File(outputDirectory, "fuzz.log");
 
 
         // Delete everything that we may have created in a previous run.
@@ -327,6 +339,21 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         }
     }
 
+    private String millisToDuration(long millis) {
+        long seconds = TimeUnit.MILLISECONDS.toSeconds(millis % TimeUnit.MINUTES.toMillis(1));
+        long minutes = TimeUnit.MILLISECONDS.toMinutes(millis % TimeUnit.HOURS.toMillis(1));
+        long hours = TimeUnit.MILLISECONDS.toHours(millis);
+        String result = "";
+        if (hours > 0) {
+            result = hours + "h ";
+        }
+        if (hours > 0 || minutes > 0) {
+            result += minutes + "m ";
+        }
+        result += seconds + "s";
+        return result;
+    }
+
     // Call only if console exists
     private void displayStats() {
         assert (console != null);
@@ -342,8 +369,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         lastRefreshTime = now;
         lastNumTrials = numTrials;
         long elapsedMilliseconds = now.getTime() - startTime.getTime();
-        long elapsedSeconds = TimeUnit.MILLISECONDS.toSeconds(elapsedMilliseconds % 60_000);
-        long elapsedMinutes = TimeUnit.MILLISECONDS.toMinutes(elapsedMilliseconds);
         long execsPerSec = numTrials * 1000L / elapsedMilliseconds;
 
         String currentParentInputDesc;
@@ -364,20 +389,23 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         console.printf("\033[2J");
         console.printf("\033[H");
-        console.printf("JQF: ExecutionIndexingGuidance\n");
-        console.printf("------------------------------\n");
-        if (this.title != null) {
-            console.printf("Target:               %s\n", this.title);
+        console.printf("JQF: Feedback-directed Generator-based Fuzzing\n");
+        console.printf("----------------------------------------------\n");
+        if (this.testName != null) {
+            console.printf("Test name:            %s\n", this.testName);
         }
-        if (TOTALLY_RANDOM) {
-            console.printf("Config:               TOTALLY_RANDOM\n");
-        } else {
-            console.printf("Config:               DISABLE_EXECUTION_INDEXING = %s,\n" +
-                            "                      STEAL_RESPONSIBILITY       = %s,\n" +
-                            "                      SPLICE_SUBTREE             = %s\n\n",
-                    DISABLE_EXECUTION_INDEXING, STEAL_RESPONSIBILITY, SPLICE_SUBTREE);
+        if (SHOW_CONFIG) {
+            if (TOTALLY_RANDOM) {
+                console.printf("Config:               TOTALLY_RANDOM\n");
+            } else {
+                console.printf("Config:               DISABLE_EXECUTION_INDEXING = %s,\n" +
+                                "                      STEAL_RESPONSIBILITY       = %s,\n" +
+                                "                      SPLICE_SUBTREE             = %s\n\n",
+                        DISABLE_EXECUTION_INDEXING, STEAL_RESPONSIBILITY, SPLICE_SUBTREE);
+            }
         }
-        console.printf("Elapsed time:         %d min %d sec\n", elapsedMinutes, elapsedSeconds);
+        console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
+                maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
         console.printf("Number of executions: %,d\n", numTrials);
         console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid*100.0/numTrials);
         console.printf("Cycles completed:     %d\n", cyclesCompleted);
@@ -524,7 +552,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     @Override
     public boolean hasInput() {
-        return this.numTrials < this.maxTrials;
+        Date now = new Date();
+        long elapsedMilliseconds = now.getTime() - startTime.getTime();
+        return elapsedMilliseconds < maxDurationMillis;
     }
 
     @Override

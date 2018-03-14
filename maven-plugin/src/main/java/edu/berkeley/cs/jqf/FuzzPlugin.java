@@ -32,6 +32,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
+import java.time.Duration;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
@@ -113,10 +115,22 @@ public class FuzzPlugin extends AbstractMojo {
     @Parameter(property="includes")
     private String includes;
 
+
+    /**
+     * The duration of time for which to run fuzzing.
+     *
+     * <p>If this property is not provided, the fuzzing session is
+     * run for an unlimited time until the process is terminated
+     * by the user (e.g. via kill or CTRL+C).</p>
+     *
+     * <p>Valid time durations are non-empty strings in the format
+     * [Nh][Nm][Ns], such as "60s" or "2h30m".</p>
+     */
+    @Parameter(property="time")
+    private String time;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-
-
         ClassLoader loader;
         Guidance guidance;
         PrintStream out = System.out; // TODO: Re-route to logger from super.getLog()
@@ -127,6 +141,15 @@ public class FuzzPlugin extends AbstractMojo {
         }
         if (includes != null) {
             System.setProperty("janala.includes", includes);
+        }
+
+        Duration duration = null;
+        if (time != null && !time.isEmpty()) {
+            try {
+                duration = Duration.parse("PT"+time);
+            } catch (DateTimeParseException e) {
+                throw new MojoExecutionException("Invalid time duration: " + time);
+            }
         }
 
         try {
@@ -141,7 +164,8 @@ public class FuzzPlugin extends AbstractMojo {
 
         try {
             File resultsDir = new File(target, "fuzz-results");
-            guidance = new ExecutionIndexingGuidance(10_000, resultsDir);
+            String targetName = testClassName + "#" + testMethod;
+            guidance = new ExecutionIndexingGuidance(targetName, duration, resultsDir);
         } catch (IOException e) {
             throw new MojoExecutionException("Could not create output directory", e);
         }
