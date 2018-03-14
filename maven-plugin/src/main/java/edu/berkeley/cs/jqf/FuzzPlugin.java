@@ -115,7 +115,6 @@ public class FuzzPlugin extends AbstractMojo {
     @Parameter(property="includes")
     private String includes;
 
-
     /**
      * The duration of time for which to run fuzzing.
      *
@@ -128,6 +127,18 @@ public class FuzzPlugin extends AbstractMojo {
      */
     @Parameter(property="time")
     private String time;
+
+    /**
+     * The name of the output directory where fuzzing results will
+     * be stored.
+     *
+     * <p>The directory will be created inside the standard Maven
+     * project build directory.</p>
+     *
+     * <p>Defaults to <em>fuzz-results</em>.</p>
+     */
+    @Parameter(property="out", defaultValue="fuzz-results")
+    private String outputDirectory;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -163,7 +174,7 @@ public class FuzzPlugin extends AbstractMojo {
         }
 
         try {
-            File resultsDir = new File(target, "fuzz-results");
+            File resultsDir = new File(target, outputDirectory);
             String targetName = testClassName + "#" + testMethod;
             guidance = new ExecutionIndexingGuidance(targetName, duration, resultsDir);
         } catch (IOException e) {

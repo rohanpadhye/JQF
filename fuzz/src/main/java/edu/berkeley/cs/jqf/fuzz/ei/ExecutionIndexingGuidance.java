@@ -394,6 +394,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         if (this.testName != null) {
             console.printf("Test name:            %s\n", this.testName);
         }
+        console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
         if (SHOW_CONFIG) {
             if (TOTALLY_RANDOM) {
                 console.printf("Config:               TOTALLY_RANDOM\n");
