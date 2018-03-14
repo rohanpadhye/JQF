@@ -11,3 +11,6 @@ results-*/
 *_crashes/
 *.swp
 apidocs/
+experiments/*-results-*
+*-results/
+.java-version

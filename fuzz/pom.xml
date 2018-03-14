@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-	    <groupId>edu.berkeley.cs</groupId>
+	    <groupId>edu.berkeley.cs.jqf</groupId>
 	    <artifactId>jqf</artifactId>
 	    <version>1.0-SNAPSHOT</version>
 	</parent>
@@ -30,8 +30,9 @@
             <artifactId>junit-quickcheck-generators</artifactId>
         </dependency>
         <dependency>
-            <groupId>edu.berkeley.cs</groupId>
+            <groupId>edu.berkeley.cs.jqf</groupId>
     		<artifactId>jqf-instrument</artifactId>
+            <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>

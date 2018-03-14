@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, University of California, Berkeley
+ * Copyright (c) 2017-2018 The Regents of the University of California
  *
  * All rights reserved.
  *

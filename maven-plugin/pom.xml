@@ -3,8 +3,8 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
+        <groupId>edu.berkeley.cs.jqf</groupId>
         <artifactId>jqf</artifactId>
-        <groupId>edu.berkeley.cs</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -34,11 +34,11 @@
             <version>3.5.3</version>
         </dependency>
         <dependency>
-            <groupId>edu.berkeley.cs</groupId>
+            <groupId>edu.berkeley.cs.jqf</groupId>
             <artifactId>jqf-instrument</artifactId>
         </dependency>
         <dependency>
-            <groupId>edu.berkeley.cs</groupId>
+            <groupId>edu.berkeley.cs.jqf</groupId>
             <artifactId>jqf-fuzz</artifactId>
         </dependency>
     </dependencies>
