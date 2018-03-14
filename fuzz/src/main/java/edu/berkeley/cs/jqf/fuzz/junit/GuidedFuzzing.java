@@ -33,6 +33,7 @@ import org.junit.internal.TextListener;
 import org.junit.internal.runners.ErrorReportingRunner;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Request;
+import org.junit.runner.Result;
 import org.junit.runner.RunWith;
 import org.junit.runner.Runner;
 
@@ -82,13 +83,13 @@ public class GuidedFuzzing {
      * @param out           an output stream to log Junit messages
      * @throws ClassNotFoundException if testClassName cannot be loaded
      * @throws IllegalStateException if a guided fuzzing run is currently executing
+     * @return the Junit-style test result
      */
-    public synchronized static void run(String testClassName, String testMethod,
+    public synchronized static Result run(String testClassName, String testMethod,
                                         Guidance guidance, PrintStream out) throws ClassNotFoundException, IllegalStateException {
 
         // Run with the system class loader
-        run(testClassName, testMethod, ClassLoader.getSystemClassLoader(), guidance, out);
-
+        return run(testClassName, testMethod, ClassLoader.getSystemClassLoader(), guidance, out);
     }
 
     /**
@@ -110,15 +111,15 @@ public class GuidedFuzzing {
      * @param out           an output stream to log Junit messages
      * @throws ClassNotFoundException if testClassName cannot be loaded
      * @throws IllegalStateException if a guided fuzzing run is currently executing
+     * @return the Junit-style test result
      */
-    public synchronized static void run(String testClassName, String testMethod,
+    public synchronized static Result run(String testClassName, String testMethod,
                                         ClassLoader loader,
                                         Guidance guidance, PrintStream out) throws ClassNotFoundException, IllegalStateException {
         Class<?> testClass =
                 java.lang.Class.forName(testClassName, true, loader);
 
-        run(testClass, testMethod, guidance, out);
-
+        return run(testClass, testMethod, guidance, out);
     }
 
 
@@ -139,9 +140,10 @@ public class GuidedFuzzing {
      * @param guidance      the fuzzing guidance
      * @param out           an output stream to log Junit messages
      * @throws IllegalStateException if a guided fuzzing run is currently executing
+     * @return the Junit-style test result
      */
-    public synchronized static void run(Class<?> testClass, String testMethod,
-                                        Guidance guidance, PrintStream out) throws IllegalStateException {
+    public synchronized static Result run(Class<?> testClass, String testMethod,
+                                          Guidance guidance, PrintStream out) throws IllegalStateException {
 
         // Ensure that the class uses the right test runner
         RunWith annotation = testClass.getAnnotation(RunWith.class);
@@ -159,8 +161,12 @@ public class GuidedFuzzing {
         // Create a JUnit Request
         Request testRequest = Request.method(testClass, testMethod);
 
-        // Instantiate a runner (throws exception if testMethod is not a proper test method)
+        // Instantiate a runner (may return an error)
         Runner testRunner = testRequest.getRunner();
+
+        if (testRunner instanceof ErrorReportingRunner) {
+            throw new IllegalArgumentException(String.format("Could not instantiate a Junit runner for method %s#%s.", testClass, testMethod));
+        }
 
         // Start tracing for the test method
         SingleSnoop.startSnooping(testClass.getName() + "#" + testMethod);
@@ -171,15 +177,12 @@ public class GuidedFuzzing {
             if (out != null) {
                 junit.addListener(new TextListener(out));
             }
-            junit.run(testRunner);
+            return junit.run(testRunner);
         } finally {
             unsetGuidance();
         }
 
 
-        if (testRunner instanceof ErrorReportingRunner) {
-            throw new IllegalArgumentException(String.format("Could not instantiate a Junit runner for method %s#%s.", testClass, testMethod));
-        }
 
     }
 

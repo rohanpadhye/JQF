@@ -44,11 +44,13 @@ import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.junit.runner.Result;
 
 /**
  * The main Mojo for the JQF Maven plugin.
@@ -144,7 +146,9 @@ public class FuzzPlugin extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         ClassLoader loader;
         Guidance guidance;
+        Log log = getLog();
         PrintStream out = System.out; // TODO: Re-route to logger from super.getLog()
+        Result result;
 
         // Configure classes to instrument
         if (excludes != null) {
@@ -182,13 +186,18 @@ public class FuzzPlugin extends AbstractMojo {
         }
 
         try {
-            GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
+            result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
         } catch (ClassNotFoundException e) {
             throw new MojoExecutionException("Could not load test class", e);
         } catch (IllegalArgumentException e) {
             throw new MojoExecutionException("Bad request", e);
         } catch (RuntimeException e) {
             throw new MojoExecutionException("Internal error", e);
+        }
+
+        if (!result.wasSuccessful()) {
+            throw new MojoFailureException("Fuzzing revealed errors. " +
+                "Use mvn jqf:repro to reproduce failing test case.");
         }
     }
 }
