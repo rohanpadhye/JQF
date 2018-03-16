@@ -608,7 +608,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
             if (SAVE_NEW_COUNTS && coverageBitsUpdated) {
                 toSave = true;
-                why = why + ",+count";
+                why = why + "+count";
             }
 
             // Save if new total coverage found
@@ -616,7 +616,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 // Must be responsible for some branch
                 assert(responsibilities.size() > 0);
                 toSave = true;
-                why = why + ",+cov";
+                why = why + "+cov";
             }
 
             if (validNonZeroAfter > validNonZeroBefore) {
@@ -624,7 +624,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 assert(responsibilities.size() > 0);
                 currentInput.valid = true;
                 toSave = true;
-                why = why + ",+valid";
+                why = why + "+valid";
             }
 
             if (toSave) {
@@ -661,14 +661,17 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 // Save crash to disk
                 try {
                     int crashIdx = uniqueFailures.size()-1;
-                    String saveFileName = String.format("id:%06d,%s", crashIdx, currentInput.desc);
+                    String saveFileName = String.format("id:%06d", crashIdx);
                     File saveFile = new File(savedFailuresDirectory, saveFileName);
                     writeCurrentInputToFile(saveFile);
+                    infoLog("%s","Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
+                    String how = currentInput.desc;
+                    String why = "+crash";
+                    infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
                 } catch (IOException e) {
                     throw new GuidanceException(e);
                 }
 
-                infoLog("%s","Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
             }
         }
 
@@ -754,10 +757,11 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         // First, save to disk
         int newInputIdx = numSavedInputs++;
-        String saveFileName = String.format("id:%06d,%s%s", newInputIdx,
-                currentInput.desc, why);
+        String saveFileName = String.format("id:%06d", newInputIdx);
+        String how = currentInput.desc;
         File saveFile = new File(savedInputsDirectory, saveFileName);
         writeCurrentInputToFile(saveFile);
+        infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
 
         // If not using guidance, do nothing else
         if (TOTALLY_RANDOM) {
