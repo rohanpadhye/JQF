@@ -25,15 +25,24 @@
             <name>Rohan Padhye</name>
             <email>rohanpadhye@cs.berkeley.edu</email>
             <organization>University of California, Berkeley</organization>
-            <url>https://people.eecs.berkeley.edu/~rohanpadhye/</url>
+            <url>https://people.eecs.berkeley.edu/~rohanpadhye</url>
         </developer>
         <developer>
             <name>Caroline Lemieux</name>
             <email>clemiux@cs.berkeley.edu</email>
             <organization>University of California, Berkeley</organization>
-            <url>http://http://www.carolemieux.com//</url>
+            <url>http://www.carolemieux.com</url>
         </developer>
     </developers>
+
+    <contributors>
+        <contributor>
+            <name>Koushik Sen</name>
+            <email>ksen@cs.berkeley.edu</email>
+            <organization>University of California, Berkeley</organization>
+            <url>https://people.eecs.berkeley.edu/~rohanpadhye/</url>
+        </contributor>
+    </contributors>
 
     <scm>
         <connection>scm:git:git@github.com:rohanpadhye/jqf.git</connection>
