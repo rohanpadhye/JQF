@@ -26,7 +26,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf;
+package edu.berkeley.cs.jqf.plugin;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,7 +63,7 @@ import org.junit.runner.Result;
 @Mojo(name="fuzz",
         requiresDependencyResolution= ResolutionScope.TEST,
         defaultPhase=LifecyclePhase.VERIFY)
-public class FuzzPlugin extends AbstractMojo {
+public class FuzzGoal extends AbstractMojo {
 
     @Parameter(defaultValue="${project}", required=true, readonly=true)
     MavenProject project;
