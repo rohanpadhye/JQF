@@ -995,7 +995,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @return the byte value at that offset
          *
          * @throws IndexOutOfBoundsException if the offset is negative or
-         *      larger than {@link #size()-1}
+         *      larger than {@link #size}()-1
          * @throws IllegalStateException if this method is called before the input
          *                               has been executed
          */
@@ -1017,7 +1017,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @return the execution index value at that offset
          *
          * @throws IndexOutOfBoundsException if the offset is negative or
-         *      larger than {@link #size()-1}
+         *      larger than {@link #size}()-1
          * @throws IllegalStateException if this method is called before the input
          *                               has been executed
          */
@@ -1111,7 +1111,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @return the value mapped for this index, or {@code null} if no such mapping exists
          *
          * @throws IndexOutOfBoundsException if the offset is negative or
-         *      larger than {@link #size()-1}
+         *      larger than {@link #size}()-1
          */
         public final Integer getValueAtKey(ExecutionIndex ei) throws IndexOutOfBoundsException {
             return valuesMap.get(ei);
@@ -1124,7 +1124,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @param val the byte to insert
          *
          * @throws IndexOutOfBoundsException if the offset is negative or
-         *      larger than {@link #size()-1}
+         *      larger than {@link #size}()-1
          * @throws IllegalStateException if this method is called after the input
          *                               has been executed
          */
