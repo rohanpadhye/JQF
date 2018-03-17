@@ -174,11 +174,6 @@
     </build>
 
     <distributionManagement>
-        <site>
-            <id>jqf.website</id>
-            <name>JQF Website</name>
-            <url>https://rohanpadhye.github.io/jqf</url>
-        </site>
         <snapshotRepository>
             <id>ossrh</id>
             <name>OSSRH Snapshots Repository</name>
