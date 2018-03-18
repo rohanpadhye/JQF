@@ -1,11 +1,8 @@
 package edu.berkeley.cs.jqf.examples.trees;
 
-import java.util.function.Predicate;
-
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.generator.InRange;
-import com.pholser.junit.quickcheck.generator.internal.Comparables;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 
 import static com.pholser.junit.quickcheck.internal.Reflection.defaultValueOf;
@@ -35,10 +32,6 @@ public class RedBlackBSTGenerator extends Generator<RedBlackBST> {
     public void configure(InRange range) {
         min = range.min().isEmpty() ? range.minInt() : Integer.parseInt(range.min());
         max = range.max().isEmpty() ? range.maxInt() : Integer.parseInt(range.max());
-    }
-
-    protected Predicate<Integer> inRange() {
-        return Comparables.inRange(min, max);
     }
 
     @Override
