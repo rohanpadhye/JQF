@@ -40,7 +40,6 @@ import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
-import jdk.nashorn.internal.parser.TokenType;
 
 import static java.lang.Math.ceil;
 import static java.lang.Math.log;
@@ -64,57 +63,16 @@ public class JavaScriptCodeGenerator extends Generator<String> {
     private int expressionDepth;
 
 
-    private static final TokenType[] UNARY_TOKENS = {
-            TokenType.NOT,
-            TokenType.INCPREFIX,
-            TokenType.DECPREFIX,
-            TokenType.BIT_NOT,
-            TokenType.DELETE,
-            TokenType.NEW,
-            TokenType.TYPEOF
+    private static final String[] UNARY_TOKENS = {
+            "!", "++", "--", "~",
+            "delete", "new", "typeof"
     };
 
-    private static final TokenType[] BINARY_TOKENS = {
-            TokenType.NE,
-            TokenType.NE_STRICT,
-            TokenType.MOD,
-            TokenType.ASSIGN_MOD,
-            TokenType.BIT_AND,
-            TokenType.AND,
-            TokenType.ASSIGN_BIT_AND,
-            TokenType.MUL,
-            TokenType.ASSIGN_MUL,
-            TokenType.ADD,
-            TokenType.ASSIGN_ADD,
-            TokenType.COMMARIGHT,
-            TokenType.SUB,
-            TokenType.ASSIGN_SUB,
-            TokenType.DIV,
-            TokenType.ASSIGN_DIV,
-            TokenType.COLON,
-            TokenType.SEMICOLON,
-            TokenType.LT,
-            TokenType.SHL,
-            TokenType.ASSIGN_SHL,
-            TokenType.LE,
-            TokenType.ASSIGN,
-            TokenType.EQ,
-            TokenType.EQ_STRICT,
-            //TokenType.BIND,
-            TokenType.GT,
-            TokenType.GE,
-            TokenType.SAR,
-            TokenType.ASSIGN_SAR,
-            TokenType.SHR,
-            TokenType.ASSIGN_SHR,
-            TokenType.TERNARY,
-            TokenType.BIT_XOR,
-            TokenType.ASSIGN_BIT_XOR,
-            TokenType.BIT_OR,
-            TokenType.ASSIGN_BIT_OR,
-            TokenType.OR,
-            TokenType.IN,
-            TokenType.INSTANCEOF
+    private static final String[] BINARY_TOKENS = {
+            "!=", "!==", "%", "%=", "&", "&&", "&=", "*", "*=", "+", "+=", ",",
+            "-", "-=", "/", "/=", "<", "<<", ">>=", "<=", "=", "==", "===",
+            ">", ">=", ">>", ">>=", ">>>", ">>>=", "^", "^=", "|", "|=", "||",
+            "in", "instanceof"
     };
 
     @Override
@@ -196,11 +154,11 @@ public class JavaScriptCodeGenerator extends Generator<String> {
 
 
     private String generateBinaryNode(SourceOfRandomness random) {
-        TokenType token = random.choose(BINARY_TOKENS);
+        String token = random.choose(BINARY_TOKENS);
         String lhs = generateExpression(random);
         String rhs = generateExpression(random);
 
-        return lhs + " " + token.getName() + " " + rhs;
+        return lhs + " " + token + " " + rhs;
     }
 
     private String generateBlock(SourceOfRandomness random) {
@@ -356,8 +314,8 @@ public class JavaScriptCodeGenerator extends Generator<String> {
     }
 
     private String generateUnaryNode(SourceOfRandomness random) {
-        TokenType token = random.choose(UNARY_TOKENS);
-        return token.getName() + " " + generateExpression(random);
+        String token = random.choose(UNARY_TOKENS);
+        return token + " " + generateExpression(random);
     }
 
     private String generateVarNode(SourceOfRandomness random) {
