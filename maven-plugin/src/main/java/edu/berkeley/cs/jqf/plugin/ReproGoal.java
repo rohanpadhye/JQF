@@ -29,11 +29,15 @@
 package edu.berkeley.cs.jqf.plugin;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
-import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
@@ -88,7 +92,7 @@ public class ReproGoal extends AbstractMojo {
     private String testMethod;
 
     /**
-     * Input file to reproduce
+     * Input file to reproduce.
      *
      * <p>These files will typically be taken from the test corpus
      * ("queue") directory or the failures ("crashes") directory
@@ -99,13 +103,56 @@ public class ReproGoal extends AbstractMojo {
     @Parameter(property="input", required=true)
     private String input;
 
+    /**
+     * Output file to dump coverage info.
+     *
+     * <p>This is an optional parameter. If set, the value is the name
+     * of a file where JQF will dump code coverage information for
+     * the test inputs being replayed.</p>
+     */
+    @Parameter(property="logCoverage")
+    private String logCoverage;
+
+    /**
+     * Comma-separated list of FQN prefixes to exclude from
+     * coverage instrumentation.
+     *
+     * <p>This property is only useful if {@link #logCoverage} is
+     * set. The semantics are similar to the similarly named
+     * property in the goal <tt>jqf:fuzz</tt>.</p>
+     */
+    @Parameter(property="excludes")
+    private String excludes;
+
+    /**
+     * Comma-separated list of FQN prefixes to forcibly include,
+     * even if they match an exclude.
+     *
+     * <p>Typically, these will be a longer prefix than a prefix
+     * in the excludes clauses.</p>
+     *
+     * <p>This property is only useful if {@link #logCoverage} is
+     * set. The semantics are similar to the similarly named
+     * property in the goal <tt>jqf:fuzz</tt>.</p>
+     */
+    @Parameter(property="includes")
+    private String includes;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         ClassLoader loader;
-        Guidance guidance;
+        ReproGuidance guidance;
         Log log = getLog();
         PrintStream out = System.out; // TODO: Re-route to logger from super.getLog()
         Result result;
+
+        // Configure classes to instrument
+        if (excludes != null) {
+            System.setProperty("janala.excludes", excludes);
+        }
+        if (includes != null) {
+            System.setProperty("janala.includes", includes);
+        }
 
         try {
             List<String> classpathElements = project.getTestClasspathElements();
@@ -122,6 +169,12 @@ public class ReproGoal extends AbstractMojo {
             throw new MojoExecutionException("Cannot find or open file " + input);
         }
 
+        // If a coverage dump file was provided, enable logging via system property
+        if (logCoverage != null) {
+            System.setProperty("jqf.repro.logUniqueBranches", "true");
+        }
+
+
         guidance = new ReproGuidance(inputFile, null);
 
         try {
@@ -132,6 +185,20 @@ public class ReproGoal extends AbstractMojo {
             throw new MojoExecutionException("Bad request", e);
         } catch (RuntimeException e) {
             throw new MojoExecutionException("Internal error", e);
+        }
+
+        // If a coverage dump file was provided, then dump coverage
+        if (logCoverage != null) {
+            Set<String> coverageSet = guidance.getBranchesCovered();
+            assert (coverageSet != null); // Should not happen if we set the system property above
+            SortedSet<String> sortedCoverage = new TreeSet<>(coverageSet);
+            try (PrintWriter covOut = new PrintWriter(new File(logCoverage))) {
+                for (String b : sortedCoverage) {
+                    covOut.println(b);
+                }
+            } catch (IOException e) {
+                log.error("Could not dump coverage info.", e);
+            }
         }
 
         if (!result.wasSuccessful()) {
