@@ -2,6 +2,8 @@
 
 JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck), which itself lets you write [Quickcheck](http://www.cse.chalmers.se/~rjmh/QuickCheck/manual.html)-like generators and properties in a [Junit](http://junit.org)-style test class. JQF enables better input generation using state-of-the-art fuzzing tools such as [AFL](http://lcamtuf.coredump.cx/afl). 
 
+JQF has been successful in [discovering a number of bugs in widely used open-source software](https://github.com/rohanpadhye/jqf/wiki/Bug-trophy-case) such as OpenJDK, Apache Maven and the Google Closure Compiler.
+
 ## Quickstart
 
 Write a Junit-like test class annotated with `@RunWith(JQF.class)` and write some test methods annotated with `@Fuzz`. The arguments to the test methods will be fuzzed by JQF:
