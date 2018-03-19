@@ -30,8 +30,8 @@ package edu.berkeley.cs.jqf.examples.commons;
 
 import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.examples.common.ArbitraryLengthStringGenerator;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import edu.berkeley.cs.jqf.fuzz.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.JQF;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.runner.RunWith;
 

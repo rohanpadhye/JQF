@@ -36,8 +36,8 @@ import com.opensymphony.xwork2.validator.validators.URLValidator;
 import com.pholser.junit.quickcheck.From;
 import com.pholser.junit.quickcheck.generator.Size;
 import edu.berkeley.cs.jqf.examples.common.ArbitraryLengthStringGenerator;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import edu.berkeley.cs.jqf.fuzz.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.JQF;
 import org.junit.Assume;
 import org.junit.runner.RunWith;
 

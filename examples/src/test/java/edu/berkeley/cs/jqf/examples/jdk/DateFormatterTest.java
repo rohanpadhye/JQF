@@ -37,8 +37,8 @@ import java.time.format.DateTimeParseException;
 import java.util.Date;
 
 import com.pholser.junit.quickcheck.generator.InRange;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import edu.berkeley.cs.jqf.fuzz.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.JQF;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.runner.RunWith;

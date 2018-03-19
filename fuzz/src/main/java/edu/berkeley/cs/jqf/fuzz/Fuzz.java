@@ -26,7 +26,7 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.fuzz.junit;
+package edu.berkeley.cs.jqf.fuzz;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

@@ -26,13 +26,14 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.fuzz.guidance;
+package edu.berkeley.cs.jqf.fuzz.junit.quickcheck;
 
 import java.util.Random;
 
 import com.pholser.junit.quickcheck.internal.Ranges;
 import com.pholser.junit.quickcheck.internal.Ranges.Type;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import edu.berkeley.cs.jqf.fuzz.guidance.StreamBackedRandom;
 
 /**
  * A source of randomness with better performance but looser

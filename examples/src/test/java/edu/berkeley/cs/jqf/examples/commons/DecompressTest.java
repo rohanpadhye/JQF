@@ -32,8 +32,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.DeflaterInputStream;
 
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import edu.berkeley.cs.jqf.fuzz.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.JQF;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.junit.runner.RunWith;
 

@@ -31,9 +31,9 @@ package edu.berkeley.cs.jqf.fuzz.guidance;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.fuzz.random.NoGuidance;
-import edu.berkeley.cs.jqf.fuzz.junit.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.JQF;
+import edu.berkeley.cs.jqf.fuzz.JQF;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 import org.junit.Assert;
 import org.junit.Assume;
