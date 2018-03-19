@@ -47,7 +47,7 @@ java.lang.ArrayIndexOutOfBoundsException: 127
 	at java.text.DateFormat.format(DateFormat.java)
 ```
 
-This shouldn't happen! `DateFormat.format()` does not specify that it will throw `ArrayIndexOutOfBoundsException`. Time to file a [bug report](https://bugs.openjdk.java.net/browse/JDK-8193444) :-)
+This shouldn't happen! `DateFormat.format()` does not specify that it will throw `ArrayIndexOutOfBoundsException`. Time to file a [bug report](https://github.com/rohanpadhye/jqf/wiki/Bug-trophy-case) :-)
 
 
 ## Building 
