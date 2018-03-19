@@ -291,9 +291,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         }
 
         // Name files and directories after AFL
-        this.savedInputsDirectory = new File(outputDirectory, "queue");
+        this.savedInputsDirectory = new File(outputDirectory, "corpus");
         this.savedInputsDirectory.mkdirs();
-        this.savedFailuresDirectory = new File(outputDirectory, "crashes");
+        this.savedFailuresDirectory = new File(outputDirectory, "failures");
         this.savedFailuresDirectory.mkdirs();
         this.statsFile = new File(outputDirectory, "plot_data");
         this.logFile = new File(outputDirectory, "fuzz.log");
