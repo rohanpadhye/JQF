@@ -136,9 +136,10 @@ public class FuzzGoal extends AbstractMojo {
      * <p>The directory will be created inside the standard Maven
      * project build directory.</p>
      *
-     * <p>Defaults to <em>fuzz-results</em>.</p>
+     * <p>If not provided, defaults to
+     * <em>jqf-fuzz/${testClassName}/${$testMethod}</em>.</p>
      */
-    @Parameter(property="out", defaultValue="fuzz-results")
+    @Parameter(property="out")
     private String outputDirectory;
 
     @Override
@@ -164,6 +165,10 @@ public class FuzzGoal extends AbstractMojo {
             } catch (DateTimeParseException e) {
                 throw new MojoExecutionException("Invalid time duration: " + time);
             }
+        }
+
+        if (outputDirectory == null || outputDirectory.isEmpty()) {
+            outputDirectory = "fuzz-results" + File.separator + testClassName + File.separator + testMethod;
         }
 
         try {
