@@ -755,13 +755,15 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     private void saveCurrentInput(Set<Object> responsibilities, String why) throws IOException {
 
-        // First, save to disk
+        // First, save to disk (note: we issue IDs to everyone, but only write to disk  if valid)
         int newInputIdx = numSavedInputs++;
         String saveFileName = String.format("id_%06d", newInputIdx);
         String how = currentInput.desc;
         File saveFile = new File(savedInputsDirectory, saveFileName);
-        writeCurrentInputToFile(saveFile);
-        infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
+        if (currentInput.valid) {
+            writeCurrentInputToFile(saveFile);
+            infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
+        }
 
         // If not using guidance, do nothing else
         if (TOTALLY_RANDOM) {
