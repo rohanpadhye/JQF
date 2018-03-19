@@ -40,6 +40,10 @@ if [ ! -f "$ROOT_DIR/bin/afl-proxy" ]; then
   exit 3
 fi
 
+# Set temp directory
+if [ -z "$JQF_TMP_DIR" ]; then
+  JQF_TMP_DIR="/tmp"
+fi
 
 # Build AFL command-line
 afl_options="-d" # fidgety by default
@@ -105,7 +109,7 @@ fi
 if [ -z "$input_dir" ]; then
   RANDOM_SEED_COUNT=5
   RANDOM_SEED_SIZE=1024
-  input_dir=$(mktemp -d /tmp/jqf-seeds.XXX)
+  input_dir=$(mktemp -d $JQF_TMP_DIR/jqf-seeds.XXX)
   for i in $(seq $RANDOM_SEED_COUNT); do
     head -c $RANDOM_SEED_SIZE /dev/urandom > "$input_dir/random_seed_$i"
   done
@@ -137,7 +141,7 @@ export AFL_SKIP_CPUFREQ=1
 
 # Do a pilot run to make sure that the class/method are JQF fuzz targets
 echo -n "Performing pilot run...."
-tmp_out=$(mktemp /tmp/jqf-pilot.XXX)
+tmp_out=$(mktemp $JQF_TMP_DIR/jqf-pilot.XXX)
 head -c 1024 /dev/urandom | "$BIN_DIR/jqf-repro" "$class" "$method" /dev/stdin 1> $tmp_out 2>&1
 if [ "$?" -ne 0 ]; then
   echo "  ERROR: Pilot run failed!!!"
