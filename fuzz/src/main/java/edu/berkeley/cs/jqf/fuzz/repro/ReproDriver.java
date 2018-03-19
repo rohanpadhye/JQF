@@ -65,12 +65,10 @@ public class ReproDriver {
 
 
 
-            if (Boolean.getBoolean("jqf.repro.logUniqueBranches")) {
+            if (guidance.getBranchesCovered() != null) {
                 String cov = "";
-                if (guidance.branchesCovered != null) {
-                    for (String s : guidance.branchesCovered) {
-                        cov += "# Covered: " + s + "\n";
-                    }
+                for (String s : guidance.getBranchesCovered()) {
+                    cov += "# Covered: " + s + "\n";
                 }
                 final String finalFooter = cov;
                 System.out.println(finalFooter);

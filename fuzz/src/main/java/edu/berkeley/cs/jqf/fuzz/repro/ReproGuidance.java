@@ -66,7 +66,8 @@ public class ReproGuidance implements Guidance {
     private List<PrintStream> traceStreams = new ArrayList<>();
     private InputStream inputStream;
     private Coverage coverage = new Coverage();
-    Set<String> branchesCovered;
+
+    private Set<String> branchesCovered;
     HashMap<Integer, String> branchDescCache = new HashMap<>();
 
 
@@ -162,21 +163,52 @@ public class ReproGuidance implements Guidance {
     }
 
     /**
-     * Returns a callback that can log trace events to a trace file.
+     * Returns a callback that can log trace events or code coverage info.
      *
-     * <p>If <tt>traceDir</tt> was non-null during the construction of
+     * <p>If the system property <tt>jqf.repro.logUniqueBranches</tt> was
+     * set to <tt>true</tt>, then the callback collects coverage info into
+     * the set {@link #branchesCovered}, which can be accessed using
+     * {@link #getBranchesCovered()}.</p>
+     *
+     * <p>Otherwise, if the <tt>traceDir</tt> was non-null during the construction of
      * this Guidance instance, then one log file per thread of
      * execution is created in this directory. The callbacks generated
      * by this method write trace event descriptions in sequence to
-     * their own thread's log files.
+     * their own thread's log files.</p>
+     *
+     * <p>If neither of the above are true, the returned callback simply updates
+     * a total coverage map (see {@link #getCoverage()}.</p>
      *
      * @param thread the thread whose events to handle
-     * @return  callback that can log trace events to a trace file
+     * @return a callback to log code coverage or execution traces
      */
     @Override
     public Consumer<TraceEvent> generateCallBack(Thread thread) {
-        // Create trace file if available
-        if (traceDir != null) {
+        if (branchesCovered != null) {
+            return (e) -> {
+                coverage.handleEvent(e);
+                if (e instanceof BranchEvent) {
+                    BranchEvent b = (BranchEvent) e;
+                    int hash = b.getIid() * 31 + b.getArm();
+                    String str = branchDescCache.get(hash);
+                    if (str == null) {
+                        str = String.format("(%09d) %s#%s():%d [%d]", b.getIid(), b.getContainingClass(), b.getContainingMethodName(),
+                                b.getLineNumber(), b.getArm());
+                        branchDescCache.put(hash, str);
+                    }
+                    branchesCovered.add(str);
+                } else if (e instanceof CallEvent) {
+                    CallEvent c = (CallEvent) e;
+                    String str = branchDescCache.get(c.getIid());
+                    if (str == null) {
+                        str = String.format("(%09d) %s#%s():%d --> %s", c.getIid(), c.getContainingClass(), c.getContainingMethodName(),
+                                c.getLineNumber(), c.getInvokedMethodName());
+                        branchDescCache.put(c.getIid(), str);
+                    }
+                    branchesCovered.add(str);
+                }
+            };
+        } else if (traceDir != null) {
             File traceFile = new File(traceDir, thread.getName() + ".log");
             try {
                 PrintStream out = new PrintStream(traceFile);
@@ -185,30 +217,7 @@ public class ReproGuidance implements Guidance {
                 // Return an event logging callback
                 return (e) -> {
                     coverage.handleEvent(e);
-                    if (branchesCovered != null) {
-                        if (e instanceof BranchEvent) {
-                            BranchEvent b = (BranchEvent) e;
-                            int hash = b.getIid() * 31 + b.getArm();
-                            String str = branchDescCache.get(hash);
-                            if (str == null) {
-                                str = String.format("(%09d) %s#%s():%d [%d]", b.getIid(), b.getContainingClass(), b.getContainingMethodName(),
-                                        b.getLineNumber(), b.getArm());
-                                branchDescCache.put(hash, str);
-                            }
-                            branchesCovered.add(str);
-                        } else if (e instanceof CallEvent) {
-                            CallEvent c = (CallEvent) e;
-                            String str = branchDescCache.get(c.getIid());
-                            if (str == null) {
-                                str = String.format("(%09d) %s#%s():%d --> %s", c.getIid(), c.getContainingClass(), c.getContainingMethodName(),
-                                        c.getLineNumber(), c.getInvokedMethodName());
-                                branchDescCache.put(c.getIid(), str);
-                            }
-                            branchesCovered.add(str);
-                        }
-                    } else {
-                        out.println(e);
-                    }
+                    out.println(e);
                 };
             } catch (FileNotFoundException e) {
                 // Note the exception, but ignore trace events
@@ -216,8 +225,9 @@ public class ReproGuidance implements Guidance {
             }
         }
 
-        // Only update coverage
+        // If none of the above work, just update coverage
         return coverage::handleEvent;
+
     }
 
     /**
@@ -226,6 +236,25 @@ public class ReproGuidance implements Guidance {
      */
     public Coverage getCoverage() {
         return coverage;
+    }
+
+
+    /**
+     * Retyrns the set of branches covered by this repro.
+     *
+     * <p>This set will only be non-empty if the system
+     * property <tt>jqf.repro.logUniqueBranches</tt> was
+     * set to <tt>true</tt> before the guidance instance
+     * was constructed.</p>
+     *
+     * <p>The format of each element in this set is a
+     * custom format that strives to be both human and
+     * machine readable.</p>
+     *
+     * @return the set of branches covered by this repro
+     */
+    public Set<String> getBranchesCovered() {
+        return branchesCovered;
     }
 
 }
