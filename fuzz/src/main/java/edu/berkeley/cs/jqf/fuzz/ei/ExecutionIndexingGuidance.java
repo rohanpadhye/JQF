@@ -661,7 +661,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 // Save crash to disk
                 try {
                     int crashIdx = uniqueFailures.size()-1;
-                    String saveFileName = String.format("id:%06d", crashIdx);
+                    String saveFileName = String.format("id_%06d", crashIdx);
                     File saveFile = new File(savedFailuresDirectory, saveFileName);
                     writeCurrentInputToFile(saveFile);
                     infoLog("%s","Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
@@ -757,7 +757,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         // First, save to disk
         int newInputIdx = numSavedInputs++;
-        String saveFileName = String.format("id:%06d", newInputIdx);
+        String saveFileName = String.format("id_%06d", newInputIdx);
         String how = currentInput.desc;
         File saveFile = new File(savedInputsDirectory, saveFileName);
         writeCurrentInputToFile(saveFile);
