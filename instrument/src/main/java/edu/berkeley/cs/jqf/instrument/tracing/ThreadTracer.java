@@ -65,6 +65,12 @@ public class ThreadTracer {
     // Whether to instrument generators
     private final boolean traceGenerators;
 
+    // Whether to check if caller and callee have the same method name/desc when tracing
+    // Set this to TRUE if instrumenting JDK classes, in order to skip JVM classloading activity
+    // Note that when this is FALSE (default behavior), static initializers are also traced, which may
+    // lead to some instability (i.e. non-reproducible code coverage).
+    private static final boolean MATCH_CALLEE_NAMES = Boolean.getBoolean("jqf.tracing.MATCH_CALLEE_NAMES");
+
 
     /**
      * Creates a new tracer that will process instructions executed by an application
@@ -206,10 +212,10 @@ public class ThreadTracer {
 
         @Override
         public void visitMETHOD_BEGIN(METHOD_BEGIN begin) {
-            if (sameNameDesc(begin, this.invokeTarget)) {
+            if (!MATCH_CALLEE_NAMES || sameNameDesc(begin, this.invokeTarget)) {
                 // Trace continues with callee
-                int invokerIid = ((Instruction) invokeTarget).iid;
-                int invokerMid = ((Instruction) invokeTarget).mid;
+                int invokerIid = invokeTarget != null ? ((Instruction) invokeTarget).iid : -1;
+                int invokerMid = invokeTarget != null ? ((Instruction) invokeTarget).mid : -1;
                 emit(new CallEvent(invokerIid, this.method, invokerMid, begin));
                 handlers.push(new TraceEventGeneratingHandler(begin, depth+1));
             } else {
