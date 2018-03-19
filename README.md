@@ -49,7 +49,6 @@ java.lang.ArrayIndexOutOfBoundsException: 127
 
 This shouldn't happen! `DateFormat.format()` does not specify that it will throw `ArrayIndexOutOfBoundsException`. Time to file a [bug report](https://github.com/rohanpadhye/jqf/wiki/Bug-trophy-case) :-)
 
-
 ## Building 
 
 To build JQF, you need Java 8+, Maven (`mvn`) and GNU Make (`make`) installed and on your path. 
@@ -67,6 +66,7 @@ The [JQF wiki](https://github.com/rohanpadhye/jqf/wiki) contains lots more docum
 - [Writing a JQF test](https://github.com/rohanpadhye/jqf/wiki/Writing-a-JQF-test)
 - [Fuzzing with AFL](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-AFL)
 - [Using a custom fuzz guidance](https://github.com/rohanpadhye/jqf/wiki/The-Guidance-interface)
+- [Performance Benchmarks](https://github.com/rohanpadhye/jqf/wiki/Performance-benchmarks)
 
 
 ## Contact the developers
