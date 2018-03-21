@@ -51,7 +51,7 @@ public class SafeClassWriter extends ClassWriter {
     
     public SafeClassWriter(ClassReader cr, ClassLoader loader, final int flags) {
         super(cr, flags);
-        this.loader = loader;
+        this.loader = loader != null ? loader : ClassLoader.getSystemClassLoader();
     }
 
     @Override
