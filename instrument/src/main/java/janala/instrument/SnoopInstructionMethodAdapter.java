@@ -9,7 +9,8 @@ import org.objectweb.asm.Opcodes;
 
 public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opcodes {
   boolean isInit;
-  boolean isSuperInitCalled;
+  boolean isSuperInitCalled; // Used to keep track of calls to super()/this() in <init>()
+  int newStack = 0; // Used to keep-track of NEW instructions in <init>()
   LinkedList<TryCatchBlock> tryCatchBlocks;
   Label methodBeginLabel = new Label();
   Label methodEndLabel = new Label();
@@ -563,6 +564,8 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
           mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "NEW", "(IILjava/lang/String;)V", false);
         }
 
+        if (isInit) newStack++; // Used in <init>; see: #visitMethodInsn
+
         break;
       case ANEWARRAY:
         if (Config.instance.instrumentAlloc) {
@@ -711,8 +714,11 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     if (opcode == INVOKESPECIAL && name.equals("<init>")) {
 
 
+      // The first call to <init> within a constructor (`isInit`) on the same or super class,
+      // which is not associated with a NEW instruction (`newStack` == 0),
+      // will be considered as an invocation of super()/this().
 
-      if (isInit && isSuperInitCalled == false &&
+      if (isInit && isSuperInitCalled == false && newStack == 0 &&
               (owner.equals(className) || owner.equals(superName))) {
         // Constructor calls to <init> method of the same or super class.
         //
@@ -762,8 +768,14 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
         mv.visitLabel(methodBeginLabel);
 
       } else {
-        // Call to <init> but not a super() or this().
+        // Call to <init> but not a super() or this(). Must have occurred after a NEW.
         addMethodWithTryCatch(opcode, owner, name, desc, itf);
+
+        // This is an outer constructor call, so reduce the NEW stack
+        if (isInit) {
+          newStack--;
+          assert newStack >= 0;
+        }
 
         // Handle direct calls to new Thread() without subclassing
         if (owner.equals("java/lang/Thread")) {
@@ -773,6 +785,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
           mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "REGISTER_THREAD", "(Ljava/lang/Thread;)V", false);
         }
       }
+
 
 
     } else { // Call to non-constructor method
@@ -828,6 +841,11 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
 
   @Override
   public void visitJumpInsn(int opcode, Label label) {
+    if (isInit && !isSuperInitCalled) {
+      // Jumps in a constructor before super() or this() mess up the analysis
+      throw new RuntimeException("Cannot handle jumps before super/this");
+    }
+
     switch (opcode) {
       case IFEQ:
         addConditionalJumpInstrumentation(opcode, label, "IFEQ", "(III)V");
