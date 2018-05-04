@@ -146,6 +146,11 @@
             <artifactId>scalachess_2.12</artifactId>
             <version>8.6.8</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.bcel</groupId>
+            <artifactId>bcel</artifactId>
+            <version>6.2</version>
+        </dependency>
     </dependencies>
 
     <build>
