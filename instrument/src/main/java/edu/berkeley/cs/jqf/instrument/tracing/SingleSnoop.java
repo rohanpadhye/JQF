@@ -29,6 +29,7 @@
 
 package edu.berkeley.cs.jqf.instrument.tracing;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -108,12 +109,21 @@ public final class SingleSnoop {
     public static void REGISTER_THREAD(Thread thread) {
         // Mark entry point as run()
         try {
-            Method runMethod = thread.getClass().getMethod("run");
+            // Get a reference to the Thread's Runnable if it exists
+            Field targetField = Thread.class.getDeclaredField("target");
+            targetField.setAccessible(true);
+            Object target =  targetField.get(thread);
+            if (target == null) {
+                // If the Runnable is not provided explicitly,
+                // it is likely a sub-class of Thread with an overriden run() method
+                target = thread;
+            }
+            Method runMethod = target.getClass().getMethod("run");
             String entryPoint = runMethod.getDeclaringClass().getName() + "#run";
             entryPoints.put(thread, entryPoint);
             // Mark thread for unblocking when we snoop its first instruction
             threadsToUnblock.synchronizedAddFirst(thread);
-        } catch (NoSuchMethodException e) {
+        } catch (NoSuchMethodException | NoSuchFieldException | IllegalAccessException e) {
             // Print error and keep going
             e.printStackTrace();
         }

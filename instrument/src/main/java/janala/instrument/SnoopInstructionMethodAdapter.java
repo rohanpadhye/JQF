@@ -753,7 +753,6 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
 
 
         // Handle super() for Thread.<init> specially
-        // TODO: Handle direct calls to new Thread() without subclassing
         if (owner.equals("java/lang/Thread")) {
           mv.visitVarInsn(ALOAD, 0);
           mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "REGISTER_THREAD", "(Ljava/lang/Thread;)V", false);
@@ -765,6 +764,14 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
       } else {
         // Call to <init> but not a super() or this().
         addMethodWithTryCatch(opcode, owner, name, desc, itf);
+
+        // Handle direct calls to new Thread() without subclassing
+        if (owner.equals("java/lang/Thread")) {
+          // Assumming the NEW-DUP-INIT pattern, the top-of-stack after the <init>() invocation
+          // should be the reference to the just-constructed object
+          mv.visitInsn(DUP);
+          mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "REGISTER_THREAD", "(Ljava/lang/Thread;)V", false);
+        }
       }
 
 
