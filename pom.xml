@@ -154,6 +154,11 @@
                     <version>2.21.0</version>
                 </plugin>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-plugin-plugin</artifactId>
+                    <version>3.5.1</version>
+                </plugin>
+                <plugin>
                     <groupId>edu.berkeley.cs.jqf</groupId>
                     <artifactId>jqf-maven-plugin</artifactId>
                     <version>1.0-alpha-3-SNAPSHOT</version>
