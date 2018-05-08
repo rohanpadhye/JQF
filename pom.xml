@@ -39,6 +39,10 @@
             <organization>University of California, Berkeley</organization>
             <url>https://people.eecs.berkeley.edu/~rohanpadhye/</url>
         </contributor>
+        <contributor>
+            <name>Floyd</name>
+            <url>http://www.floyd.ch</url>
+        </contributor>
     </contributors>
 
     <scm>
