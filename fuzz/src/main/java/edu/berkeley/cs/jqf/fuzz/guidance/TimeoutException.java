@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018 The Regents of the University of California
+ * Copyright (c) 2018, The Regents of the University of California
  *
  * All rights reserved.
  *
@@ -28,39 +28,14 @@
  */
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
-/**
- * Represents the result of a guided fuzzing trial.
- *
- * @author Rohan Padhye
- */
-public enum Result {
 
-    /**
-     * The run completed successfully without errors.
-     */
-    SUCCESS,
+public class TimeoutException extends RuntimeException {
 
-    /**
-     * The results of this run are to be discarded, as
-     * the input invalidated certain assumptions.
-     */
-    INVALID,
+    public TimeoutException() {
+        super("Timeout");
+    }
 
-    /**
-     * The test method threw an uncaught exception.
-     * Assertion failures also fall in this category.
-     */
-    FAILURE,
-
-    /**
-     * The run timed out.
-     *
-     * Setting a timeout and monitoring for timeouts is
-     * guidance-specific. If a guidance does not set/throw
-     * timeouts, then it need not handle this result type.
-     */
-    TIMEOUT
-
-
-
+    public TimeoutException(long elapsed, long limit) {
+        super(String.format("Timeout - %s msec elapsed; limit was %s", elapsed, limit));
+    }
 }

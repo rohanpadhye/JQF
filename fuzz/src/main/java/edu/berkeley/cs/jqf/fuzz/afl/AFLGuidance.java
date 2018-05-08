@@ -40,11 +40,13 @@ import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Date;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
+import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.util.Hashing;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
@@ -88,6 +90,18 @@ public class AFLGuidance implements Guidance {
     /** A temporary holding the opened input file stream during a run. */
     private InputStream inputFileStream;
 
+    /** Timeout for an individual run. */
+    private long singleRunTimeoutMillis;
+
+    /** Date when last run was started. */
+    private Date runStart;
+
+    /** Number of events since last run was started. */
+    private long eventCount;
+
+    /** Timeout flag. Set when single run times out and reset on start. */
+    private boolean timeoutOccurred;
+
     private static final int FEEDBACK_BUFFER_SIZE = 1 << 17;
     private static final byte[] FEEDBACK_ZEROS = new byte[FEEDBACK_BUFFER_SIZE];
 
@@ -105,6 +119,17 @@ public class AFLGuidance implements Guidance {
         this.proxyOutput = new BufferedOutputStream(new FileOutputStream(outPipe));
         this.feedback = ByteBuffer.allocate(FEEDBACK_BUFFER_SIZE);
         this.feedback.order(ByteOrder.LITTLE_ENDIAN);
+
+        // Try to parse the single-run timeout
+        String timeout = System.getProperty("jqf.afl.TIMEOUT");
+        if (timeout != null && !timeout.isEmpty()) {
+            try {
+                // Interpret the timeout as milliseconds (just like `afl-fuzz -t`)
+                this.singleRunTimeoutMillis = Long.parseLong(timeout);
+            } catch (NumberFormatException e1) {
+                throw new IllegalArgumentException("Invalid timeout duration: " + timeout);
+            }
+        }
     }
 
     /**
@@ -160,6 +185,9 @@ public class AFLGuidance implements Guidance {
 
         try {
             this.inputFileStream = new BufferedInputStream(new FileInputStream(this.inputFile));
+            this.runStart = new Date();
+            this.eventCount = 0;
+            this.timeoutOccurred = false;
             return this.inputFileStream;
         } catch (IOException e) {
             throw new GuidanceException(e);
@@ -213,6 +241,9 @@ public class AFLGuidance implements Guidance {
      */
     @Override
     public void handleResult(Result result, Throwable error) {
+        // Stop timeout handling
+        this.runStart = null;
+
         // Close the open input file
         try {
             if (inputFileStream != null) {
@@ -241,7 +272,7 @@ public class AFLGuidance implements Guidance {
             case FAILURE: {
                 // For failure, the exit value is non-zero in LSB to
                 // simulate exit with signal
-                status = 1;
+                status = 6; // SIGABRT
                 break;
             }
             case INVALID: {
@@ -259,6 +290,13 @@ public class AFLGuidance implements Guidance {
                     traceBits[i] = 0;
                 }
 */
+
+                break;
+            }
+            case TIMEOUT: {
+                // For timeouts, we mock AFL's behavior of having killed the target
+                // with a SIGKILL signal
+                status = 9; // SIGKILL
 
                 break;
             }
@@ -323,8 +361,22 @@ public class AFLGuidance implements Guidance {
 
             // Increment the 8-bit branch counter
             incrementTraceBits(edgeId);
+        }
 
+        // Check for possible timeouts every so often
+        if (this.runStart != null && (++this.eventCount) % 10_000 == 0) {
+            Date now = new Date();
+            if (now.getTime() - runStart.getTime() > this.singleRunTimeoutMillis + 1000) {
+                this.timeoutOccurred = true;
+            }
+        }
 
+        // Throw an exception if timeout has occurred
+        // This exception is thrown here instead of above so that multi-threaded programs
+        // throw timeout exceptions from all threads, ensuring that it propagates to the
+        // fuzzing loop
+        if (this.timeoutOccurred) {
+            throw new TimeoutException(new Date().getTime(), runStart.getTime());
         }
     }
 

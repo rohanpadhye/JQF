@@ -38,6 +38,8 @@
 
 #include "afl-proxy.h"
 
+#define PID_MAX_LIMIT (1 << 22)  // Portable upper-bound for value defined in linux/threads.h
+
 /* 
 * Proxy between AFL and JQF. Communicates to 
 * both via pipes -- those launched by AFL and two whose names
@@ -126,6 +128,7 @@ int main(int argc, char** argv) {
   u8 helo[4] = {'H', 'E', 'L', 'O'}; // to set up connections
   uint32_t status = 0; // to receive + send status from java
   u8 buf[4]; // to receive signals from AFL
+  u32 child_pid = PID_MAX_LIMIT + 1; // A PID that can never exist in practice
 
   /* temp variable to store communicated bytes */
   int comm_bytes;
@@ -178,9 +181,9 @@ int main(int argc, char** argv) {
   /* main fuzzing loop. AFL sends ready signals through  
      pipe with file descriptor FORKSRV_FD */
   while (read(FORKSRV_FD,(void *)&buf, 4) == 4){
-    /* this sends "child pid" to AFL -- effectively
-       just another hello                         */
-    if ((comm_bytes = write(FORKSRV_FD+1, &helo, 4)) < 4) {
+    /* this sends "child pid" to AFL -- we use an impossible PID
+     * that AFL cannot kill even in the presence of timeouts. */
+    if ((comm_bytes = write(FORKSRV_FD+1, &child_pid, 4)) < 4) {
       log_to_file(1, log_file_name, 
         "Something went wrong saying hello to AFL in loop: wrote %d bytes.\n", comm_bytes);
     }

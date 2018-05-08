@@ -16,6 +16,7 @@ print_usage() {
   echo "  -x AFL_DICT        Provide a dictionary to AFL (default is no dictionary)"
   echo "  -T AFL_TITLE       Customize title banner (default is TEST_CLASS#TEST_METHOD)"
   echo "  -m MEM_LIMIT       Set a memory limit in MB (default is 8192)"
+  echo "  -t TIMEOUT         Set a single-run timeout in milliseconds (default is 10000)"
   echo "  -v                 Enable verbose logging (in file 'jqf.log')"
 }
 
@@ -52,8 +53,9 @@ mem_limit="8192"
 target_options=""
 input_dir=""
 output_dir="fuzz-results"
+timeout="10000"
 
-while getopts ":c:i:o:x:m:dpsrvT:" opt; do
+while getopts ":c:i:o:x:m:dpsrvt:T:" opt; do
   case $opt in
     /?)
       echo "Invalid option: -$OPTARG" >&2
@@ -90,6 +92,10 @@ while getopts ":c:i:o:x:m:dpsrvT:" opt; do
     v)
       target_options="$target_options -v"
       export JVM_OPTS="$JVM_OPTS -Djanala.verbose=true"
+      ;;
+    t)
+      timeout="$OPTARG"
+      export JVM_OPTS="$JVM_OPTS -Djqf.afl.TIMEOUT=$timeout"
       ;;
     T)
       title="$OPTARG"
@@ -129,6 +135,7 @@ afl_options="$afl_options -i $input_dir"
 afl_options="$afl_options -o $output_dir"
 afl_options="$afl_options -T $title"
 afl_options="$afl_options -m $mem_limit"
+afl_options="$afl_options -t $timeout"
 
 # Set classpath for JQF
 export CLASSPATH="$classpath"
