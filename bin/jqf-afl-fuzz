@@ -95,7 +95,6 @@ while getopts ":c:i:o:x:m:dpsrvt:T:" opt; do
       ;;
     t)
       timeout="$OPTARG"
-      export JVM_OPTS="$JVM_OPTS -Djqf.afl.TIMEOUT=$timeout"
       ;;
     T)
       title="$OPTARG"
@@ -135,7 +134,11 @@ afl_options="$afl_options -i $input_dir"
 afl_options="$afl_options -o $output_dir"
 afl_options="$afl_options -T $title"
 afl_options="$afl_options -m $mem_limit"
-afl_options="$afl_options -t $timeout"
+afl_options="$afl_options -t 50"  
+# We set a very small timeout for AFL so that it always sets child_timed_out
+# To flag a "hang", AFL checks both that its timer went out and that the target died with SIGKILL.
+# The SIGKILL is sent back by JQF if the real timeout expires, as set below:
+export JVM_OPTS="$JVM_OPTS -Djqf.afl.TIMEOUT=$timeout"
 
 # Set classpath for JQF
 export CLASSPATH="$classpath"

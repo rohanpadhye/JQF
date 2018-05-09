@@ -45,6 +45,7 @@ import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
+import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.random.NoGuidance;
 import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
@@ -165,6 +166,9 @@ public class FuzzStatement extends Statement {
                     throw e;
                 } catch (AssumptionViolatedException e) {
                     result = INVALID;
+                    error = e;
+                } catch (TimeoutException e) {
+                    result = TIMEOUT;
                     error = e;
                 } catch (Throwable e) {
 

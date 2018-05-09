@@ -364,9 +364,10 @@ public class AFLGuidance implements Guidance {
         }
 
         // Check for possible timeouts every so often
-        if (this.runStart != null && (++this.eventCount) % 10_000 == 0) {
+        if (this.singleRunTimeoutMillis > 0 &&
+                this.runStart != null && (++this.eventCount) % 10_000 == 0) {
             Date now = new Date();
-            if (now.getTime() - runStart.getTime() > this.singleRunTimeoutMillis + 1000) {
+            if (now.getTime() - runStart.getTime() > this.singleRunTimeoutMillis) {
                 this.timeoutOccurred = true;
             }
         }
@@ -376,7 +377,8 @@ public class AFLGuidance implements Guidance {
         // throw timeout exceptions from all threads, ensuring that it propagates to the
         // fuzzing loop
         if (this.timeoutOccurred) {
-            throw new TimeoutException(new Date().getTime(), runStart.getTime());
+            long elapsed = new Date().getTime() - runStart.getTime();
+            throw new TimeoutException(elapsed, this.singleRunTimeoutMillis);
         }
     }
 
