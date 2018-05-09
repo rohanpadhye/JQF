@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# Figure out script absolute path
+pushd `dirname $0` > /dev/null
+BIN_DIR=`pwd`
+popd > /dev/null
+
+ROOT_DIR=`dirname $BIN_DIR`
+
+print_usage() {
+  echo "Usage: $0 [options] TEST_CLASS TEST_METHOD INPUT_FILE"
+  echo "Options: "
+  echo "  -c JAVA_CLASSPATH  Classpath used to find your test classes (default is '.')"
+  echo "  -o OUTPUT_FILE     File to write the trace data to (default is 'afl.map')"
+  echo "  -m MEM_LIMIT       Set a memory limit in MB (default is 8192)"
+  echo "  -t TIMEOUT         Set a single-run timeout in milliseconds (default is 10000)"
+  echo "  -v                 Enable verbose logging (in file 'jqf.log')"
+}
+
+# Ensure that afl-showmap can be found
+if [ -n "$AFL_DIR" ]; then
+  AFL_SHOWMAP="$AFL_DIR/afl-showmap"
+else
+  AFL_SHOWMAP=$(which afl-showmap)
+fi
+if [ ! -x "$AFL_SHOWMAP" ]; then
+  echo "The program 'afl-showmap' cannot be found" >&2
+  echo "Fix this in one of two ways:" >&2
+  echo "   1. Make sure 'afl-showmap' is in your PATH" >&2
+  echo "   2. Set the env var AFL_DIR to point to where AFL is installed" >&2
+  exit 2
+fi
+
+
+# Ensure that AFL proxy is built
+if [ ! -f "$ROOT_DIR/bin/afl-proxy" ]; then
+  echo "The JQF-AFL proxy has not been built! Make sure to run scripts/setup.sh or run 'make'" >&2
+  exit 3
+fi
+
+# Set temp directory
+if [ -z "$JQF_TMP_DIR" ]; then
+  JQF_TMP_DIR="/tmp"
+fi
+
+# Build AFL command-line
+afl_options=""
+classpath="."
+mem_limit="8192"
+target_options=""
+out_file="afl.map"
+timeout="10000"
+
+while getopts ":c:o:m:vt:" opt; do
+  case $opt in
+    /?)
+      echo "Invalid option: -$OPTARG" >&2
+      print_usage >&1
+      exit 1
+      ;;
+    c)
+      classpath="$OPTARG"
+      ;;
+    o)
+      out_file="$OPTARG"
+      ;;
+    m)
+      mem_limit="$OPTARG"
+      ;;
+    v)
+      target_options="$target_options -v"
+      export JVM_OPTS="$JVM_OPTS -Djanala.verbose=true"
+      ;;
+    t)
+      timeout="$OPTARG"
+      export JVM_OPTS="$JVM_OPTS -Djqf.afl.TIMEOUT=$timeout"
+      ;;
+  esac
+done
+shift $((OPTIND-1))
+
+
+# Check positional arguments
+if [ $# -lt 3 ]; then
+  print_usage >&2
+  exit 1
+fi
+
+class="$1"
+method="$2"
+input="$3"
+target="$BIN_DIR/jqf-afl-target"
+
+# Set AFL options
+afl_options="$afl_options -o $out_file"
+afl_options="$afl_options -m $mem_limit"
+afl_options="$afl_options -t $timeout"
+
+# Set classpath for JQF
+export CLASSPATH="$classpath"
+
+# Set environment variables for AFL
+export AFL_SKIP_BIN_CHECK=1
+export AFL_NO_AFFINITY=1
+export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
+export AFL_SKIP_CPUFREQ=1
+
+# Ready to go
+exec "$AFL_SHOWMAP" $afl_options "$target" $target_options "$class" "$method" "$input"
+

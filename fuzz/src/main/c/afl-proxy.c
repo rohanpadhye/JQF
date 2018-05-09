@@ -27,6 +27,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -130,6 +131,9 @@ int main(int argc, char** argv) {
   u8 buf[4]; // to receive signals from AFL
   u32 child_pid = PID_MAX_LIMIT + 1; // A PID that can never exist in practice
 
+  /* Run once? Used by afl-showmap and perhaps other tools to avoid looping. */
+  bool run_once = false;
+
   /* temp variable to store communicated bytes */
   int comm_bytes;
 
@@ -173,21 +177,25 @@ int main(int argc, char** argv) {
   /* say the first hello to AFL. use write() because we
      have an int file descriptor */
   if (write(FORKSRV_FD + 1, (void*) &helo, 4) < 4) {
-    log_to_file(1, log_file_name, "Error saying initial hello to AFL\n");
+    log_to_file(0, log_file_name, "Error saying initial hello to AFL\n");
+    run_once = true;
+  } else {
+    log_to_file(0, log_file_name, "Said hello to AFL (init).\n");
   }
-
-  log_to_file(0, log_file_name, "Said hello to AFL (init).\n");
 
   /* main fuzzing loop. AFL sends ready signals through  
      pipe with file descriptor FORKSRV_FD */
-  while (read(FORKSRV_FD,(void *)&buf, 4) == 4){
-    /* this sends "child pid" to AFL -- we use an impossible PID
-     * that AFL cannot kill even in the presence of timeouts. */
-    if ((comm_bytes = write(FORKSRV_FD+1, &child_pid, 4)) < 4) {
-      log_to_file(1, log_file_name, 
-        "Something went wrong saying hello to AFL in loop: wrote %d bytes.\n", comm_bytes);
+  while (run_once || read(FORKSRV_FD,(void *)&buf, 4) == 4){
+
+    if (!run_once) {
+      /* this sends "child pid" to AFL -- we use an impossible PID
+       * that AFL cannot kill even in the presence of timeouts. */
+      if ((comm_bytes = write(FORKSRV_FD+1, &child_pid, 4)) < 4) {
+        log_to_file(1, log_file_name, 
+          "Something went wrong saying hello to AFL in loop: wrote %d bytes.\n", comm_bytes);
+      }
+      log_to_file(0, log_file_name, "Said hello to AFL (in loop).\n");
     }
-    log_to_file(0, log_file_name, "Said hello to AFL (in loop).\n");
 
     /* Say hello to Java */
     if ((comm_bytes = fwrite(&helo, 1, 4, to_java_fd)) < 4) {
@@ -227,13 +235,17 @@ int main(int argc, char** argv) {
     }
 #endif
 
-    /* Tell AFL we got the return */
-    if((comm_bytes = write(FORKSRV_FD + 1, &status, 4)) < 4) {
-      log_to_file(1, log_file_name, 
-        "Something went wrong sending return status to AFL: wrote %d bytes.\n", comm_bytes);
-    }
+    if (!run_once) {
+      /* Tell AFL we got the return */
+      if((comm_bytes = write(FORKSRV_FD + 1, &status, 4)) < 4) {
+        log_to_file(1, log_file_name, 
+          "Something went wrong sending return status to AFL: wrote %d bytes.\n", comm_bytes);
+      }
 
-    log_to_file(0, log_file_name, "sent return status to AFL.\n");
+      log_to_file(0, log_file_name, "sent return status to AFL.\n");
+    } else {
+      break; // run_once
+    }
   }
 
   /* teardown. Will probably never be called */
@@ -245,6 +257,6 @@ int main(int argc, char** argv) {
     log_to_file(1, log_file_name, 
         "Something went wrong closing pipe from Java.\n");
   }
-  exit(0);
+  exit(status);
 
 }
