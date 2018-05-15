@@ -28,7 +28,7 @@ public class DateFormatterTest {
 
 Compile with JQF on the classpath (using the provided handy script):
 ```bash
-$ javac -cp $(scripts/classpath.sh) DateFormatterTest.java
+$ javac -cp $(jqf/scripts/classpath.sh) DateFormatterTest.java
 ```
 
 
