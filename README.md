@@ -60,16 +60,24 @@ java.lang.ArrayIndexOutOfBoundsException: 127
 
 This shouldn't happen! `DateFormat.format()` does not specify that it will throw `ArrayIndexOutOfBoundsException`. Time to file a [bug report](https://github.com/rohanpadhye/jqf/wiki/Bug-trophy-case) :-)
 
-## Building 
+## Using JQF with Maven
 
-To build JQF, you need Java 8+, Maven (`mvn`) and GNU Make (`make`) installed and on your path. 
+Do you use Apache Maven to build your project? Great! Then you don't need to clone/build JQF and mess with classpaths and shell scripts.
 
-Clone the JQF repo and run `setup.sh`.
+Simply add a test-dependency to the JQF API in your `pom.xml` file as so:
 
-```bash
-git clone https://github.com/rohanpadhye/jqf
-jqf/setup.sh 
+```xml
+<dependency>
+    <groupId>edu.berkeley.cs.jqf</groupId>
+    <artifactId>jqf-fuzz</artifactId>
+    <version>1.0-alpha-2</version>
+    <scope>test</scope>
+</dependency>
 ```
+
+You can now have your JQF test classes be part of your standard JUnit test suite. When not run as a stand-alone fuzzing job on the command-line, these tests will be run like regular `junit-quickcheck` tests, i.e. 100 inputs will be generated randomly without feedback per `@Fuzz` annotated method.
+
+You might also want to checkout the [JQF Maven Plugin](https://github.com/rohanpadhye/jqf/wiki/JQF-Maven-Plugin) that lets you fuzz your application using `mvn jqf:fuzz` instead of having to clone this repo and run shell scripts.
 
 ## Documentation
 
