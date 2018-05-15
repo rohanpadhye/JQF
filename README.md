@@ -26,8 +26,13 @@ public class DateFormatterTest {
 }
 ```
 
+Compile with JQF on the classpath (using the provided handy script):
+```bash
+$ javac -cp $(scripts/classpath.sh) DateFormatterTest.java
+```
 
-Fuzz with AFL:
+
+Fuzz the method `fuzzSimple` with AFL:
 ```bash
 $ jqf/bin/jqf-afl-fuzz DateFormatterTest fuzzSimple
 ```
