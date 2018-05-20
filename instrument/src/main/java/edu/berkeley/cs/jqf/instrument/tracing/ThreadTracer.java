@@ -112,13 +112,19 @@ public class ThreadTracer {
         return t;
     }
 
+    protected RuntimeException callBackException = null;
+
     /**
      * Emits a trace event to be consumed by the registered callback.
      *
      * @param e the event to emit
      */
     protected final void emit(TraceEvent e) {
-        callback.accept(e);
+        try {
+            callback.accept(e);
+        } catch (RuntimeException ex) {
+            callBackException = ex;
+        }
     }
 
     /**
@@ -129,6 +135,11 @@ public class ThreadTracer {
     protected final void consume(Instruction ins) {
         // Apply the visitor at the top of the stack
         ins.visit(handlers.peek());
+        if (callBackException != null) {
+            RuntimeException e = callBackException;
+            callBackException = null;
+            throw e;
+        }
     }
 
 
