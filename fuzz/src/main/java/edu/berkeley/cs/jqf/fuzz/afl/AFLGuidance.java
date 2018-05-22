@@ -96,11 +96,8 @@ public class AFLGuidance implements Guidance {
     /** Date when last run was started. */
     private Date runStart;
 
-    /** Number of events since last run was started. */
-    private long eventCount;
-
-    /** Timeout flag. Set when single run times out and reset on start. */
-    private boolean timeoutOccurred;
+    /** Number of conditional jumps since last run was started. */
+    private long branchCount;
 
     private static final int FEEDBACK_BUFFER_SIZE = 1 << 17;
     private static final byte[] FEEDBACK_ZEROS = new byte[FEEDBACK_BUFFER_SIZE];
@@ -186,8 +183,7 @@ public class AFLGuidance implements Guidance {
         try {
             this.inputFileStream = new BufferedInputStream(new FileInputStream(this.inputFile));
             this.runStart = new Date();
-            this.eventCount = 0;
-            this.timeoutOccurred = false;
+            this.branchCount = 0;
             return this.inputFileStream;
         } catch (IOException e) {
             throw new GuidanceException(e);
@@ -354,6 +350,16 @@ public class AFLGuidance implements Guidance {
 
             // Increment the 8-bit branch counter
             incrementTraceBits(edgeId);
+
+            // Check for possible timeouts every so often
+            if (this.singleRunTimeoutMillis > 0 &&
+                    this.runStart != null && (++this.branchCount) % 10_000 == 0) {
+                long elapsed = new Date().getTime() - runStart.getTime();
+                if (elapsed > this.singleRunTimeoutMillis) {
+                    throw new TimeoutException(elapsed, this.singleRunTimeoutMillis);
+                }
+            }
+
         } else if (e instanceof CallEvent) {
 
             // Map IID to [1, MAP_SIZE]; the odd bound also reduces collisions
@@ -363,23 +369,6 @@ public class AFLGuidance implements Guidance {
             incrementTraceBits(edgeId);
         }
 
-        // Check for possible timeouts every so often
-        if (this.singleRunTimeoutMillis > 0 &&
-                this.runStart != null && (++this.eventCount) % 10_000 == 0) {
-            Date now = new Date();
-            if (now.getTime() - runStart.getTime() > this.singleRunTimeoutMillis) {
-                this.timeoutOccurred = true;
-            }
-        }
-
-        // Throw an exception if timeout has occurred
-        // This exception is thrown here instead of above so that multi-threaded programs
-        // throw timeout exceptions from all threads, ensuring that it propagates to the
-        // fuzzing loop
-        if (this.timeoutOccurred) {
-            long elapsed = new Date().getTime() - runStart.getTime();
-            throw new TimeoutException(elapsed, this.singleRunTimeoutMillis);
-        }
     }
 
     /**
