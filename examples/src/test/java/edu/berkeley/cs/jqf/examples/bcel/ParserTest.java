@@ -52,21 +52,21 @@ import static org.junit.Assume.assumeThat;
 public class ParserTest {
 
     @Fuzz
-    public void testParser(InputStream inputStream) throws IOException {
+    public void testWithInputStream(InputStream inputStream) throws IOException {
         JavaClass clazz = new ClassParser(inputStream, "A.java").parse();
+        verifyJavaClass(clazz);
     }
 
     @Fuzz
-    public void testParserFromJavaClass(@From(JavaClassGenerator.class) JavaClass javaClass) throws IOException {
+    public void testWithGenerator(@From(JavaClassGenerator.class) JavaClass javaClass) throws IOException {
 
-        //File file = Files.createTempFile("A", ".class").toFile();
         try {
             // Dump the javaclass to a byte stream and get an input pipe
             PipedOutputStream out = new PipedOutputStream();
             PipedInputStream in = new PipedInputStream(out);
             javaClass.dump(out);
 
-            JavaClass clazz = new ClassParser(in, "A.java").parse();
+            testWithInputStream(in);
         } catch (ClassFormatException e) {
             throw e;
         }
@@ -82,12 +82,11 @@ public class ParserTest {
             result = verifier.doPass1();
             assumeThat(result.getMessage(), result.getStatus(), is(VerificationResult.VERIFIED_OK));
             result = verifier.doPass2();
-            //System.out.println(result);
             assumeThat(result.getMessage(), result.getStatus(), is(VerificationResult.VERIFIED_OK));
             for (int i = 0; i < javaClass.getMethods().length; i++) {
                 result = verifier.doPass3a(i);
+                assumeThat(result.getMessage(), result.getStatus(), is(VerificationResult.VERIFIED_OK));
             }
-            //assumeThat(result.getMessage(), result.getStatus(), is(VerificationResult.VERIFIED_OK));
         } finally {
             Repository.removeClass(javaClass);
         }
