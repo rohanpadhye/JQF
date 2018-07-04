@@ -2,8 +2,8 @@
 
 set -e
 
-if [ $# -lt 5 ]; then
-  echo "Usage: $0 <NAME> <TEST_CLASS> <IDX> <TIME> <DICT>"
+if [ $# -lt 6 ]; then
+  echo "Usage: $0 <NAME> <TEST_CLASS> <IDX> <TIME> <DICT> <SEEDS>"
   exit 1
 fi
 
@@ -24,6 +24,7 @@ TEST_CLASS="edu.berkeley.cs.jqf.examples.$2"
 IDX=$3
 TIME=$4
 DICT="$JQF_DIR/examples/target/test-classes/dictionaries/$5"
+SEEDS="$JQF_DIR/examples/target/seeds/$6"
 
 e=$IDX
 
@@ -44,5 +45,5 @@ screen -S "$SNAME" -X screen -t afl_$e
 screen -S "$SNAME" -X screen -t rnd_$e
 screen -S "$SNAME" -p jqf_$e -X stuff "timeout $TIME $JQF_EI -c \$($JQF_DIR/scripts/examples_classpath.sh) $TEST_CLASS testWithGenerator $JQF_OUT_DIR ^M"
 screen -S "$SNAME" -p rnd_$e -X stuff "JVM_OPTS=\"\$JVM_OPTS -Djqf.ei.TOTALLY_RANDOM=true\" timeout $TIME $JQF_EI -c \$($JQF_DIR/scripts/examples_classpath.sh) $TEST_CLASS testWithGenerator $RND_OUT_DIR ^M"
-screen -S "$SNAME" -p afl_$e -X stuff "timeout $TIME $JQF_AFL -c \$($JQF_DIR/scripts/examples_classpath.sh) -x $DICT -o $AFL_OUT_DIR -T $NAME-seq $TEST_CLASS testWithInputStream ^M"
+screen -S "$SNAME" -p afl_$e -X stuff "timeout $TIME $JQF_AFL -t 1000 -c \$($JQF_DIR/scripts/examples_classpath.sh) -x $DICT -o $AFL_OUT_DIR -T $NAME-seq -i $SEEDS -v $TEST_CLASS testWithInputStream ^M"
 
