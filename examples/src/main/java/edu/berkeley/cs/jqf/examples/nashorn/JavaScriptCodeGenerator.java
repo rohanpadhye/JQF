@@ -117,7 +117,8 @@ public class JavaScriptCodeGenerator extends Generator<String> {
                     this::generateCallNode,
                     this::generateFunctionNode,
                     this::generatePropertyNode,
-                    this::generateIndexNode
+                    this::generateIndexNode,
+                    this::generateArrowFunctionNode
             )).apply(random);
         }
         expressionDepth--;
@@ -230,6 +231,16 @@ public class JavaScriptCodeGenerator extends Generator<String> {
 
     private String generateNamedFunctionNode(SourceOfRandomness random) {
         return "function " + generateIdentNode(random) + "(" + String.join(", ", generateItems(this::generateIdentNode, random, 5)) + ")" + generateBlock(random);
+    }
+
+    private String generateArrowFunctionNode(SourceOfRandomness random) {
+        String params = "(" + String.join(", ", generateItems(this::generateIdentNode, random, 3)) + ")";
+        if (random.nextBoolean()) {
+            return params + " => " + generateBlock(random);
+        } else {
+            return params + " => " + generateExpression(random);
+        }
+
     }
 
 
