@@ -178,13 +178,18 @@ public class JavaClassGenerator extends Generator<JavaClass> {
         InstructionList code = new InstructionList();
 
         while (r.nextBoolean()) {
-            Instruction ins = generateInstruction(r, argTypes.length+1); // TODO: Allocate some locals
-            code.append(ins);
+            Instruction ins = generateInstruction(r, argTypes.length+1, code); // TODO: Allocate some locals
+            if (ins instanceof BranchInstruction) {
+                // Call the overloaded append()
+                code.append((BranchInstruction) ins);
+            } else {
+                code.append(ins);
+            }
         }
         return code;
     }
 
-    private Instruction generateInstruction(SourceOfRandomness r, int slots) {
+    private Instruction generateInstruction(SourceOfRandomness r, int slots, InstructionList code) {
 
         int opcode = r.nextInt(256);
         Instruction ins = InstructionConst.getInstruction(opcode);
@@ -361,52 +366,52 @@ public class JavaClassGenerator extends Generator<JavaClass> {
             case Const.IINC:
                 ins = new IINC(r.nextInt(slots), r.nextInt(-128, 128));
                 break;
-                /*
             case Const.IFEQ:
-                ins = new IFEQ(generateLabel(r));
+                ins = new IFEQ(generateLabel(r, code));
                 break;
             case Const.IFNE:
-                ins = new IFNE(generateLabel(r));
+                ins = new IFNE(generateLabel(r, code));
                 break;
             case Const.IFLT:
-                ins = new IFLT(generateLabel(r));
+                ins = new IFLT(generateLabel(r, code));
                 break;
             case Const.IFGE:
-                ins = new IFGE(generateLabel(r));
+                ins = new IFGE(generateLabel(r, code));
                 break;
             case Const.IFGT:
-                ins = new IFGT(generateLabel(r));
+                ins = new IFGT(generateLabel(r, code));
                 break;
             case Const.IFLE:
-                ins = new IFLE(generateLabel(r));
+                ins = new IFLE(generateLabel(r, code));
                 break;
             case Const.IF_ICMPEQ:
-                ins = new IF_ICMPEQ(generateLabel(r));
+                ins = new IF_ICMPEQ(generateLabel(r, code));
                 break;
             case Const.IF_ICMPNE:
-                ins = new IF_ICMPNE(generateLabel(r));
+                ins = new IF_ICMPNE(generateLabel(r, code));
                 break;
             case Const.IF_ICMPLT:
-                ins = new IF_ICMPLT(generateLabel(r));
+                ins = new IF_ICMPLT(generateLabel(r, code));
                 break;
             case Const.IF_ICMPGE:
-                ins = new IF_ICMPGE(generateLabel(r));
+                ins = new IF_ICMPGE(generateLabel(r, code));
                 break;
             case Const.IF_ICMPGT:
-                ins = new IF_ICMPGT(generateLabel(r));
+                ins = new IF_ICMPGT(generateLabel(r, code));
                 break;
             case Const.IF_ICMPLE:
-                ins = new IF_ICMPLE(generateLabel(r));
+                ins = new IF_ICMPLE(generateLabel(r, code));
                 break;
             case Const.IF_ACMPEQ:
-                ins = new IF_ACMPEQ(generateLabel(r));
+                ins = new IF_ACMPEQ(generateLabel(r, code));
                 break;
             case Const.IF_ACMPNE:
-                ins = new IF_ACMPNE(generateLabel(r));
+                ins = new IF_ACMPNE(generateLabel(r, code));
                 break;
             case Const.GOTO:
-                ins = new GOTO(generateLabel(r));
+                ins = new GOTO(generateLabel(r, code));
                 break;
+                /*
             case Const.JSR:
                 ins = new JSR(generateLabel(r));
                 break;
@@ -464,16 +469,16 @@ public class JavaClassGenerator extends Generator<JavaClass> {
                 break;
             case Const.MULTIANEWARRAY:
                 ins = new MULTIANEWARRAY(generateClassRef(r), r.nextShort((short) 1 , Short.MAX_VALUE));
-                break;/*
+                break;
             case Const.IFNULL:
-                ins = new IFNULL(generateLabel(r));
+                ins = new IFNULL(generateLabel(r, code));
                 break;
             case Const.IFNONNULL:
-                ins = new IFNONNULL(generateLabel(r));
+                ins = new IFNONNULL(generateLabel(r, code));
                 break;
             case Const.GOTO_W:
-                ins = new GOTO_W(generateLabel(r));
-                break;*/
+                ins = new GOTO_W(generateLabel(r, code));
+                break;
             default:
                 throw new AssumptionViolatedException("Invalid opcode");
 
@@ -481,8 +486,13 @@ public class JavaClassGenerator extends Generator<JavaClass> {
         return ins;
     }
 
-    InstructionHandle generateLabel(SourceOfRandomness r) {
-        return null; // TODO: Generate label
+    InstructionHandle generateLabel(SourceOfRandomness r, InstructionList code) {
+        InstructionHandle handles[] = code.getInstructionHandles();
+        // If no instructions generated so far, emit a NOP to get some label
+        if (handles.length == 0) {
+            handles = new InstructionHandle[]{ code.append(new NOP()) };
+        }
+        return r.choose(handles);
     }
 
     String generateClassName(SourceOfRandomness r)

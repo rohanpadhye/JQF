@@ -43,6 +43,7 @@ import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.verifier.StatelessVerifierFactory;
 import org.apache.bcel.verifier.VerificationResult;
 import org.apache.bcel.verifier.Verifier;
+import org.junit.Assume;
 import org.junit.runner.RunWith;
 
 import static org.hamcrest.Matchers.is;
@@ -53,7 +54,17 @@ public class ParserTest {
 
     @Fuzz
     public void testWithInputStream(InputStream inputStream) throws IOException {
-        JavaClass clazz = new ClassParser(inputStream, "A.java").parse();
+        JavaClass clazz;
+        try {
+            clazz = new ClassParser(inputStream, "A.java").parse();
+        } catch (ClassFormatException e) {
+            // ClassFormatException thrown by the parser is just invalid input
+            Assume.assumeNoException(e);
+            return;
+        }
+
+        // Any non-IOException thrown here should be marked a failure
+        // (including ClassFormatException)
         verifyJavaClass(clazz);
     }
 
