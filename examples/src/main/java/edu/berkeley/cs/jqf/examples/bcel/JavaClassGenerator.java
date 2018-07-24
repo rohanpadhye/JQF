@@ -92,7 +92,7 @@ public class JavaClassGenerator extends Generator<JavaClass> {
         // Generate a class with its meta-data
         String className = "example.A";
         String superName = r.nextBoolean() ? "example.B" : "java.lang.Object";
-        String fileName = "A.java";
+        String fileName = "A.class";
         int flags = r.nextInt(0, Short.MAX_VALUE);
         int numInterfaces = r.nextBoolean() ? 0 : geom.sampleWithMean(MEAN_INTERFACE_COUNT, r);
         String[] interfaces = new String[numInterfaces];

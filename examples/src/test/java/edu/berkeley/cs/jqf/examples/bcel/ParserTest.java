@@ -56,7 +56,7 @@ public class ParserTest {
     public void testWithInputStream(InputStream inputStream) throws IOException {
         JavaClass clazz;
         try {
-            clazz = new ClassParser(inputStream, "A.java").parse();
+            clazz = new ClassParser(inputStream, "Hello.class").parse();
         } catch (ClassFormatException e) {
             // ClassFormatException thrown by the parser is just invalid input
             Assume.assumeNoException(e);
