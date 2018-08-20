@@ -69,6 +69,8 @@ public class ReproGuidance implements Guidance {
 
     private Set<String> branchesCoveredInCurrentRun;
     private Set<String> allBranchesCovered;
+    private boolean ignoreInvalidCoverage;
+
     HashMap<Integer, String> branchDescCache = new HashMap<>();
 
 
@@ -88,6 +90,8 @@ public class ReproGuidance implements Guidance {
         if (Boolean.getBoolean("jqf.repro.logUniqueBranches")) {
             allBranchesCovered = new HashSet<>();
             branchesCoveredInCurrentRun = new HashSet<>();
+            ignoreInvalidCoverage = Boolean.getBoolean("jqf.repro.ignoreInvalidCoverage");
+
         }
     }
 
@@ -164,7 +168,7 @@ public class ReproGuidance implements Guidance {
         }
 
         // Possibly accumulate coverage
-        if (result == Result.SUCCESS && allBranchesCovered != null) {
+        if (allBranchesCovered != null && (ignoreInvalidCoverage == false || result == Result.SUCCESS)) {
             assert branchesCoveredInCurrentRun != null;
             allBranchesCovered.addAll(branchesCoveredInCurrentRun);
         }
