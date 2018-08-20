@@ -212,6 +212,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Whether to use real execution indexes as opposed to flat numbering. */
     static final boolean DISABLE_EXECUTION_INDEXING = !Boolean.getBoolean("jqf.ei.ENABLE_EXECUTION_INDEXING");
 
+    /** Whether to save only valid inputs **/
+    static final boolean SAVE_ONLY_VALID = Boolean.getBoolean("jqf.ei.SAVE_ONLY_VALID");
+
     /** Max input size to generate. */
     static final int MAX_INPUT_SIZE = Integer.getInteger("jqf.ei.MAX_INPUT_SIZE", 1024);
 
@@ -760,7 +763,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         String saveFileName = String.format("id_%06d", newInputIdx);
         String how = currentInput.desc;
         File saveFile = new File(savedInputsDirectory, saveFileName);
-        if (currentInput.valid) {
+        if (SAVE_ONLY_VALID == false || currentInput.valid) {
             writeCurrentInputToFile(saveFile);
             infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
         }
