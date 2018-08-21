@@ -86,8 +86,8 @@ public class ParserTest {
 
     @Fuzz
     public void verifyJavaClass(@From(JavaClassGenerator.class) JavaClass javaClass) throws IOException {
-        Repository.addClass(javaClass);
         try {
+            Repository.addClass(javaClass);
             Verifier verifier = StatelessVerifierFactory.getVerifier(javaClass.getClassName());
             VerificationResult result;
             result = verifier.doPass1();
@@ -99,7 +99,7 @@ public class ParserTest {
                 assumeThat(result.getMessage(), result.getStatus(), is(VerificationResult.VERIFIED_OK));
             }
         } finally {
-            Repository.removeClass(javaClass);
+            Repository.clearCache();
         }
     }
 
