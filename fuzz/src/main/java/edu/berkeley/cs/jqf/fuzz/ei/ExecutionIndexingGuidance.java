@@ -61,6 +61,7 @@ import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Suffix;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
+import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
 import edu.berkeley.cs.jqf.fuzz.util.ProducerHashMap;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
@@ -207,6 +208,17 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Whether to print the fuzz config to the stats screen. */
     private static boolean SHOW_CONFIG = false;
 
+    // ------------- TIMEOUT HANDLING ------------
+
+    /** Timeout for an individual run. */
+    private long singleRunTimeoutMillis;
+
+    /** Date when last run was started. */
+    private Date runStart;
+
+    /** Number of conditional jumps since last run was started. */
+    private long branchCount;
+
     // ------------- FUZZING HEURISTICS ------------
 
     /** Turn this on to disable all guidance (i.e. no mutations, only random fuzzing) */
@@ -263,6 +275,17 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
         this.outputDirectory = outputDirectory;
         prepareOutputDirectory();
+
+        // Try to parse the single-run timeout
+        String timeout = System.getProperty("jqf.ei.TIMEOUT");
+        if (timeout != null && !timeout.isEmpty()) {
+            try {
+                // Interpret the timeout as milliseconds (just like `afl-fuzz -t`)
+                this.singleRunTimeoutMillis = Long.parseLong(timeout);
+            } catch (NumberFormatException e1) {
+                throw new IllegalArgumentException("Invalid timeout duration: " + timeout);
+            }
+        }
     }
 
     /**
@@ -532,6 +555,10 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             try {
                 writeCurrentInputToFile(currentInputFile);
             } catch (IOException ignore) { }
+
+            // Start time-counting for timeout handling
+            this.runStart = new Date();
+            this.branchCount = 0;
         }
 
 
@@ -572,6 +599,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     @Override
     public void handleResult(Result result, Throwable error) throws GuidanceException {
+        // Stop timeout handling
+        this.runStart = null;
+
         // Increment run count
         this.numTrials++;
 
@@ -658,7 +688,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 }
 
             }
-        } else if (result == Result.FAILURE) {
+        } else if (result == Result.FAILURE || result == Result.TIMEOUT) {
             String msg = error.getMessage();
 
             // Get the root cause of the failure
@@ -678,7 +708,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                     writeCurrentInputToFile(saveFile);
                     infoLog("%s","Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
                     String how = currentInput.desc;
-                    String why = "+crash";
+                    String why = result == Result.FAILURE ? "+crash" : "+hang";
                     infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
                 } catch (IOException e) {
                     throw new GuidanceException(e);
@@ -846,6 +876,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         // Collect totalCoverage
         runCoverage.handleEvent(e);
+        // Check for possible timeouts every so often
+        if (this.singleRunTimeoutMillis > 0 &&
+                this.runStart != null && (++this.branchCount) % 10_000 == 0) {
+            long elapsed = new Date().getTime() - runStart.getTime();
+            if (elapsed > this.singleRunTimeoutMillis) {
+                throw new TimeoutException(elapsed, this.singleRunTimeoutMillis);
+            }
+        }
     }
 
     @Override
