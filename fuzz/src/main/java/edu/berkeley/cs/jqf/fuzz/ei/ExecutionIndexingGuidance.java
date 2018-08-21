@@ -201,6 +201,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** The file where saved plot data is written. */
     private File statsFile;
 
+    /** The currently executing input (for debugging purposes). */
+    private File currentInputFile;
+
     /** Whether to print the fuzz config to the stats screen. */
     private static boolean SHOW_CONFIG = false;
 
@@ -300,6 +303,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         this.savedFailuresDirectory.mkdirs();
         this.statsFile = new File(outputDirectory, "plot_data");
         this.logFile = new File(outputDirectory, "fuzz.log");
+        this.currentInputFile = new File(outputDirectory, ".cur_input");
 
 
         // Delete everything that we may have created in a previous run.
@@ -523,6 +527,11 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             // Fuzz it to get a new input
             currentInput = parent.fuzz(random, ecToInputLoc);
             numChildrenGeneratedForCurrentParentInput++;
+
+            // Write it to disk for debugging
+            try {
+                writeCurrentInputToFile(currentInputFile);
+            } catch (IOException ignore) { }
         }
 
 
