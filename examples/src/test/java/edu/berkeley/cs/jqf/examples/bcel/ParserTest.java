@@ -28,10 +28,10 @@
  */
 package edu.berkeley.cs.jqf.examples.bcel;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 
 import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.fuzz.Fuzz;
@@ -73,10 +73,10 @@ public class ParserTest {
 
         try {
             // Dump the javaclass to a byte stream and get an input pipe
-            PipedOutputStream out = new PipedOutputStream();
-            PipedInputStream in = new PipedInputStream(out);
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
             javaClass.dump(out);
 
+            ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
             testWithInputStream(in);
         } catch (ClassFormatException e) {
             throw e;
