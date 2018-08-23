@@ -67,8 +67,6 @@ public class ThreadTracer {
 
     // Whether to check if caller and callee have the same method name/desc when tracing
     // Set this to TRUE if instrumenting JDK classes, in order to skip JVM classloading activity
-    // Note that when this is FALSE (default behavior), static initializers are also traced, which may
-    // lead to some instability (i.e. non-reproducible code coverage).
     private static final boolean MATCH_CALLEE_NAMES = Boolean.getBoolean("jqf.tracing.MATCH_CALLEE_NAMES");
 
 
