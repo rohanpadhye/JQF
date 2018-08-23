@@ -223,7 +223,7 @@ public class ThreadTracer {
 
         @Override
         public void visitMETHOD_BEGIN(METHOD_BEGIN begin) {
-            if (!MATCH_CALLEE_NAMES || sameNameDesc(begin, this.invokeTarget)) {
+            if ((MATCH_CALLEE_NAMES == false && begin.name.equals("<clinit>") == false) || sameNameDesc(begin, this.invokeTarget)) {
                 // Trace continues with callee
                 int invokerIid = invokeTarget != null ? ((Instruction) invokeTarget).iid : -1;
                 int invokerMid = invokeTarget != null ? ((Instruction) invokeTarget).mid : -1;
