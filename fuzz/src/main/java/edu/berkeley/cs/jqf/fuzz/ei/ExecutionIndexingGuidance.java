@@ -233,6 +233,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Max input size to generate. */
     static final int MAX_INPUT_SIZE = Integer.getInteger("jqf.ei.MAX_INPUT_SIZE", 1024);
 
+    /** Whether to generate EOFs when we run out of bytes in the input, instead of randomly generating new bytes. **/
+    static final boolean GENERATE_EOF_WHEN_OUT = Boolean.getBoolean("jqf.ei.GENERATE_EOF_WHEN_OUT");
+
     /** Baseline number of mutated children to produce from a given parent input. */
     static final int NUM_CHILDREN_BASELINE = 50;
 
@@ -247,6 +250,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     /** Max number of contiguous bytes to splice in from another input during the splicing stage. */
     static final int MAX_SPLICE_SIZE = 64; // Bytes
+
 
     /** Whether to splice only in the same sub-tree */
     static final boolean SPLICE_SUBTREE = Boolean.getBoolean("jqf.ei.SPLICE_SUBTREE");
@@ -1131,6 +1135,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
                 // If we could not splice or were unsuccessful, try to generate a new input
                 if (val == null) {
+                    if (GENERATE_EOF_WHEN_OUT) {
+                        return -1;
+                    }
                     if (random.nextDouble() < DEMAND_DRIVEN_SPLICING_PROBABILITY) {
                         // TODO: Find a random inputLocation with same EC,
                         // extract common suffix of sourceEi and targetEi,
