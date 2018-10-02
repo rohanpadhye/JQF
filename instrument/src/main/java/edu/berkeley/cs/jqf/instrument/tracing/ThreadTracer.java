@@ -272,7 +272,7 @@ public class ThreadTracer {
         @Override
         public void visitINVOKEMETHOD_END(INVOKEMETHOD_END ins) {
             if (this.invokeTarget == null) {
-                throw new RuntimeException("Unexpected INVOKEMETHOD_EXCEPTION");
+                throw new RuntimeException("Unexpected INVOKEMETHOD_END");
             } else {
                 // Unset the invocation target for the rest of the instruction stream
                 this.invokeTarget = null;
