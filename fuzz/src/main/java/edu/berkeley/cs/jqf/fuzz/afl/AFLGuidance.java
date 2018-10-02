@@ -99,6 +99,9 @@ public class AFLGuidance implements Guidance {
     /** Number of conditional jumps since last run was started. */
     private long branchCount;
 
+    /** Flag that is set if the current run exceeds time limit. */
+    private volatile boolean timeoutHasOccurred;
+
     private static final int FEEDBACK_BUFFER_SIZE = 1 << 17;
     private static final byte[] FEEDBACK_ZEROS = new byte[FEEDBACK_BUFFER_SIZE];
 
@@ -184,6 +187,7 @@ public class AFLGuidance implements Guidance {
             this.inputFileStream = new BufferedInputStream(new FileInputStream(this.inputFile));
             this.runStart = new Date();
             this.branchCount = 0;
+            this.timeoutHasOccurred = false;
             return this.inputFileStream;
         } catch (IOException e) {
             throw new GuidanceException(e);
@@ -239,6 +243,11 @@ public class AFLGuidance implements Guidance {
     public void handleResult(Result result, Throwable error) {
         // Stop timeout handling
         this.runStart = null;
+
+        // Change result if timeout has occurred
+        if (timeoutHasOccurred) {
+            result = Result.TIMEOUT;
+        }
 
         // Close the open input file
         try {
@@ -356,6 +365,7 @@ public class AFLGuidance implements Guidance {
                     this.runStart != null && (++this.branchCount) % 10_000 == 0) {
                 long elapsed = new Date().getTime() - runStart.getTime();
                 if (elapsed > this.singleRunTimeoutMillis) {
+                    timeoutHasOccurred = true;
                     throw new TimeoutException(elapsed, this.singleRunTimeoutMillis);
                 }
             }
