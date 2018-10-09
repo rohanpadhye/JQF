@@ -34,9 +34,6 @@ else
   JAVAAGENT="-javaagent:${INST_JAR}"
 fi
 
-# Must match callee names, since JDK could be instrumented
-export JVM_OPTS="$JVM_OPTS -Djqf.tracing.MATCH_CALLEE_NAMES=true"
-
 # Run Java
 if [ -n "$JAVA_HOME" ]; then
     java="$JAVA_HOME"/bin/java
