@@ -75,6 +75,11 @@ public class GuidanceTest {
         public void expectedException(int x) throws NullPointerException {
             throw new NullPointerException();
         }
+
+        @Fuzz
+        public void timeout(int x) {
+            throw new TimeoutException();
+        }
     }
 
     @Spy
@@ -120,4 +125,13 @@ public class GuidanceTest {
         GuidedFuzzing.run(GuidanceTestFuzzer.class, "expectedException", guidance, null);
         Mockito.verify(guidance).handleResult(Result.SUCCESS, null);
     }
+
+    @Test
+    public void testTimeout() {
+        GuidedFuzzing.run(GuidanceTestFuzzer.class, "timeout", guidance, null);
+        Mockito.verify(guidance).handleResult(
+                ArgumentMatchers.eq(Result.TIMEOUT),
+                ArgumentMatchers.isA(RuntimeException.class));
+    }
+
 }
