@@ -70,7 +70,7 @@ Simply add a test-dependency to the JQF API in your `pom.xml` file as so:
 <dependency>
     <groupId>edu.berkeley.cs.jqf</groupId>
     <artifactId>jqf-fuzz</artifactId>
-    <version>1.0-alpha-3</version>
+    <version>1.0-beta-1</version>
     <scope>test</scope>
 </dependency>
 ```
