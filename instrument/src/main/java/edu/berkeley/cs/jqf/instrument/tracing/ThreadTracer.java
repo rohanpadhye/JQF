@@ -67,8 +67,6 @@ public class ThreadTracer {
 
     // Whether to check if caller and callee have the same method name/desc when tracing
     // Set this to TRUE if instrumenting JDK classes, in order to skip JVM classloading activity
-    // Note that when this is FALSE (default behavior), static initializers are also traced, which may
-    // lead to some instability (i.e. non-reproducible code coverage).
     private static final boolean MATCH_CALLEE_NAMES = Boolean.getBoolean("jqf.tracing.MATCH_CALLEE_NAMES");
 
 
@@ -112,13 +110,19 @@ public class ThreadTracer {
         return t;
     }
 
+    protected RuntimeException callBackException = null;
+
     /**
      * Emits a trace event to be consumed by the registered callback.
      *
      * @param e the event to emit
      */
     protected final void emit(TraceEvent e) {
-        callback.accept(e);
+        try {
+            callback.accept(e);
+        } catch (RuntimeException ex) {
+            callBackException = ex;
+        }
     }
 
     /**
@@ -129,6 +133,11 @@ public class ThreadTracer {
     protected final void consume(Instruction ins) {
         // Apply the visitor at the top of the stack
         ins.visit(handlers.peek());
+        if (callBackException != null) {
+            RuntimeException e = callBackException;
+            callBackException = null;
+            throw e;
+        }
     }
 
 
@@ -212,7 +221,7 @@ public class ThreadTracer {
 
         @Override
         public void visitMETHOD_BEGIN(METHOD_BEGIN begin) {
-            if (!MATCH_CALLEE_NAMES || sameNameDesc(begin, this.invokeTarget)) {
+            if ((MATCH_CALLEE_NAMES == false && begin.name.equals("<clinit>") == false) || sameNameDesc(begin, this.invokeTarget)) {
                 // Trace continues with callee
                 int invokerIid = invokeTarget != null ? ((Instruction) invokeTarget).iid : -1;
                 int invokerMid = invokeTarget != null ? ((Instruction) invokeTarget).mid : -1;
@@ -263,7 +272,7 @@ public class ThreadTracer {
         @Override
         public void visitINVOKEMETHOD_END(INVOKEMETHOD_END ins) {
             if (this.invokeTarget == null) {
-                throw new RuntimeException("Unexpected INVOKEMETHOD_EXCEPTION");
+                throw new RuntimeException("Unexpected INVOKEMETHOD_END");
             } else {
                 // Unset the invocation target for the rest of the instruction stream
                 this.invokeTarget = null;

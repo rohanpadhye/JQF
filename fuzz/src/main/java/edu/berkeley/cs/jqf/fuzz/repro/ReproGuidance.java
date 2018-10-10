@@ -67,7 +67,10 @@ public class ReproGuidance implements Guidance {
     private InputStream inputStream;
     private Coverage coverage = new Coverage();
 
-    private Set<String> branchesCovered;
+    private Set<String> branchesCoveredInCurrentRun;
+    private Set<String> allBranchesCovered;
+    private boolean ignoreInvalidCoverage;
+
     HashMap<Integer, String> branchDescCache = new HashMap<>();
 
 
@@ -85,7 +88,10 @@ public class ReproGuidance implements Guidance {
         this.inputFiles = inputFiles;
         this.traceDir = traceDir;
         if (Boolean.getBoolean("jqf.repro.logUniqueBranches")) {
-            branchesCovered = new HashSet<>();
+            allBranchesCovered = new HashSet<>();
+            branchesCoveredInCurrentRun = new HashSet<>();
+            ignoreInvalidCoverage = Boolean.getBoolean("jqf.repro.ignoreInvalidCoverage");
+
         }
     }
 
@@ -113,6 +119,11 @@ public class ReproGuidance implements Guidance {
         try {
             File inputFile = inputFiles[nextFileIdx];
             this.inputStream = new BufferedInputStream(new FileInputStream(inputFile));
+
+            if (allBranchesCovered != null) {
+                branchesCoveredInCurrentRun.clear();
+            }
+
             return this.inputStream;
         } catch (IOException e) {
             throw new GuidanceException(e);
@@ -156,6 +167,12 @@ public class ReproGuidance implements Guidance {
             error.printStackTrace();
         }
 
+        // Possibly accumulate coverage
+        if (allBranchesCovered != null && (ignoreInvalidCoverage == false || result == Result.SUCCESS)) {
+            assert branchesCoveredInCurrentRun != null;
+            allBranchesCovered.addAll(branchesCoveredInCurrentRun);
+        }
+
         // Increment file
         nextFileIdx++;
 
@@ -167,7 +184,7 @@ public class ReproGuidance implements Guidance {
      *
      * <p>If the system property <tt>jqf.repro.logUniqueBranches</tt> was
      * set to <tt>true</tt>, then the callback collects coverage info into
-     * the set {@link #branchesCovered}, which can be accessed using
+     * the set {@link #branchesCoveredInCurrentRun}, which can be accessed using
      * {@link #getBranchesCovered()}.</p>
      *
      * <p>Otherwise, if the <tt>traceDir</tt> was non-null during the construction of
@@ -184,7 +201,7 @@ public class ReproGuidance implements Guidance {
      */
     @Override
     public Consumer<TraceEvent> generateCallBack(Thread thread) {
-        if (branchesCovered != null) {
+        if (branchesCoveredInCurrentRun != null) {
             return (e) -> {
                 coverage.handleEvent(e);
                 if (e instanceof BranchEvent) {
@@ -196,7 +213,7 @@ public class ReproGuidance implements Guidance {
                                 b.getLineNumber(), b.getArm());
                         branchDescCache.put(hash, str);
                     }
-                    branchesCovered.add(str);
+                    branchesCoveredInCurrentRun.add(str);
                 } else if (e instanceof CallEvent) {
                     CallEvent c = (CallEvent) e;
                     String str = branchDescCache.get(c.getIid());
@@ -205,7 +222,7 @@ public class ReproGuidance implements Guidance {
                                 c.getLineNumber(), c.getInvokedMethodName());
                         branchDescCache.put(c.getIid(), str);
                     }
-                    branchesCovered.add(str);
+                    branchesCoveredInCurrentRun.add(str);
                 }
             };
         } else if (traceDir != null) {
@@ -251,10 +268,14 @@ public class ReproGuidance implements Guidance {
      * custom format that strives to be both human and
      * machine readable.</p>
      *
+     * <p>A branch is only logged for inputs that execute
+     * successfully. In particular, branches are not recorded
+     * for failing runs or for runs that violate assumptions.</p>
+     *
      * @return the set of branches covered by this repro
      */
     public Set<String> getBranchesCovered() {
-        return branchesCovered;
+        return allBranchesCovered;
     }
 
 }

@@ -131,897 +131,897 @@ public final class SingleSnoop {
 
     public static void LDC(int iid, int mid, int c) {
         if (block.get()) return; else block.set(true);
-        intp.LDC(iid, mid, c); block.set(false);
+        try { intp.LDC(iid, mid, c); } finally { block.set(false); }
     }
 
     public static void LDC(int iid, int mid, long c) {
         if (block.get()) return; else block.set(true);
-        intp.LDC(iid, mid, c); block.set(false);
+        try { intp.LDC(iid, mid, c); } finally { block.set(false); }
     }
 
     public static void LDC(int iid, int mid, float c) {
         if (block.get()) return; else block.set(true);
-        intp.LDC(iid, mid, c); block.set(false);
+        try { intp.LDC(iid, mid, c); } finally { block.set(false); }
     }
 
     public static void LDC(int iid, int mid, double c) {
         if (block.get()) return; else block.set(true);
-        intp.LDC(iid, mid, c); block.set(false);
+        try { intp.LDC(iid, mid, c); } finally { block.set(false); }
     }
 
     public static void LDC(int iid, int mid, String c) {
         if (block.get()) return; else block.set(true);
-        intp.LDC(iid, mid, c); block.set(false);
+        try { intp.LDC(iid, mid, c); } finally { block.set(false); }
     }
 
     public static void LDC(int iid, int mid, Object c) {
         if (block.get()) return; else block.set(true);
-        intp.LDC(iid, mid, c); block.set(false);
+        try { intp.LDC(iid, mid, c); } finally { block.set(false); }
     }
 
     public static void IINC(int iid, int mid, int var, int increment) {
         if (block.get()) return; else block.set(true);
-        intp.IINC(iid, mid, var, increment); block.set(false);
+        try { intp.IINC(iid, mid, var, increment); } finally { block.set(false); }
     }
 
     public static void MULTIANEWARRAY(int iid, int mid, String desc, int dims) {
         if (block.get()) return; else block.set(true);
-        intp.MULTIANEWARRAY(iid, mid, desc, dims); block.set(false);
+        try { intp.MULTIANEWARRAY(iid, mid, desc, dims); } finally { block.set(false); }
     }
 
     public static void LOOKUPSWITCH(int iid, int mid, int dflt, int[] keys, int[] labels) {
         if (block.get()) return; else block.set(true);
-        intp.LOOKUPSWITCH(iid, mid, dflt, keys, labels); block.set(false);
+        try { intp.LOOKUPSWITCH(iid, mid, dflt, keys, labels); } finally { block.set(false); }
     }
 
     public static void TABLESWITCH(int iid, int mid, int min, int max, int dflt, int[] labels) {
         if (block.get()) return; else block.set(true);
-        intp.TABLESWITCH(iid, mid, min, max, dflt, labels); block.set(false);
+        try { intp.TABLESWITCH(iid, mid, min, max, dflt, labels); } finally { block.set(false); }
     }
 
     public static void IFEQ(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IFEQ(iid, mid, label); block.set(false);
+        try { intp.IFEQ(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IFNE(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IFNE(iid, mid, label); block.set(false);
+        try { intp.IFNE(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IFLT(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IFLT(iid, mid, label); block.set(false);
+        try { intp.IFLT(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IFGE(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IFGE(iid, mid, label); block.set(false);
+        try { intp.IFGE(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IFGT(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IFGT(iid, mid, label); block.set(false);
+        try { intp.IFGT(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IFLE(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IFLE(iid, mid, label); block.set(false);
+        try { intp.IFLE(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IF_ICMPEQ(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IF_ICMPEQ(iid, mid, label); block.set(false);
+        try { intp.IF_ICMPEQ(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IF_ICMPNE(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IF_ICMPNE(iid, mid, label); block.set(false);
+        try { intp.IF_ICMPNE(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IF_ICMPLT(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IF_ICMPLT(iid, mid, label); block.set(false);
+        try { intp.IF_ICMPLT(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IF_ICMPGE(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IF_ICMPGE(iid, mid, label); block.set(false);
+        try { intp.IF_ICMPGE(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IF_ICMPGT(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IF_ICMPGT(iid, mid, label); block.set(false);
+        try { intp.IF_ICMPGT(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IF_ICMPLE(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IF_ICMPLE(iid, mid, label); block.set(false);
+        try { intp.IF_ICMPLE(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IF_ACMPEQ(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IF_ACMPEQ(iid, mid, label); block.set(false);
+        try { intp.IF_ACMPEQ(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IF_ACMPNE(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IF_ACMPNE(iid, mid, label); block.set(false);
+        try { intp.IF_ACMPNE(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void GOTO(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.GOTO(iid, mid, label); block.set(false);
+        try { intp.GOTO(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void JSR(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.JSR(iid, mid, label); block.set(false);
+        try { intp.JSR(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IFNULL(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IFNULL(iid, mid, label); block.set(false);
+        try { intp.IFNULL(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void IFNONNULL(int iid, int mid, int label) {
         if (block.get()) return; else block.set(true);
-        intp.IFNONNULL(iid, mid, label); block.set(false);
+        try { intp.IFNONNULL(iid, mid, label); } finally { block.set(false); }
     }
 
     public static void INVOKEVIRTUAL(int iid, int mid, String owner, String name, String desc) {
         if (block.get()) return; else block.set(true);
-        intp.INVOKEVIRTUAL(iid, mid, owner, name, desc); block.set(false);
+        try { intp.INVOKEVIRTUAL(iid, mid, owner, name, desc); } finally { block.set(false); }
     }
 
     public static void INVOKESPECIAL(int iid, int mid, String owner, String name, String desc) {
         if (block.get()) return; else block.set(true);
-        intp.INVOKESPECIAL(iid, mid, owner, name, desc); block.set(false);
+        try { intp.INVOKESPECIAL(iid, mid, owner, name, desc); } finally { block.set(false); }
     }
 
     public static void INVOKESTATIC(int iid, int mid, String owner, String name, String desc) {
         if (block.get()) return; else block.set(true);
-        intp.INVOKESTATIC(iid, mid, owner, name, desc); block.set(false);
+        try { intp.INVOKESTATIC(iid, mid, owner, name, desc); } finally { block.set(false); }
     }
 
     public static void INVOKEINTERFACE(int iid, int mid, String owner, String name, String desc) {
         if (block.get()) return; else block.set(true);
-        intp.INVOKEINTERFACE(iid, mid, owner, name, desc); block.set(false);
+        try { intp.INVOKEINTERFACE(iid, mid, owner, name, desc); } finally { block.set(false); }
     }
 
     public static void GETSTATIC(int iid, int mid, int cIdx, int fIdx, String desc) {
         if (block.get()) return; else block.set(true);
-        intp.GETSTATIC(iid, mid, cIdx, fIdx, desc); block.set(false);
+        try { intp.GETSTATIC(iid, mid, cIdx, fIdx, desc); } finally { block.set(false); }
     }
 
     public static void PUTSTATIC(int iid, int mid, int cIdx, int fIdx, String desc) {
         if (block.get()) return; else block.set(true);
-        intp.PUTSTATIC(iid, mid, cIdx, fIdx, desc); block.set(false);
+        try { intp.PUTSTATIC(iid, mid, cIdx, fIdx, desc); } finally { block.set(false); }
     }
 
     public static void GETFIELD(int iid, int mid, int cIdx, int fIdx, String desc) {
         if (block.get()) return; else block.set(true);
-        intp.GETFIELD(iid, mid, cIdx, fIdx, desc); block.set(false);
+        try { intp.GETFIELD(iid, mid, cIdx, fIdx, desc); } finally { block.set(false); }
     }
 
     public static void PUTFIELD(int iid, int mid, int cIdx, int fIdx, String desc) {
         if (block.get()) return; else block.set(true);
-        intp.PUTFIELD(iid, mid, cIdx, fIdx, desc); block.set(false);
+        try { intp.PUTFIELD(iid, mid, cIdx, fIdx, desc); } finally { block.set(false); }
     }
 
     public static void HEAPLOAD1(Object object, String field, int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.HEAPLOAD(iid, mid, System.identityHashCode(object), field); block.set(false);
+        try { intp.HEAPLOAD(iid, mid, System.identityHashCode(object), field); } finally { block.set(false); }
     }
 
     public static void HEAPLOAD2(Object object, int idx, int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.HEAPLOAD(iid, mid, System.identityHashCode(object), String.valueOf(idx)); block.set(false);
+        try { intp.HEAPLOAD(iid, mid, System.identityHashCode(object), String.valueOf(idx)); } finally { block.set(false); }
     }
 
     public static void NEW(int iid, int mid, String type) {
         if (block.get()) return; else block.set(true);
-        intp.NEW(iid, mid, type, 0); block.set(false);
+        try { intp.NEW(iid, mid, type, 0); } finally { block.set(false); }
     }
 
     public static void ANEWARRAY(int iid, int mid, String type) {
         if (block.get()) return; else block.set(true);
-        intp.ANEWARRAY(iid, mid, type); block.set(false);
+        try { intp.ANEWARRAY(iid, mid, type); } finally { block.set(false); }
     }
 
     public static void CHECKCAST(int iid, int mid, String type) {
         if (block.get()) return; else block.set(true);
-        intp.CHECKCAST(iid, mid, type); block.set(false);
+        try { intp.CHECKCAST(iid, mid, type); } finally { block.set(false); }
     }
 
     public static void INSTANCEOF(int iid, int mid, String type) {
         if (block.get()) return; else block.set(true);
-        intp.INSTANCEOF(iid, mid, type); block.set(false);
+        try { intp.INSTANCEOF(iid, mid, type); } finally { block.set(false); }
     }
 
     public static void BIPUSH(int iid, int mid, int value) {
         if (block.get()) return; else block.set(true);
-        intp.BIPUSH(iid, mid, value); block.set(false);
+        try { intp.BIPUSH(iid, mid, value); } finally { block.set(false); }
     }
 
     public static void SIPUSH(int iid, int mid, int value) {
         if (block.get()) return; else block.set(true);
-        intp.SIPUSH(iid, mid, value); block.set(false);
+        try { intp.SIPUSH(iid, mid, value); } finally { block.set(false); }
     }
 
     public static void NEWARRAY(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.NEWARRAY(iid, mid); block.set(false);
+        try { intp.NEWARRAY(iid, mid); } finally { block.set(false); }
     }
 
     public static void ILOAD(int iid, int mid, int var) {
         if (block.get()) return; else block.set(true);
-        intp.ILOAD(iid, mid, var); block.set(false);
+        try { intp.ILOAD(iid, mid, var); } finally { block.set(false); }
     }
 
     public static void LLOAD(int iid, int mid, int var) {
         if (block.get()) return; else block.set(true);
-        intp.LLOAD(iid, mid, var); block.set(false);
+        try { intp.LLOAD(iid, mid, var); } finally { block.set(false); }
     }
 
     public static void FLOAD(int iid, int mid, int var) {
         if (block.get()) return; else block.set(true);
-        intp.FLOAD(iid, mid, var); block.set(false);
+        try { intp.FLOAD(iid, mid, var); } finally { block.set(false); }
     }
 
     public static void DLOAD(int iid, int mid, int var) {
         if (block.get()) return; else block.set(true);
-        intp.DLOAD(iid, mid, var); block.set(false);
+        try { intp.DLOAD(iid, mid, var); } finally { block.set(false); }
     }
 
     public static void ALOAD(int iid, int mid, int var) {
         if (block.get()) return; else block.set(true);
-        intp.ALOAD(iid, mid, var); block.set(false);
+        try { intp.ALOAD(iid, mid, var); } finally { block.set(false); }
     }
 
     public static void ISTORE(int iid, int mid, int var) {
         if (block.get()) return; else block.set(true);
-        intp.ISTORE(iid, mid, var); block.set(false);
+        try { intp.ISTORE(iid, mid, var); } finally { block.set(false); }
     }
 
     public static void LSTORE(int iid, int mid, int var) {
         if (block.get()) return; else block.set(true);
-        intp.LSTORE(iid, mid, var); block.set(false);
+        try { intp.LSTORE(iid, mid, var); } finally { block.set(false); }
     }
 
     public static void FSTORE(int iid, int mid, int var) {
         if (block.get()) return; else block.set(true);
-        intp.FSTORE(iid, mid, var); block.set(false);
+        try { intp.FSTORE(iid, mid, var); } finally { block.set(false); }
     }
 
     public static void DSTORE(int iid, int mid, int var) {
         if (block.get()) return; else block.set(true);
-        intp.DSTORE(iid, mid, var); block.set(false);
+        try { intp.DSTORE(iid, mid, var); } finally { block.set(false); }
     }
 
     public static void ASTORE(int iid, int mid, int var) {
         if (block.get()) return; else block.set(true);
-        intp.ASTORE(iid, mid, var); block.set(false);
+        try { intp.ASTORE(iid, mid, var); } finally { block.set(false); }
     }
 
     public static void RET(int iid, int mid, int var) {
         if (block.get()) return; else block.set(true);
-        intp.RET(iid, mid, var); block.set(false);
+        try { intp.RET(iid, mid, var); } finally { block.set(false); }
     }
 
     public static void NOP(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.NOP(iid, mid); block.set(false);
+        try { intp.NOP(iid, mid); } finally { block.set(false); }
     }
 
     public static void ACONST_NULL(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ACONST_NULL(iid, mid); block.set(false);
+        try { intp.ACONST_NULL(iid, mid); } finally { block.set(false); }
     }
 
     public static void ICONST_M1(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ICONST_M1(iid, mid); block.set(false);
+        try { intp.ICONST_M1(iid, mid); } finally { block.set(false); }
     }
 
     public static void ICONST_0(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ICONST_0(iid, mid); block.set(false);
+        try { intp.ICONST_0(iid, mid); } finally { block.set(false); }
     }
 
     public static void ICONST_1(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ICONST_1(iid, mid); block.set(false);
+        try { intp.ICONST_1(iid, mid); } finally { block.set(false); }
     }
 
     public static void ICONST_2(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ICONST_2(iid, mid); block.set(false);
+        try { intp.ICONST_2(iid, mid); } finally { block.set(false); }
     }
 
     public static void ICONST_3(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ICONST_3(iid, mid); block.set(false);
+        try { intp.ICONST_3(iid, mid); } finally { block.set(false); }
     }
 
     public static void ICONST_4(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ICONST_4(iid, mid); block.set(false);
+        try { intp.ICONST_4(iid, mid); } finally { block.set(false); }
     }
 
     public static void ICONST_5(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ICONST_5(iid, mid); block.set(false);
+        try { intp.ICONST_5(iid, mid); } finally { block.set(false); }
     }
 
     public static void LCONST_0(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LCONST_0(iid, mid); block.set(false);
+        try { intp.LCONST_0(iid, mid); } finally { block.set(false); }
     }
 
     public static void LCONST_1(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LCONST_1(iid, mid); block.set(false);
+        try { intp.LCONST_1(iid, mid); } finally { block.set(false); }
     }
 
     public static void FCONST_0(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FCONST_0(iid, mid); block.set(false);
+        try { intp.FCONST_0(iid, mid); } finally { block.set(false); }
     }
 
     public static void FCONST_1(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FCONST_1(iid, mid); block.set(false);
+        try { intp.FCONST_1(iid, mid); } finally { block.set(false); }
     }
 
     public static void FCONST_2(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FCONST_2(iid, mid); block.set(false);
+        try { intp.FCONST_2(iid, mid); } finally { block.set(false); }
     }
 
     public static void DCONST_0(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DCONST_0(iid, mid); block.set(false);
+        try { intp.DCONST_0(iid, mid); } finally { block.set(false); }
     }
 
     public static void DCONST_1(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DCONST_1(iid, mid); block.set(false);
+        try { intp.DCONST_1(iid, mid); } finally { block.set(false); }
     }
 
     public static void IALOAD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.IALOAD(iid, mid); block.set(false);
+        try { intp.IALOAD(iid, mid); } finally { block.set(false); }
     }
 
     public static void LALOAD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LALOAD(iid, mid); block.set(false);
+        try { intp.LALOAD(iid, mid); } finally { block.set(false); }
     }
 
     public static void FALOAD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FALOAD(iid, mid); block.set(false);
+        try { intp.FALOAD(iid, mid); } finally { block.set(false); }
     }
 
     public static void DALOAD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DALOAD(iid, mid); block.set(false);
+        try { intp.DALOAD(iid, mid); } finally { block.set(false); }
     }
 
     public static void AALOAD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.AALOAD(iid, mid); block.set(false);
+        try { intp.AALOAD(iid, mid); } finally { block.set(false); }
     }
 
     public static void BALOAD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.BALOAD(iid, mid); block.set(false);
+        try { intp.BALOAD(iid, mid); } finally { block.set(false); }
     }
 
     public static void CALOAD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.CALOAD(iid, mid); block.set(false);
+        try { intp.CALOAD(iid, mid); } finally { block.set(false); }
     }
 
     public static void SALOAD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.SALOAD(iid, mid); block.set(false);
+        try { intp.SALOAD(iid, mid); } finally { block.set(false); }
     }
 
     public static void IASTORE(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.IASTORE(iid, mid); block.set(false);
+        try { intp.IASTORE(iid, mid); } finally { block.set(false); }
     }
 
     public static void LASTORE(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LASTORE(iid, mid); block.set(false);
+        try { intp.LASTORE(iid, mid); } finally { block.set(false); }
     }
 
     public static void FASTORE(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FASTORE(iid, mid); block.set(false);
+        try { intp.FASTORE(iid, mid); } finally { block.set(false); }
     }
 
     public static void DASTORE(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DASTORE(iid, mid); block.set(false);
+        try { intp.DASTORE(iid, mid); } finally { block.set(false); }
     }
 
     public static void AASTORE(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.AASTORE(iid, mid); block.set(false);
+        try { intp.AASTORE(iid, mid); } finally { block.set(false); }
     }
 
     public static void BASTORE(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.BASTORE(iid, mid); block.set(false);
+        try { intp.BASTORE(iid, mid); } finally { block.set(false); }
     }
 
     public static void CASTORE(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.CASTORE(iid, mid); block.set(false);
+        try { intp.CASTORE(iid, mid); } finally { block.set(false); }
     }
 
     public static void SASTORE(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.SASTORE(iid, mid); block.set(false);
+        try { intp.SASTORE(iid, mid); } finally { block.set(false); }
     }
 
     public static void POP(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.POP(iid, mid); block.set(false);
+        try { intp.POP(iid, mid); } finally { block.set(false); }
     }
 
     public static void POP2(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.POP2(iid, mid); block.set(false);
+        try { intp.POP2(iid, mid); } finally { block.set(false); }
     }
 
     public static void DUP(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DUP(iid, mid); block.set(false);
+        try { intp.DUP(iid, mid); } finally { block.set(false); }
     }
 
     public static void DUP_X1(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DUP_X1(iid, mid); block.set(false);
+        try { intp.DUP_X1(iid, mid); } finally { block.set(false); }
     }
 
     public static void DUP_X2(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DUP_X2(iid, mid); block.set(false);
+        try { intp.DUP_X2(iid, mid); } finally { block.set(false); }
     }
 
     public static void DUP2(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DUP2(iid, mid); block.set(false);
+        try { intp.DUP2(iid, mid); } finally { block.set(false); }
     }
 
     public static void DUP2_X1(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DUP2_X1(iid, mid); block.set(false);
+        try { intp.DUP2_X1(iid, mid); } finally { block.set(false); }
     }
 
     public static void DUP2_X2(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DUP2_X2(iid, mid); block.set(false);
+        try { intp.DUP2_X2(iid, mid); } finally { block.set(false); }
     }
 
     public static void SWAP(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.SWAP(iid, mid); block.set(false);
+        try { intp.SWAP(iid, mid); } finally { block.set(false); }
     }
 
     public static void IADD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.IADD(iid, mid); block.set(false);
+        try { intp.IADD(iid, mid); } finally { block.set(false); }
     }
 
     public static void LADD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LADD(iid, mid); block.set(false);
+        try { intp.LADD(iid, mid); } finally { block.set(false); }
     }
 
     public static void FADD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FADD(iid, mid); block.set(false);
+        try { intp.FADD(iid, mid); } finally { block.set(false); }
     }
 
     public static void DADD(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DADD(iid, mid); block.set(false);
+        try { intp.DADD(iid, mid); } finally { block.set(false); }
     }
 
     public static void ISUB(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ISUB(iid, mid); block.set(false);
+        try { intp.ISUB(iid, mid); } finally { block.set(false); }
     }
 
     public static void LSUB(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LSUB(iid, mid); block.set(false);
+        try { intp.LSUB(iid, mid); } finally { block.set(false); }
     }
 
     public static void FSUB(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FSUB(iid, mid); block.set(false);
+        try { intp.FSUB(iid, mid); } finally { block.set(false); }
     }
 
     public static void DSUB(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DSUB(iid, mid); block.set(false);
+        try { intp.DSUB(iid, mid); } finally { block.set(false); }
     }
 
     public static void IMUL(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.IMUL(iid, mid); block.set(false);
+        try { intp.IMUL(iid, mid); } finally { block.set(false); }
     }
 
     public static void LMUL(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LMUL(iid, mid); block.set(false);
+        try { intp.LMUL(iid, mid); } finally { block.set(false); }
     }
 
     public static void FMUL(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FMUL(iid, mid); block.set(false);
+        try { intp.FMUL(iid, mid); } finally { block.set(false); }
     }
 
     public static void DMUL(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DMUL(iid, mid); block.set(false);
+        try { intp.DMUL(iid, mid); } finally { block.set(false); }
     }
 
     public static void IDIV(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.IDIV(iid, mid); block.set(false);
+        try { intp.IDIV(iid, mid); } finally { block.set(false); }
     }
 
     public static void LDIV(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LDIV(iid, mid); block.set(false);
+        try { intp.LDIV(iid, mid); } finally { block.set(false); }
     }
 
     public static void FDIV(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FDIV(iid, mid); block.set(false);
+        try { intp.FDIV(iid, mid); } finally { block.set(false); }
     }
 
     public static void DDIV(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DDIV(iid, mid); block.set(false);
+        try { intp.DDIV(iid, mid); } finally { block.set(false); }
     }
 
     public static void IREM(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.IREM(iid, mid); block.set(false);
+        try { intp.IREM(iid, mid); } finally { block.set(false); }
     }
 
     public static void LREM(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LREM(iid, mid); block.set(false);
+        try { intp.LREM(iid, mid); } finally { block.set(false); }
     }
 
     public static void FREM(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FREM(iid, mid); block.set(false);
+        try { intp.FREM(iid, mid); } finally { block.set(false); }
     }
 
     public static void DREM(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DREM(iid, mid); block.set(false);
+        try { intp.DREM(iid, mid); } finally { block.set(false); }
     }
 
     public static void INEG(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.INEG(iid, mid); block.set(false);
+        try { intp.INEG(iid, mid); } finally { block.set(false); }
     }
 
     public static void LNEG(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LNEG(iid, mid); block.set(false);
+        try { intp.LNEG(iid, mid); } finally { block.set(false); }
     }
 
     public static void FNEG(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FNEG(iid, mid); block.set(false);
+        try { intp.FNEG(iid, mid); } finally { block.set(false); }
     }
 
     public static void DNEG(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DNEG(iid, mid); block.set(false);
+        try { intp.DNEG(iid, mid); } finally { block.set(false); }
     }
 
     public static void ISHL(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ISHL(iid, mid); block.set(false);
+        try { intp.ISHL(iid, mid); } finally { block.set(false); }
     }
 
     public static void LSHL(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LSHL(iid, mid); block.set(false);
+        try { intp.LSHL(iid, mid); } finally { block.set(false); }
     }
 
     public static void ISHR(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ISHR(iid, mid); block.set(false);
+        try { intp.ISHR(iid, mid); } finally { block.set(false); }
     }
 
     public static void LSHR(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LSHR(iid, mid); block.set(false);
+        try { intp.LSHR(iid, mid); } finally { block.set(false); }
     }
 
     public static void IUSHR(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.IUSHR(iid, mid); block.set(false);
+        try { intp.IUSHR(iid, mid); } finally { block.set(false); }
     }
 
     public static void LUSHR(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LUSHR(iid, mid); block.set(false);
+        try { intp.LUSHR(iid, mid); } finally { block.set(false); }
     }
 
     public static void IAND(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.IAND(iid, mid); block.set(false);
+        try { intp.IAND(iid, mid); } finally { block.set(false); }
     }
 
     public static void LAND(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LAND(iid, mid); block.set(false);
+        try { intp.LAND(iid, mid); } finally { block.set(false); }
     }
 
     public static void IOR(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.IOR(iid, mid); block.set(false);
+        try { intp.IOR(iid, mid); } finally { block.set(false); }
     }
 
     public static void LOR(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LOR(iid, mid); block.set(false);
+        try { intp.LOR(iid, mid); } finally { block.set(false); }
     }
 
     public static void IXOR(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.IXOR(iid, mid); block.set(false);
+        try { intp.IXOR(iid, mid); } finally { block.set(false); }
     }
 
     public static void LXOR(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LXOR(iid, mid); block.set(false);
+        try { intp.LXOR(iid, mid); } finally { block.set(false); }
     }
 
     public static void I2L(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.I2L(iid, mid); block.set(false);
+        try { intp.I2L(iid, mid); } finally { block.set(false); }
     }
 
     public static void I2F(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.I2F(iid, mid); block.set(false);
+        try { intp.I2F(iid, mid); } finally { block.set(false); }
     }
 
     public static void I2D(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.I2D(iid, mid); block.set(false);
+        try { intp.I2D(iid, mid); } finally { block.set(false); }
     }
 
     public static void L2I(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.L2I(iid, mid); block.set(false);
+        try { intp.L2I(iid, mid); } finally { block.set(false); }
     }
 
     public static void L2F(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.L2F(iid, mid); block.set(false);
+        try { intp.L2F(iid, mid); } finally { block.set(false); }
     }
 
     public static void L2D(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.L2D(iid, mid); block.set(false);
+        try { intp.L2D(iid, mid); } finally { block.set(false); }
     }
 
     public static void F2I(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.F2I(iid, mid); block.set(false);
+        try { intp.F2I(iid, mid); } finally { block.set(false); }
     }
 
     public static void F2L(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.F2L(iid, mid); block.set(false);
+        try { intp.F2L(iid, mid); } finally { block.set(false); }
     }
 
     public static void F2D(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.F2D(iid, mid); block.set(false);
+        try { intp.F2D(iid, mid); } finally { block.set(false); }
     }
 
     public static void D2I(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.D2I(iid, mid); block.set(false);
+        try { intp.D2I(iid, mid); } finally { block.set(false); }
     }
 
     public static void D2L(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.D2L(iid, mid); block.set(false);
+        try { intp.D2L(iid, mid); } finally { block.set(false); }
     }
 
     public static void D2F(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.D2F(iid, mid); block.set(false);
+        try { intp.D2F(iid, mid); } finally { block.set(false); }
     }
 
     public static void I2B(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.I2B(iid, mid); block.set(false);
+        try { intp.I2B(iid, mid); } finally { block.set(false); }
     }
 
     public static void I2C(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.I2C(iid, mid); block.set(false);
+        try { intp.I2C(iid, mid); } finally { block.set(false); }
     }
 
     public static void I2S(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.I2S(iid, mid); block.set(false);
+        try { intp.I2S(iid, mid); } finally { block.set(false); }
     }
 
     public static void LCMP(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LCMP(iid, mid); block.set(false);
+        try { intp.LCMP(iid, mid); } finally { block.set(false); }
     }
 
     public static void FCMPL(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FCMPL(iid, mid); block.set(false);
+        try { intp.FCMPL(iid, mid); } finally { block.set(false); }
     }
 
     public static void FCMPG(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FCMPG(iid, mid); block.set(false);
+        try { intp.FCMPG(iid, mid); } finally { block.set(false); }
     }
 
     public static void DCMPL(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DCMPL(iid, mid); block.set(false);
+        try { intp.DCMPL(iid, mid); } finally { block.set(false); }
     }
 
     public static void DCMPG(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DCMPG(iid, mid); block.set(false);
+        try { intp.DCMPG(iid, mid); } finally { block.set(false); }
     }
 
     public static void IRETURN(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.IRETURN(iid, mid); block.set(false);
+        try { intp.IRETURN(iid, mid); } finally { block.set(false); }
     }
 
     public static void LRETURN(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.LRETURN(iid, mid); block.set(false);
+        try { intp.LRETURN(iid, mid); } finally { block.set(false); }
     }
 
     public static void FRETURN(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.FRETURN(iid, mid); block.set(false);
+        try { intp.FRETURN(iid, mid); } finally { block.set(false); }
     }
 
     public static void DRETURN(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.DRETURN(iid, mid); block.set(false);
+        try { intp.DRETURN(iid, mid); } finally { block.set(false); }
     }
 
     public static void ARETURN(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ARETURN(iid, mid); block.set(false);
+        try { intp.ARETURN(iid, mid); } finally { block.set(false); }
     }
 
     public static void RETURN(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.RETURN(iid, mid); block.set(false);
+        try { intp.RETURN(iid, mid); } finally { block.set(false); }
     }
 
     public static void ARRAYLENGTH(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ARRAYLENGTH(iid, mid); block.set(false);
+        try { intp.ARRAYLENGTH(iid, mid); } finally { block.set(false); }
     }
 
     public static void ATHROW(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.ATHROW(iid, mid); block.set(false);
+        try { intp.ATHROW(iid, mid); } finally { block.set(false); }
     }
 
     public static void MONITORENTER(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.MONITORENTER(iid, mid); block.set(false);
+        try { intp.MONITORENTER(iid, mid); } finally { block.set(false); }
     }
 
     public static void MONITOREXIT(int iid, int mid) {
         if (block.get()) return; else block.set(true);
-        intp.MONITOREXIT(iid, mid); block.set(false);
+        try { intp.MONITOREXIT(iid, mid); } finally { block.set(false); }
     }
 
     public static void GETVALUE_double(double v) {
         if (block.get()) return; else block.set(true);
-        intp.GETVALUE_double(v); block.set(false);
+        try { intp.GETVALUE_double(v); } finally { block.set(false); }
     }
 
     public static void GETVALUE_long(long v) {
         if (block.get()) return; else block.set(true);
-        intp.GETVALUE_long(v); block.set(false);
+        try { intp.GETVALUE_long(v); } finally { block.set(false); }
     }
 
     public static void GETVALUE_Object(Object v) {
         if (block.get()) return; else block.set(true);
-        intp.GETVALUE_Object(v); block.set(false);
+        try { intp.GETVALUE_Object(v); } finally { block.set(false); }
     }
 
     public static void GETVALUE_boolean(boolean v) {
         if (block.get()) return; else block.set(true);
-        intp.GETVALUE_boolean(v); block.set(false);
+        try { intp.GETVALUE_boolean(v); } finally { block.set(false); }
     }
 
     public static void GETVALUE_byte(byte v) {
         if (block.get()) return; else block.set(true);
-        intp.GETVALUE_byte(v); block.set(false);
+        try { intp.GETVALUE_byte(v); } finally { block.set(false); }
     }
 
     public static void GETVALUE_char(char v) {
         if (block.get()) return; else block.set(true);
-        intp.GETVALUE_char(v); block.set(false);
+        try { intp.GETVALUE_char(v); } finally { block.set(false); }
     }
 
     public static void GETVALUE_float(float v) {
         if (block.get()) return; else block.set(true);
-        intp.GETVALUE_float(v); block.set(false);
+        try { intp.GETVALUE_float(v); } finally { block.set(false); }
     }
 
     public static void GETVALUE_int(int v) {
         if (block.get()) return; else block.set(true);
-        intp.GETVALUE_int(v); block.set(false);
+        try { intp.GETVALUE_int(v); } finally { block.set(false); }
     }
 
     public static void GETVALUE_short(short v) {
         if (block.get()) return; else block.set(true);
-        intp.GETVALUE_short(v); block.set(false);
+        try { intp.GETVALUE_short(v); } finally { block.set(false); }
     }
 
     public static void GETVALUE_void() {
         if (block.get()) return; else block.set(true);
-        intp.GETVALUE_void(); block.set(false);
+        try { intp.GETVALUE_void(); } finally { block.set(false); }
     }
 
     public static void METHOD_BEGIN(String className, String methodName, String desc) {
         if (block.get()) return; else block.set(true);
-        intp.METHOD_BEGIN(className, methodName, desc); block.set(false);
+        try { intp.METHOD_BEGIN(className, methodName, desc); } finally { block.set(false); }
     }
 
     public static void METHOD_THROW() {
         if (block.get()) return; else block.set(true);
-        intp.METHOD_THROW(); block.set(false);
+        try { intp.METHOD_THROW(); } finally { block.set(false); }
     }
 
     public static void INVOKEMETHOD_EXCEPTION() {
         if (block.get()) return; else block.set(true);
-        intp.INVOKEMETHOD_EXCEPTION(); block.set(false);
+        try { intp.INVOKEMETHOD_EXCEPTION(); } finally { block.set(false); }
     }
 
     public static void INVOKEMETHOD_END() {
         if (block.get()) return; else block.set(true);
-        intp.INVOKEMETHOD_END(); block.set(false);
+        try { intp.INVOKEMETHOD_END(); } finally { block.set(false); }
     }
 
     public static void SPECIAL(int i) {
         if (block.get()) return; else block.set(true);
-        intp.SPECIAL(i); block.set(false);
+        try { intp.SPECIAL(i); } finally { block.set(false); }
     }
 
     public static void MAKE_SYMBOLIC() {
         if (block.get()) return; else block.set(true);
-        intp.MAKE_SYMBOLIC(); block.set(false);
+        try { intp.MAKE_SYMBOLIC(); } finally { block.set(false); }
     }
 
     public static void flush() {

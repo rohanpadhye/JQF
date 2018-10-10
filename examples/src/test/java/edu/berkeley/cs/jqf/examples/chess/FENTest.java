@@ -39,9 +39,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import scala.Option;
 
-import static org.junit.Assume.*;
-import static org.junit.Assert.*;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * @author Rohan Padhye
@@ -89,5 +89,10 @@ public class FENTest {
     @Fuzz
     public void debugWithGenerator(@From(FENGenerator.class) String fen) {
         System.out.println(fen);//debugWithString(fen);
+    }
+
+    @Fuzz
+    public void testWithInputStream(@From(ArbitraryLengthStringGenerator.class) String fen) {
+        testWithString(fen);
     }
 }

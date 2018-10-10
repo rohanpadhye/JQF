@@ -122,14 +122,17 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
         }
       }
 
-
-      ClassReader cr = new ClassReader(cbuf);
-      ClassWriter cw = new SafeClassWriter(cr,  loader,
-              ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
-      ClassVisitor cv = new SnoopInstructionClassAdapter(cw, cname);
-
+      byte[] ret = cbuf;
       try {
+
+        ClassReader cr = new ClassReader(cbuf);
+        ClassWriter cw = new SafeClassWriter(cr,  loader,
+                ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+        ClassVisitor cv = new SnoopInstructionClassAdapter(cw, cname);
+
         cr.accept(cv, 0);
+
+        ret = cw.toByteArray();
       } catch (Throwable e) {
         System.err.println("\n[JANALA] Error instrumenting class " + cname);
         if (verbose) {
@@ -138,7 +141,6 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
         return null;
       }
 
-      byte[] ret = cw.toByteArray();
       println("Done!");
       instrumentedBytes.put(cname, ret);
 
