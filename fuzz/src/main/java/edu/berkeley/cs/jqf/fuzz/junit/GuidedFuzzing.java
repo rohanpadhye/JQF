@@ -169,7 +169,7 @@ public class GuidedFuzzing {
         Runner testRunner = testRequest.getRunner();
 
         if (testRunner instanceof ErrorReportingRunner) {
-            throw new IllegalArgumentException(String.format("Could not instantiate a Junit runner for method %s#%s.", testClass, testMethod));
+            throw new IllegalArgumentException(String.format("Could not instantiate a Junit runner for method %s#%s.", testClass.getName(), testMethod));
         }
 
         // Start tracing for the test method

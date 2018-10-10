@@ -61,6 +61,7 @@ import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Suffix;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
+import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
 import edu.berkeley.cs.jqf.fuzz.util.ProducerHashMap;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
@@ -201,8 +202,22 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** The file where saved plot data is written. */
     private File statsFile;
 
+    /** The currently executing input (for debugging purposes). */
+    private File currentInputFile;
+
     /** Whether to print the fuzz config to the stats screen. */
     private static boolean SHOW_CONFIG = false;
+
+    // ------------- TIMEOUT HANDLING ------------
+
+    /** Timeout for an individual run. */
+    private long singleRunTimeoutMillis;
+
+    /** Date when last run was started. */
+    private Date runStart;
+
+    /** Number of conditional jumps since last run was started. */
+    private long branchCount;
 
     // ------------- FUZZING HEURISTICS ------------
 
@@ -212,8 +227,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Whether to use real execution indexes as opposed to flat numbering. */
     static final boolean DISABLE_EXECUTION_INDEXING = !Boolean.getBoolean("jqf.ei.ENABLE_EXECUTION_INDEXING");
 
+    /** Whether to save only valid inputs **/
+    static final boolean SAVE_ONLY_VALID = Boolean.getBoolean("jqf.ei.SAVE_ONLY_VALID");
+
     /** Max input size to generate. */
     static final int MAX_INPUT_SIZE = Integer.getInteger("jqf.ei.MAX_INPUT_SIZE", 1024);
+
+    /** Whether to generate EOFs when we run out of bytes in the input, instead of randomly generating new bytes. **/
+    static final boolean GENERATE_EOF_WHEN_OUT = Boolean.getBoolean("jqf.ei.GENERATE_EOF_WHEN_OUT");
 
     /** Baseline number of mutated children to produce from a given parent input. */
     static final int NUM_CHILDREN_BASELINE = 50;
@@ -229,6 +250,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     /** Max number of contiguous bytes to splice in from another input during the splicing stage. */
     static final int MAX_SPLICE_SIZE = 64; // Bytes
+
 
     /** Whether to splice only in the same sub-tree */
     static final boolean SPLICE_SUBTREE = Boolean.getBoolean("jqf.ei.SPLICE_SUBTREE");
@@ -257,6 +279,17 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
         this.outputDirectory = outputDirectory;
         prepareOutputDirectory();
+
+        // Try to parse the single-run timeout
+        String timeout = System.getProperty("jqf.ei.TIMEOUT");
+        if (timeout != null && !timeout.isEmpty()) {
+            try {
+                // Interpret the timeout as milliseconds (just like `afl-fuzz -t`)
+                this.singleRunTimeoutMillis = Long.parseLong(timeout);
+            } catch (NumberFormatException e1) {
+                throw new IllegalArgumentException("Invalid timeout duration: " + timeout);
+            }
+        }
     }
 
     /**
@@ -297,6 +330,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         this.savedFailuresDirectory.mkdirs();
         this.statsFile = new File(outputDirectory, "plot_data");
         this.logFile = new File(outputDirectory, "fuzz.log");
+        this.currentInputFile = new File(outputDirectory, ".cur_input");
 
 
         // Delete everything that we may have created in a previous run.
@@ -520,6 +554,15 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             // Fuzz it to get a new input
             currentInput = parent.fuzz(random, ecToInputLoc);
             numChildrenGeneratedForCurrentParentInput++;
+
+            // Write it to disk for debugging
+            try {
+                writeCurrentInputToFile(currentInputFile);
+            } catch (IOException ignore) { }
+
+            // Start time-counting for timeout handling
+            this.runStart = new Date();
+            this.branchCount = 0;
         }
 
 
@@ -560,6 +603,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     @Override
     public void handleResult(Result result, Throwable error) throws GuidanceException {
+        // Stop timeout handling
+        this.runStart = null;
+
         // Increment run count
         this.numTrials++;
 
@@ -646,7 +692,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 }
 
             }
-        } else if (result == Result.FAILURE) {
+        } else if (result == Result.FAILURE || result == Result.TIMEOUT) {
             String msg = error.getMessage();
 
             // Get the root cause of the failure
@@ -666,7 +712,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                     writeCurrentInputToFile(saveFile);
                     infoLog("%s","Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
                     String how = currentInput.desc;
-                    String why = "+crash";
+                    String why = result == Result.FAILURE ? "+crash" : "+hang";
                     infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
                 } catch (IOException e) {
                     throw new GuidanceException(e);
@@ -760,7 +806,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         String saveFileName = String.format("id_%06d", newInputIdx);
         String how = currentInput.desc;
         File saveFile = new File(savedInputsDirectory, saveFileName);
-        if (currentInput.valid) {
+        if (SAVE_ONLY_VALID == false || currentInput.valid) {
             writeCurrentInputToFile(saveFile);
             infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
         }
@@ -834,6 +880,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         // Collect totalCoverage
         runCoverage.handleEvent(e);
+        // Check for possible timeouts every so often
+        if (this.singleRunTimeoutMillis > 0 &&
+                this.runStart != null && (++this.branchCount) % 10_000 == 0) {
+            long elapsed = new Date().getTime() - runStart.getTime();
+            if (elapsed > this.singleRunTimeoutMillis) {
+                throw new TimeoutException(elapsed, this.singleRunTimeoutMillis);
+            }
+        }
     }
 
     @Override
@@ -1081,6 +1135,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
                 // If we could not splice or were unsuccessful, try to generate a new input
                 if (val == null) {
+                    if (GENERATE_EOF_WHEN_OUT) {
+                        return -1;
+                    }
                     if (random.nextDouble() < DEMAND_DRIVEN_SPLICING_PROBABILITY) {
                         // TODO: Find a random inputLocation with same EC,
                         // extract common suffix of sourceEi and targetEi,

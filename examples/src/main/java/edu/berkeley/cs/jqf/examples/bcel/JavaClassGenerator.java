@@ -54,9 +54,23 @@ public class JavaClassGenerator extends Generator<JavaClass> {
 
     private String[] interestingClasses = {
             "java/lang/Object",
+            "java/lang/Integer",
+            "java/util/List",
+            "java/util/Map",
             "example/A",
-            "example/B",
-            "java/util/List" // TODO: How do we choose these?
+            "example/B"
+    };
+
+
+    private String[] memberDictionary = {
+            "foo",
+            "bar",
+            "baz",
+            "example",
+            "A",
+            "B",
+            "C",
+            "D"
     };
 
     private static GeometricDistribution geom = new GeometricDistribution();
@@ -78,7 +92,7 @@ public class JavaClassGenerator extends Generator<JavaClass> {
         // Generate a class with its meta-data
         String className = "example.A";
         String superName = r.nextBoolean() ? "example.B" : "java.lang.Object";
-        String fileName = "A.java";
+        String fileName = "A.class";
         int flags = r.nextInt(0, Short.MAX_VALUE);
         int numInterfaces = r.nextBoolean() ? 0 : geom.sampleWithMean(MEAN_INTERFACE_COUNT, r);
         String[] interfaces = new String[numInterfaces];
@@ -97,7 +111,7 @@ public class JavaClassGenerator extends Generator<JavaClass> {
 
         int numMethods = geom.sampleWithMean(MEAN_METHODS_COUNT, r);
         for (int i = 0; i < numMethods; i++) {
-            classGen.addMethod(generateMethod(r));
+            classGen.addMethod(generateMethod(className, r));
         }
 
         return classGen.getJavaClass();
@@ -112,7 +126,7 @@ public class JavaClassGenerator extends Generator<JavaClass> {
         return fieldGen.getField();
     }
 
-    private Method generateMethod(SourceOfRandomness r) {
+    private Method generateMethod(String className, SourceOfRandomness r) {
         int flags = r.nextInt(0, Short.MAX_VALUE);
         Type returnType = r.nextBoolean() ? Type.VOID : generateType(r, true);
         String methodName = generateMemberName(r);
@@ -124,24 +138,27 @@ public class JavaClassGenerator extends Generator<JavaClass> {
             argNames[i] = generateMemberName(r);
         }
         InstructionList code = generateCode(r, argTypes, returnType);
-        MethodGen methodGen = new MethodGen(flags, returnType, argTypes, argNames, methodName, null, code, constants);
+        MethodGen methodGen = new MethodGen(flags, returnType, argTypes, argNames, methodName, className, code, constants);
         // Validate flags
         Assume.assumeFalse(methodGen.isFinal() && methodGen.isAbstract());
         return methodGen.getMethod();
     }
 
     private String generateMemberName(SourceOfRandomness r) {
+        if (r.nextBoolean()) {
+            return r.choose(memberDictionary);
+        }
         return r.nextChar('a', 'z') + "_" + r.nextInt(10);
     }
 
-    private Type generateType(SourceOfRandomness r, boolean arraysAllowed) {
+    private String generateTypeSignature(SourceOfRandomness r, boolean arraysAllowed) {
         String typeSig;
         if (r.nextBoolean()) {
             // Primitive
             typeSig = r.choose(primitiveTypes);
         } else {
             // Class type
-            typeSig = "L" + r.choose(interestingClasses) + ";";
+            typeSig = "L" + generateClassName(r) + ";";
         }
         if (arraysAllowed && r.nextBoolean()) {
             // Generate array depth with geometric distribution
@@ -150,22 +167,29 @@ public class JavaClassGenerator extends Generator<JavaClass> {
                 typeSig = "[" + typeSig;
             }
         }
-        return Type.getType(typeSig);
+        return typeSig;
+    }
+
+    private Type generateType(SourceOfRandomness r, boolean arraysAllowed) {
+        return Type.getType(generateTypeSignature(r, arraysAllowed));
     }
 
     private InstructionList generateCode(SourceOfRandomness r, Type[] argTypes, Type returnType) {
-        InstructionFactory typed = new InstructionFactory(constants);
-        byte[] bytes = r.nextBytes(geom.sampleWithMean(6, r));
         InstructionList code = new InstructionList();
 
         while (r.nextBoolean()) {
-            Instruction ins = generateInstruction(r, argTypes.length+1); // TODO: Allocate some locals
-            code.append(ins);
+            Instruction ins = generateInstruction(r, argTypes.length+1, code); // TODO: Allocate some locals
+            if (ins instanceof BranchInstruction) {
+                // Call the overloaded append()
+                code.append((BranchInstruction) ins);
+            } else {
+                code.append(ins);
+            }
         }
         return code;
     }
 
-    private Instruction generateInstruction(SourceOfRandomness r, int slots) {
+    private Instruction generateInstruction(SourceOfRandomness r, int slots, InstructionList code) {
 
         int opcode = r.nextInt(256);
         Instruction ins = InstructionConst.getInstruction(opcode);
@@ -342,52 +366,52 @@ public class JavaClassGenerator extends Generator<JavaClass> {
             case Const.IINC:
                 ins = new IINC(r.nextInt(slots), r.nextInt(-128, 128));
                 break;
-                /*
             case Const.IFEQ:
-                ins = new IFEQ(generateLabel(r));
+                ins = new IFEQ(generateLabel(r, code));
                 break;
             case Const.IFNE:
-                ins = new IFNE(generateLabel(r));
+                ins = new IFNE(generateLabel(r, code));
                 break;
             case Const.IFLT:
-                ins = new IFLT(generateLabel(r));
+                ins = new IFLT(generateLabel(r, code));
                 break;
             case Const.IFGE:
-                ins = new IFGE(generateLabel(r));
+                ins = new IFGE(generateLabel(r, code));
                 break;
             case Const.IFGT:
-                ins = new IFGT(generateLabel(r));
+                ins = new IFGT(generateLabel(r, code));
                 break;
             case Const.IFLE:
-                ins = new IFLE(generateLabel(r));
+                ins = new IFLE(generateLabel(r, code));
                 break;
             case Const.IF_ICMPEQ:
-                ins = new IF_ICMPEQ(generateLabel(r));
+                ins = new IF_ICMPEQ(generateLabel(r, code));
                 break;
             case Const.IF_ICMPNE:
-                ins = new IF_ICMPNE(generateLabel(r));
+                ins = new IF_ICMPNE(generateLabel(r, code));
                 break;
             case Const.IF_ICMPLT:
-                ins = new IF_ICMPLT(generateLabel(r));
+                ins = new IF_ICMPLT(generateLabel(r, code));
                 break;
             case Const.IF_ICMPGE:
-                ins = new IF_ICMPGE(generateLabel(r));
+                ins = new IF_ICMPGE(generateLabel(r, code));
                 break;
             case Const.IF_ICMPGT:
-                ins = new IF_ICMPGT(generateLabel(r));
+                ins = new IF_ICMPGT(generateLabel(r, code));
                 break;
             case Const.IF_ICMPLE:
-                ins = new IF_ICMPLE(generateLabel(r));
+                ins = new IF_ICMPLE(generateLabel(r, code));
                 break;
             case Const.IF_ACMPEQ:
-                ins = new IF_ACMPEQ(generateLabel(r));
+                ins = new IF_ACMPEQ(generateLabel(r, code));
                 break;
             case Const.IF_ACMPNE:
-                ins = new IF_ACMPNE(generateLabel(r));
+                ins = new IF_ACMPNE(generateLabel(r, code));
                 break;
             case Const.GOTO:
-                ins = new GOTO(generateLabel(r));
+                ins = new GOTO(generateLabel(r, code));
                 break;
+                /*
             case Const.JSR:
                 ins = new JSR(generateLabel(r));
                 break;
@@ -400,73 +424,61 @@ public class JavaClassGenerator extends Generator<JavaClass> {
             case Const.LOOKUPSWITCH:
                 ins = new LOOKUPSWITCH();
                 break;
+               */
             case Const.GETSTATIC:
-                ins = new GETSTATIC();
+                ins = new GETSTATIC(generateFieldRef(r));
                 break;
             case Const.PUTSTATIC:
-                ins = new PUTSTATIC();
+                ins = new PUTSTATIC(generateFieldRef(r));
                 break;
             case Const.GETFIELD:
-                ins = new GETFIELD();
+                ins = new GETFIELD(generateFieldRef(r));
                 break;
             case Const.PUTFIELD:
-                ins = new PUTFIELD();
+                ins = new PUTFIELD(generateFieldRef(r));
                 break;
             case Const.INVOKEVIRTUAL:
-                ins = new INVOKEVIRTUAL();
+                ins = new INVOKEVIRTUAL(generateMethodRef(r));
                 break;
             case Const.INVOKESPECIAL:
-                ins = new INVOKESPECIAL();
+                ins = new INVOKESPECIAL(generateMethodRef(r));
                 break;
             case Const.INVOKESTATIC:
-                ins = new INVOKESTATIC();
+                ins = new INVOKESTATIC(generateMethodRef(r));
                 break;
             case Const.INVOKEINTERFACE:
-                ins = new INVOKEINTERFACE();
+                ins = new INVOKEINTERFACE(generateMethodRef(r), r.nextInt(1, 4));
                 break;
             case Const.INVOKEDYNAMIC:
-                ins = new INVOKEDYNAMIC();
+                ins = new INVOKEDYNAMIC(generateMethodRef(r));
                 break;
             case Const.NEW:
-                ins = new NEW();
+                ins = new NEW(generateClassRef(r));
                 break;
             case Const.NEWARRAY:
-                ins = new NEWARRAY();
+                ins = new NEWARRAY(r.nextByte((byte) 4, (byte) 12)); // TODO: Document basic type codes
                 break;
             case Const.ANEWARRAY:
-                ins = new ANEWARRAY();
+                ins = new ANEWARRAY(generateClassRef(r));
                 break;
             case Const.CHECKCAST:
-                ins = new CHECKCAST();
+                ins = new CHECKCAST(generateClassRef(r));
                 break;
             case Const.INSTANCEOF:
-                ins = new INSTANCEOF();
+                ins = new INSTANCEOF(generateClassRef(r));
                 break;
             case Const.MULTIANEWARRAY:
-                ins = new MULTIANEWARRAY();
+                ins = new MULTIANEWARRAY(generateClassRef(r), r.nextShort((short) 1 , Short.MAX_VALUE));
                 break;
             case Const.IFNULL:
-                ins = new IFNULL();
+                ins = new IFNULL(generateLabel(r, code));
                 break;
             case Const.IFNONNULL:
-                ins = new IFNONNULL();
+                ins = new IFNONNULL(generateLabel(r, code));
                 break;
             case Const.GOTO_W:
-                ins = new GOTO_W();
+                ins = new GOTO_W(generateLabel(r, code));
                 break;
-            case Const.JSR_W:
-                ins = new JSR_W();
-                break;
-            case Const.BREAKPOINT:
-                ins = new BREAKPOINT();
-                break;
-            case Const.IMPDEP1:
-                ins = new IMPDEP1();
-                break;
-            case Const.IMPDEP2:
-                ins = new IMPDEP2();
-                break;
-                */
             default:
                 throw new AssumptionViolatedException("Invalid opcode");
 
@@ -474,7 +486,45 @@ public class JavaClassGenerator extends Generator<JavaClass> {
         return ins;
     }
 
-    InstructionHandle generateLabel(SourceOfRandomness r) {
-        return null; // TODO: Generate label
+    InstructionHandle generateLabel(SourceOfRandomness r, InstructionList code) {
+        InstructionHandle handles[] = code.getInstructionHandles();
+        // If no instructions generated so far, emit a NOP to get some label
+        if (handles.length == 0) {
+            handles = new InstructionHandle[]{ code.append(new NOP()) };
+        }
+        return r.choose(handles);
+    }
+
+    String generateClassName(SourceOfRandomness r)
+    {
+        if (r.nextBoolean()) {
+            return r.choose(interestingClasses);
+        }
+        int numParts = r.nextInt(1, 5);
+        String[] parts = new String[numParts];
+        for (int i = 0; i < numParts; i++) {
+            parts[i] = generateMemberName(r);
+        }
+        return String.join("/", parts);
+    }
+
+    int generateFieldRef(SourceOfRandomness r) {
+        String sig = "()" + generateTypeSignature(r, true);
+        return constants.addFieldref(generateClassName(r), generateMemberName(r), sig);
+    }
+
+    int generateMethodRef(SourceOfRandomness r) {
+        int numParams = r.nextInt(4);
+        String sig = "(";
+        for (int i = 0; i < numParams; i++) {
+            sig += generateTypeSignature(r, true);
+        }
+        sig += ")";
+        sig += generateTypeSignature(r, true);
+        return constants.addMethodref(generateClassName(r), generateMemberName(r), sig);
+    }
+
+    int generateClassRef(SourceOfRandomness r) {
+        return constants.addClass(generateClassName(r));
     }
 }

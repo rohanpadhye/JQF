@@ -78,7 +78,6 @@ while getopts ":c:i:o:m:vt:" opt; do
       ;;
     t)
       timeout="$OPTARG"
-      export JVM_OPTS="$JVM_OPTS -Djqf.afl.TIMEOUT=$timeout"
       ;;
   esac
 done

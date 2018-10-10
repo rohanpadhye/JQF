@@ -54,7 +54,6 @@ public class JavaScriptCodeGenerator extends Generator<String> {
 
     private GenerationStatus status;
 
-
     private static final int MAX_IDENTIFIERS = 100;
     private static final int MAX_EXPRESSION_DEPTH = 10;
     private static final int MAX_STATEMENT_DEPTH = 6;
@@ -117,7 +116,8 @@ public class JavaScriptCodeGenerator extends Generator<String> {
                     this::generateCallNode,
                     this::generateFunctionNode,
                     this::generatePropertyNode,
-                    this::generateIndexNode
+                    this::generateIndexNode,
+                    this::generateArrowFunctionNode
             )).apply(random);
         }
         expressionDepth--;
@@ -232,6 +232,15 @@ public class JavaScriptCodeGenerator extends Generator<String> {
         return "function " + generateIdentNode(random) + "(" + String.join(", ", generateItems(this::generateIdentNode, random, 5)) + ")" + generateBlock(random);
     }
 
+    private String generateArrowFunctionNode(SourceOfRandomness random) {
+        String params = "(" + String.join(", ", generateItems(this::generateIdentNode, random, 3)) + ")";
+        if (random.nextBoolean()) {
+            return params + " => " + generateBlock(random);
+        } else {
+            return params + " => " + generateExpression(random);
+        }
+
+    }
 
     private String generateIdentNode(SourceOfRandomness random) {
         // Either generate a new identifier or use an existing one
@@ -283,10 +292,6 @@ public class JavaScriptCodeGenerator extends Generator<String> {
         }
     }
 
-    private String generateObjectNode(SourceOfRandomness random) {
-        return null;
-    }
-
     private String generatePropertyNode(SourceOfRandomness random) {
         return generateExpression(random) + "." + generateIdentNode(random);
     }
@@ -324,9 +329,5 @@ public class JavaScriptCodeGenerator extends Generator<String> {
 
     private String generateWhileNode(SourceOfRandomness random) {
         return "while (" + generateExpression(random) + ")" + generateBlock(random);
-    }
-
-    private String generateWithNode(SourceOfRandomness random) {
-        return null;
     }
 }
