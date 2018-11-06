@@ -14,6 +14,7 @@ print_usage() {
   echo "  -i AFL_INPUT_DIR   Seed inputs for AFL (default is a few seeds of random data)"
   echo "  -o AFL_OUTPUT_DIR  Where AFL should save fuzz results (default is './fuzz-results')"
   echo "  -x AFL_DICT        Provide a dictionary to AFL (default is no dictionary)"
+  echo "  -S SLAVE_ID        A unique identifier when running in parallel mode"
   echo "  -T AFL_TITLE       Customize title banner (default is TEST_CLASS#TEST_METHOD)"
   echo "  -m MEM_LIMIT       Set a memory limit in MB (default is 8192)"
   echo "  -t TIMEOUT         Set a single-run timeout in milliseconds (default is 10000)"
@@ -47,15 +48,16 @@ if [ -z "$JQF_TMP_DIR" ]; then
 fi
 
 # Build AFL command-line
-afl_options="" # fidgety by default -> implied by -S
+afl_options=""
 classpath="."
 mem_limit="8192"
 target_options=""
 input_dir=""
 output_dir="fuzz-results"
 timeout="10000"
+slave_id=""
 
-while getopts ":c:i:o:x:m:dpsrvt:T:" opt; do
+while getopts ":c:i:o:x:m:dpsrvt:S:T:" opt; do
   case $opt in
     /?)
       echo "Invalid option: -$OPTARG" >&2
@@ -96,6 +98,9 @@ while getopts ":c:i:o:x:m:dpsrvt:T:" opt; do
     t)
       timeout="$OPTARG"
       ;;
+    S)
+      slave_id="$OPTARG"
+      ;;
     T)
       title="$OPTARG"
       ;;
@@ -126,15 +131,23 @@ target="$BIN_DIR/jqf-afl-target"
 
 # Set title banner
 if [ -z "$title" ]; then
-  title="$RANDOM$method"
+  title="${class##*.}#$method"
+  if [ -n "$slave_id" ]; then
+    title="$title[$slave_id]"
+  fi
 fi
 
 # Set AFL options
 afl_options="$afl_options -i $input_dir"
 afl_options="$afl_options -o $output_dir"
-afl_options="$afl_options -S $title"
+afl_options="$afl_options -T $title"
 afl_options="$afl_options -m $mem_limit"
-afl_options="$afl_options -t 50+"  
+if [ -n "$slave_id" ]; then
+  afl_options="$afl_options -S $slave_id" # Implies -d
+else
+  afl_options="$afl_options -d" # Explicit -d if no -S given
+fi
+afl_options="$afl_options -t 50+"
 # We set a very small timeout for AFL so that it always sets child_timed_out
 # To flag a "hang", AFL checks both that its timer went out and that the target died with SIGKILL.
 # The SIGKILL is sent back by JQF if the real timeout expires, as set below:
