@@ -1,6 +1,9 @@
 edu.berkeley.cs.jqf.examples
 edu.berkeley.cs.jqf.examples.algs4
+edu.berkeley.cs.jqf.examples.bcel
+edu.berkeley.cs.jqf.examples.chess
 edu.berkeley.cs.jqf.examples.common
+edu.berkeley.cs.jqf.examples.guava
 edu.berkeley.cs.jqf.examples.imageio
 edu.berkeley.cs.jqf.examples.jgrapht
 edu.berkeley.cs.jqf.examples.kaitai
@@ -23,4 +26,3 @@ edu.berkeley.cs.jqf.plugin
 janala.instrument
 janala.logger
 janala.logger.inst
-org.apache.coyote.http11
