@@ -2,8 +2,8 @@
 
 set -e
 
-if [ $# -lt 2 ]; then
-  echo "Usage: $0 <NAME> <TEST_CLASS>"
+if [ $# -lt 3 ]; then
+  echo "Usage: $0 <NAME> <TEST_CLASS> <RUNS>"
   exit 1
 fi
 
@@ -15,11 +15,12 @@ JQF_DIR="$SCRIPT_DIR/.."
 JQF_REPRO="$JQF_DIR/bin/jqf-repro -i"
 NAME=$1
 TEST_CLASS="edu.berkeley.cs.jqf.examples.$2"
+RUNS="$3"
   
 
 export JVM_OPTS="$JVM_OPTS -Djqf.repro.logUniqueBranches=true"
 
-for e in $(seq 3); do
+for e in $(seq $RUNS); do
   JQF_OUT_DIR="$NAME-jqf-results-$e"
   AFL_OUT_DIR="$NAME-afl-results-$e"
   RND_OUT_DIR="$NAME-rnd-results-$e"
