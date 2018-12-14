@@ -1,0 +1,118 @@
+#!/bin/bash
+
+# Figure out script absolute path
+pushd `dirname $0` > /dev/null
+BIN_DIR=`pwd`
+popd > /dev/null
+
+ROOT_DIR=`dirname $BIN_DIR`
+
+print_usage() {
+  echo "Usage: $0 [options] TEST_CLASS TEST_METHOD"
+  echo "Options: "
+  echo "  -c JAVA_CLASSPATH  Classpath used to find your test classes (default is '.')"
+  echo "  -i INPUT_DIR       Directory containing original corpus (default is 'fuzz-results')"
+  echo "  -o OUTPUT_DIR      Directory where minimized corpus will be written (default is 'fuzz-min')"
+  echo "  -m MEM_LIMIT       Set a memory limit in MB (default is 8192)"
+  echo "  -t TIMEOUT         Set a single-run timeout in milliseconds (default is 10000)"
+  echo "  -v                 Enable verbose logging (in file 'jqf.log')"
+}
+
+# Ensure that afl-cmin.py can be found
+if [ -n "$AFL_CMIN_PY_DIR" ]; then
+  AFL_CMIN_PY="$AFL_CMIN_PY_DIR/afl-cmin.py"
+else
+  AFL_CMIN_PY=$(which afl-cmin.py)
+fi
+if [ ! -x "$AFL_CMIN_PY" ]; then
+  echo "The program 'afl-cmin.py' cannot be found" >&2
+  echo "Fix this in one of two ways:" >&2
+  echo "   1. Make sure 'afl-cmin.py' is in your PATH" >&2
+  echo "   2. Set the env var AFL_CMIN_PY_DIR to point to where afl-kit is installed" >&2
+  exit 2
+fi
+
+
+# Ensure that AFL proxy is built
+if [ ! -f "$ROOT_DIR/bin/afl-proxy" ]; then
+  echo "The JQF-AFL proxy has not been built! Make sure to run scripts/setup.sh or run 'make'" >&2
+  exit 3
+fi
+
+# Set temp directory
+if [ -z "$JQF_TMP_DIR" ]; then
+  JQF_TMP_DIR="/tmp"
+fi
+
+# Build AFL command-line
+afl_options=""
+classpath="."
+mem_limit="8192"
+target_options=""
+in_dir="fuzz-results"
+out_dir="fuzz-min"
+workers="2"
+timeout="10000"
+
+while getopts ":c:i:o:m:vw:t:" opt; do
+  case $opt in
+    /?)
+      echo "Invalid option: -$OPTARG" >&2
+      print_usage >&1
+      exit 1
+      ;;
+    c)
+      classpath="$OPTARG"
+      ;;
+    i)
+      in_dir="$OPTARG"
+      ;;
+    o)
+      out_dir="$OPTARG"
+      ;;
+    m)
+      mem_limit="$OPTARG"
+      ;;
+    v)
+      target_options="$target_options -v"
+      export JVM_OPTS="$JVM_OPTS -Djanala.verbose=true"
+      ;;
+    w)
+      workers="$OPTARG"
+      ;;
+    t)
+      timeout="$OPTARG"
+      ;;
+  esac
+done
+shift $((OPTIND-1))
+
+
+# Check positional arguments
+if [ $# -lt 2 ]; then
+  print_usage >&2
+  exit 1
+fi
+
+class="$1"
+method="$2"
+target="$BIN_DIR/jqf-afl-target"
+
+# Set AFL options
+afl_options="$afl_options -i $in_dir -o $out_dir"
+afl_options="$afl_options -m $mem_limit"
+afl_options="$afl_options -t $timeout"
+afl_options="$afl_options -w $workers"
+
+# Set classpath for JQF
+export CLASSPATH="$classpath"
+
+# Set environment variables for AFL
+export AFL_SKIP_BIN_CHECK=1
+export AFL_NO_AFFINITY=1
+export AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES=1
+export AFL_SKIP_CPUFREQ=1
+
+# Ready to go
+echo "$AFL_CMIN_PY" $afl_options "$target" $target_options "$class" "$method" @@
+exec "$AFL_CMIN_PY" $afl_options "$target" $target_options "$class" "$method" @@
