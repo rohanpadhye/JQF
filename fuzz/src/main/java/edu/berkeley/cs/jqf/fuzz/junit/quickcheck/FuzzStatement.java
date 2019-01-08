@@ -138,7 +138,7 @@ public class FuzzStatement extends Statement {
                         args = generators.stream()
                                 .map(g -> g.generate(random, genStatus))
                                 .toArray();
-                    } catch (IllegalStateException e) {
+                    } catch (StreamBackedRandom.EndOfStreamException e) {
                         // This happens when we reach EOF before reading all the random values.
                         // Treat this as an assumption failure, so that the guidance considers the
                         // generated input as INVALID

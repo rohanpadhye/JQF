@@ -134,7 +134,7 @@ public class StreamBackedRandom extends Random {
                 String message = String.format("EOF reached; total bytes read = %d, " +
                                 "last read got %d of %d bytes",
                         totalBytesRead, actualBytesRead, maxBytesToRead);
-                throw new IllegalStateException(message);
+                throw new EndOfStreamException(message);
 
             }
 
@@ -168,6 +168,12 @@ public class StreamBackedRandom extends Random {
 
     public int getTotalBytesRead() {
         return this.totalBytesRead;
+    }
+
+    public static class EndOfStreamException extends RuntimeException {
+        public EndOfStreamException(String msg) {
+            super(msg);
+        }
     }
 
 }
