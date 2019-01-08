@@ -28,6 +28,7 @@
  */
 package edu.berkeley.cs.jqf.examples.common;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -53,7 +54,11 @@ public class InputStreamGenerator extends Generator<InputStream> {
                    int nextInt = nextByte & 0xFF;
                    return nextInt;
                } catch (IllegalStateException e) {
-                   return -1;
+                   if (e.getCause() instanceof EOFException) {
+                       return -1;
+                   } else {
+                       throw e;
+                   }
                }
            }
        };

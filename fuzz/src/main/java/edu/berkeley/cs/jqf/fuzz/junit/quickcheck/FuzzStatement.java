@@ -28,6 +28,7 @@
  */
 package edu.berkeley.cs.jqf.fuzz.junit.quickcheck;
 
+import java.io.EOFException;
 import java.io.File;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Parameter;
@@ -138,11 +139,15 @@ public class FuzzStatement extends Statement {
                         args = generators.stream()
                                 .map(g -> g.generate(random, genStatus))
                                 .toArray();
-                    } catch (StreamBackedRandom.EndOfStreamException e) {
-                        // This happens when we reach EOF before reading all the random values.
-                        // Treat this as an assumption failure, so that the guidance considers the
-                        // generated input as INVALID
-                        throw new AssumptionViolatedException("StreamBackedRandom does not have enough data", e);
+                    } catch (IllegalStateException e) {
+                        if (e.getCause() instanceof EOFException) {
+                            // This happens when we reach EOF before reading all the random values.
+                            // Treat this as an assumption failure, so that the guidance considers the
+                            // generated input as INVALID
+                            throw new AssumptionViolatedException("StreamBackedRandom does not have enough data", e.getCause());
+                        } else {
+                            throw e;
+                        }
                     } catch (AssumptionViolatedException e) {
                         // Propagate assumption violations out
                         throw e;
