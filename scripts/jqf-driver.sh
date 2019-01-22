@@ -28,9 +28,7 @@ if [ -z "${CLASSPATH}" ]; then
 fi  
 
 # Java Agent config (can be turned off using env var)
-if [ -n "$JQF_DISABLE_INSTRUMENTATION" ]; then
-  JAVAAGENT=""
-else
+if [ -z "$JQF_DISABLE_INSTRUMENTATION" ]; then
   JAVAAGENT="-javaagent:${INST_JAR}"
 fi
 
