@@ -32,6 +32,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -147,9 +148,6 @@ public class ReproGuidance implements Guidance {
      */
     @Override
     public void handleResult(Result result, Throwable error) {
-        // Print footer in log files
-        String footer = String.format("# End %s\n", inputFiles[nextFileIdx].toString());
-
         // Close the open input file
         try {
             if (inputStream != null) {
@@ -171,6 +169,19 @@ public class ReproGuidance implements Guidance {
         if (allBranchesCovered != null && (ignoreInvalidCoverage == false || result == Result.SUCCESS)) {
             assert branchesCoveredInCurrentRun != null;
             allBranchesCovered.addAll(branchesCoveredInCurrentRun);
+        }
+
+        // Maybe add to results csv
+        if (traceDir != null) {
+            File resultsCsv = new File(traceDir, "results.csv");
+            boolean append = nextFileIdx > 0; // append for all but the first input
+            try (PrintStream out = new PrintStream(new FileOutputStream(resultsCsv, append))) {
+                String inputName = inputFiles[nextFileIdx].toString();
+                String exception = result == Result.FAILURE ? error.getClass().getName() : "";
+                out.printf("%s,%s,%s\n", inputName, result, exception);
+            } catch (IOException e) {
+                throw new GuidanceException(e);
+            }
         }
 
         // Increment file

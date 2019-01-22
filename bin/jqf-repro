@@ -8,10 +8,10 @@ popd > /dev/null
 ROOT_DIR=`dirname $BIN_DIR`
 
 print_usage() {
-  echo "Usage: $0 [-c CLASSPATH] [-i] [-v] TEST_CLASS TEST_METHOD INPUT_FILE.."
+  echo "Usage: $0 [-c CLASSPATH] [-i] [-v] [-r] TEST_CLASS TEST_METHOD INPUT_FILE.."
 }
 
-while getopts ":c:iv" opt; do
+while getopts ":c:ivr" opt; do
   case $opt in
     /?)
       echo "Invalid option: -$OPTARG" >&2
@@ -24,6 +24,9 @@ while getopts ":c:iv" opt; do
     i)
       instrument=1
       ;;
+    r)
+      results=1
+      ;;
     v)
       export JVM_OPTS="$JVM_OPTS -Djqf.logCoverage=true -Djanala.verbose=true"
       ;;
@@ -31,9 +34,11 @@ while getopts ":c:iv" opt; do
 done
 shift $((OPTIND-1))
 
-if [ -n "$instrument" ]; then
+if [ -n "$instrument" -o -n "$results" ]; then
   export JVM_OPTS="-Djqf.repro.traceDir=. $JVM_OPTS"
-else
+fi
+
+if [ -z "$instrument" ]; then
   export JQF_DISABLE_INSTRUMENTATION=1
 fi
 
