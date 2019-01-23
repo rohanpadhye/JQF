@@ -29,6 +29,7 @@
 package edu.berkeley.cs.jqf.fuzz.repro;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -36,6 +37,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,6 +52,11 @@ import edu.berkeley.cs.jqf.fuzz.util.Coverage;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import org.jacoco.core.analysis.Analyzer;
+import org.jacoco.core.analysis.CoverageBuilder;
+import org.jacoco.core.tools.ExecFileLoader;
+import org.jacoco.report.IReportVisitor;
+import org.jacoco.report.csv.CSVFormatter;
 
 /**
  * A front-end that provides a specified set of inputs for test
@@ -141,6 +148,14 @@ public class ReproGuidance implements Guidance {
     }
 
     /**
+     * Returns the input file which is currently being repro'd.
+     * @return the current input file
+     */
+    private File getCurrentInputFile() {
+        return inputFiles[nextFileIdx];
+    }
+
+    /**
      * Logs the end of run in the log files, if any.
      *
      * @param result   the result of the fuzzing trial
@@ -160,10 +175,12 @@ public class ReproGuidance implements Guidance {
 
         // Show errors for invalid tests
         if (result == Result.INVALID && error != null) {
-            File inputFile = inputFiles[nextFileIdx];
+            File inputFile = getCurrentInputFile();
             System.err.println(inputFile.getName() + ": Test run was invalid");
-            error.printStackTrace();
+            // error.printStackTrace();
         }
+
+
 
         // Possibly accumulate coverage
         if (allBranchesCovered != null && (ignoreInvalidCoverage == false || result == Result.SUCCESS)) {
@@ -176,12 +193,20 @@ public class ReproGuidance implements Guidance {
             File resultsCsv = new File(traceDir, "results.csv");
             boolean append = nextFileIdx > 0; // append for all but the first input
             try (PrintStream out = new PrintStream(new FileOutputStream(resultsCsv, append))) {
-                String inputName = inputFiles[nextFileIdx].toString();
+                String inputName = getCurrentInputFile().toString();
                 String exception = result == Result.FAILURE ? error.getClass().getName() : "";
                 out.printf("%s,%s,%s\n", inputName, result, exception);
             } catch (IOException e) {
                 throw new GuidanceException(e);
             }
+        }
+
+        // Maybe checkpoint JaCoCo coverage
+        String jacocoAccumulateJar = System.getProperty("jqf.repro.jacocoAccumulateJar");
+        if (jacocoAccumulateJar != null) {
+            String dir = System.getProperty("jqf.repro.jacocoAccumulateDir", ".");
+            jacocoCheckpoint(new File(jacocoAccumulateJar), new File(dir));
+
         }
 
         // Increment file
@@ -287,6 +312,40 @@ public class ReproGuidance implements Guidance {
      */
     public Set<String> getBranchesCovered() {
         return allBranchesCovered;
+    }
+
+
+    public void jacocoCheckpoint(File classFile, File csvDir) {
+        int idx = nextFileIdx;
+        csvDir.mkdirs();
+        try {
+            // Get exec data by dynamically calling RT.getAgent().getExecutionData()
+            Class RT = Class.forName("org.jacoco.agent.rt.RT");
+            Method getAgent = RT.getMethod("getAgent");
+            Object agent = getAgent.invoke(null);
+            Method dump = agent.getClass().getMethod("getExecutionData", boolean.class);
+            byte[] execData = (byte[]) dump.invoke(agent, false);
+
+            // Analyze exec data
+            ExecFileLoader loader = new ExecFileLoader();
+            loader.load(new ByteArrayInputStream(execData));
+            final CoverageBuilder builder = new CoverageBuilder();
+            Analyzer analyzer = new Analyzer(loader.getExecutionDataStore(), builder);
+            analyzer.analyzeAll(classFile);
+
+            // Generate CSV
+            File csv = new File(csvDir, String.format("cov-%05d.csv", idx));
+            try (FileOutputStream out = new FileOutputStream(csv)) {
+                IReportVisitor coverageVisitor = new CSVFormatter().createVisitor(out);
+                coverageVisitor.visitBundle(builder.getBundle("JQF"), null);
+                coverageVisitor.visitEnd();
+                out.flush();
+            }
+
+
+        } catch (Exception e) {
+            System.err.println(e);
+        }
     }
 
 }
