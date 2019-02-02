@@ -1,8 +1,20 @@
-# JQF: A feedback-directed fuzz testing platform for Java
+# JQF: Generator-based Structured Fuzzing for Java 
 
-JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck), which itself lets you write [Quickcheck](http://www.cse.chalmers.se/~rjmh/QuickCheck/manual.html)-like generators and properties in a [Junit](http://junit.org)-style test class. JQF enables better input generation using state-of-the-art fuzzing tools such as [AFL](http://lcamtuf.coredump.cx/afl). 
+JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck), which itself lets you write [Quickcheck](http://www.cse.chalmers.se/~rjmh/QuickCheck/manual.html)-like **generators** and properties in a [Junit](http://junit.org)-style test class. JQF enables better input generation using **coverage-guided** fuzzing tools such as [AFL](http://lcamtuf.coredump.cx/afl). 
 
 JQF has been successful in [discovering a number of bugs in widely used open-source software](https://github.com/rohanpadhye/jqf/wiki/Bug-trophy-case) such as OpenJDK, Apache Maven and the Google Closure Compiler.
+
+## What is *structured fuzzing*?
+
+Conventional fuzzing tools like [AFL](http://lcamtuf.coredump.cx/afl) and [libFuzzer](https://llvm.org/docs/LibFuzzer.html) treat the input as a sequence of bytes. If the test program expects highly structured inputs, such as XML documents or JavaScript programs, then mutating byte-arrays often results in syntactically invalid inputs; the core of the test program remains untested.
+
+**Structured fuzzing** tools like **JQF** and others perform mutations in the space of *syntactically valid* inputs, by leveraging domain-specific knowledge of the input format.
+
+### What is *generator-based* structured fuzzing?
+
+Structured fuzzing tools need a way to understand the input format. Some tools use [grammars](https://embed.cs.utah.edu/csmith/) and [protobufs](https://github.com/google/libprotobuf-mutator) as a declarative specification. JQF uses an imperative approach: arbitrary *generator* programs. A generator for type `T` is a function which when invoked returns a random instance of type `T`. For example, a generator of type `Date` returns randomly-generated `Date` objects. One can easily write generators for more complex types, such as [XML documents](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/xml/XmlDocumentGenerator.java), [JavaScript programs](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/js/JavaScriptCodeGenerator.java), [JVM class files](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/bcel/JavaClassGenerator.java), SQL queries, HTTP requests, and many more -- this is **generator-based structured fuzzing**. However, simply sampling random inputs of type `T` is not usually very effective, since the generator does not know if the inputs it is producing are any good.
+
+**JQF uses code-coverage feedback to bias the pseudo-random source that backs your generator**, thereby encouraging the production of inputs that are both syntactically valid and find bugs deep in your test program.
 
 ## Quickstart
 
