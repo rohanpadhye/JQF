@@ -26,21 +26,12 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.examples;
+package edu.berkeley.cs.jqf.examples.xml;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
 
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
@@ -57,6 +48,8 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Text;
 
 /**
+ * A generator for XML documents.
+ *
  * @author Rohan Padhye
  */
 public class XmlDocumentGenerator extends Generator<Document> {
@@ -64,16 +57,25 @@ public class XmlDocumentGenerator extends Generator<Document> {
     private static DocumentBuilderFactory documentBuilderFactory =
             DocumentBuilderFactory.newInstance();
 
-    private static TransformerFactory transformerFactory =
-            TransformerFactory.newInstance();
-
     private static GeometricDistribution geometricDistribution =
             new GeometricDistribution();
 
-    private static double MEAN_NUM_CHILDREN = 4;
-    private static double MEAN_NUM_ATTRIBUTES = 2;
+    /** Mean number of child nodes for each XML element. */
+    private static final double MEAN_NUM_CHILDREN = 4;
 
+    /** Mean number of attributes for each XML element. */
+    private static final double MEAN_NUM_ATTRIBUTES = 2;
+
+    /**
+     * Minimum size of XML tree.
+     * @see {@link #configure(Size)}
+     */
     private int minDepth = 0;
+
+    /**
+     * Maximum size of XML tree.
+     * @see {@link #configure(Size)}
+     */
     private int maxDepth = 4;
 
     private Generator<String> stringGenerator = new AlphaStringGenerator();
@@ -82,15 +84,40 @@ public class XmlDocumentGenerator extends Generator<Document> {
         super(Document.class);
     }
 
+    /**
+     * Configures the minimum/maximum size of the XML document.
+     *
+     * This method is not usually invoked directly. Instead, use
+     * the `@Size` annotation on fuzzed parameters to configure
+     * automatically.
+     *
+     * @param size the min/max size of the XML document
+     */
     public void configure(Size size) {
         minDepth = size.min();
         maxDepth = size.max();
     }
 
+
+    /**
+     * Configures the string generator used by this generator to use
+     * a dictionary. This is useful for overriding the default
+     * arbitrary string generator with something that pulls tag names
+     * from a predefined list.
+     *
+     * @param dict the dictionary file
+     * @throws IOException if the dictionary file cannot be read
+     */
     public void configure(Dictionary dict) throws IOException {
         stringGenerator = new DictionaryBackedStringGenerator(dict.value(), stringGenerator);
     }
 
+    /**
+     * Generators a random XML document.
+     * @param random a source of pseudo-random values
+     * @param status generation state
+     * @return a randomly-generated XML document
+     */
     @Override
     public Document generate(SourceOfRandomness random, GenerationStatus status) {
         DocumentBuilder builder;
@@ -114,29 +141,6 @@ public class XmlDocumentGenerator extends Generator<Document> {
 
     }
 
-    public static String documentToString(Document document) {
-        try {
-            Transformer transformer = transformerFactory.newTransformer();
-            StringWriter stream = new StringWriter();
-            transformer.transform(new DOMSource(document), new StreamResult(stream));
-            return stream.toString();
-        } catch (TransformerException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
-    public static InputStream documentToInputStream(Document document) {
-        try {
-            Transformer transformer = transformerFactory.newTransformer();
-            ByteArrayOutputStream stream = new ByteArrayOutputStream();
-            transformer.transform(new DOMSource(document), new StreamResult(stream));
-            return new ByteArrayInputStream(stream.toByteArray());
-        } catch (TransformerException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private String makeString(SourceOfRandomness random, GenerationStatus status) {
         return stringGenerator.generate(random, status);
     }
@@ -147,7 +151,6 @@ public class XmlDocumentGenerator extends Generator<Document> {
         document.appendChild(root);
         return document;
     }
-
 
     private void populateElement(Document document, Element elem, SourceOfRandomness random, GenerationStatus status, int depth) {
         // Add attributes

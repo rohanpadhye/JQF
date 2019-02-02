@@ -37,7 +37,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.pholser.junit.quickcheck.From;
-import edu.berkeley.cs.jqf.examples.XmlDocumentGenerator;
+import edu.berkeley.cs.jqf.examples.xml.XMLDocumentUtils;
+import edu.berkeley.cs.jqf.examples.xml.XmlDocumentGenerator;
 import edu.berkeley.cs.jqf.examples.common.Dictionary;
 import edu.berkeley.cs.jqf.fuzz.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.JQF;
@@ -84,13 +85,13 @@ public class ProjectBuilderTest {
     @Fuzz
     public void testWithGenerator(@From(XmlDocumentGenerator.class)
                                       @Dictionary("dictionaries/ant-project.dict") Document dom) {
-        testWithInputStream(XmlDocumentGenerator.documentToInputStream(dom));
+        testWithInputStream(XMLDocumentUtils.documentToInputStream(dom));
     }
 
     @Fuzz
     public void debugWithGenerator(@From(XmlDocumentGenerator.class)
                                        @Dictionary("dictionaries/ant-project.dict") Document dom) {
-        System.out.println(XmlDocumentGenerator.documentToString(dom));
+        System.out.println(XMLDocumentUtils.documentToString(dom));
         testWithGenerator(dom);
     }
 
