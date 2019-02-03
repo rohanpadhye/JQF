@@ -14,7 +14,7 @@ Conventional fuzzing tools like [AFL](http://lcamtuf.coredump.cx/afl) and [libFu
 
 Structured fuzzing tools need a way to understand the input format. Some tools use [grammars](https://embed.cs.utah.edu/csmith/) and [protobufs](https://github.com/google/libprotobuf-mutator) as a declarative specification. JQF uses an imperative approach: arbitrary *generator* programs. A generator for type `T` is a function which when invoked returns a random instance of type `T`. For example, a generator of type `Date` returns randomly-generated `Date` objects. One can easily write generators for more complex types, such as [XML documents](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/xml/XmlDocumentGenerator.java), [JavaScript programs](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/js/JavaScriptCodeGenerator.java), [JVM class files](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/bcel/JavaClassGenerator.java), SQL queries, HTTP requests, and many more -- this is **generator-based structured fuzzing**. However, simply sampling random inputs of type `T` is not usually very effective, since the generator does not know if the inputs it is producing are any good.
 
-**JQF uses code-coverage feedback to bias the pseudo-random source that backs your generator**, thereby encouraging the production of inputs that are both syntactically valid and find bugs deep in your test program.
+**JQF uses code-coverage feedback to bias the pseudo-random source that backs your generator**, thereby encouraging the production of inputs that are both syntactically valid and find bugs deep in your test program. Once you have a generator for type `T`, you can fuzz any method that takes an instance of type `T` in its argument list.
 
 ## Quickstart
 
@@ -71,6 +71,12 @@ java.lang.ArrayIndexOutOfBoundsException: 127
 ```
 
 This shouldn't happen! `DateFormat.format()` does not specify that it will throw `ArrayIndexOutOfBoundsException`. Time to file a [bug report](https://github.com/rohanpadhye/jqf/wiki/Bug-trophy-case) :-)
+
+## Writing Generators
+
+In the example above, the generator for `Date` type ships with `junit-quickcheck`, which is the QuickCheck library that JQF uses. To write generators of more complex types `T`, simply create your own class which extends `Generator<T>`. If creating a random instance of `T` requires a random instance of `U`, you can simply re-use an existing `Generator<U>`. **Generators are composable!*
+
+Go check out the [junit-quickcheck documentation on writing generators](https://pholser.github.io/junit-quickcheck/site/0.7/usage/complex-types.html), or look at some [examples in the JQF repository](https://github.com/rohanpadhye/jqf/tree/master/examples/src/main/java/edu/berkeley/cs/jqf/examples).
 
 ## Using JQF with Maven
 
