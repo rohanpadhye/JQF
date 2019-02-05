@@ -129,7 +129,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     private Deque<SeedInput> seedInputs = new ArrayDeque<>();
 
     /** Current input that's running -- valid after getInput() and before handleResult(). */
-    private Input currentInput;
+    private Input<?> currentInput;
 
     /** Index of currentInput in the savedInputs -- valid after seeds are processed (OK if this is inaccurate). */
     private int currentParentInputIdx = 0;
@@ -231,7 +231,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     static final boolean SAVE_ONLY_VALID = Boolean.getBoolean("jqf.ei.SAVE_ONLY_VALID");
 
     /** Max input size to generate. */
-    static final int MAX_INPUT_SIZE = Integer.getInteger("jqf.ei.MAX_INPUT_SIZE", 1024);
+    static final int MAX_INPUT_SIZE = Integer.getInteger("jqf.ei.MAX_INPUT_SIZE", 10240);
 
     /** Whether to generate EOFs when we run out of bytes in the input, instead of randomly generating new bytes. **/
     static final boolean GENERATE_EOF_WHEN_OUT = Boolean.getBoolean("jqf.ei.GENERATE_EOF_WHEN_OUT");
@@ -251,7 +251,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     /** Max number of contiguous bytes to splice in from another input during the splicing stage. */
     static final int MAX_SPLICE_SIZE = 64; // Bytes
 
-
     /** Whether to splice only in the same sub-tree */
     static final boolean SPLICE_SUBTREE = Boolean.getBoolean("jqf.ei.SPLICE_SUBTREE");
 
@@ -263,7 +262,6 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     /** Probability of splicing in getOrGenerateFresh() */
     static final double DEMAND_DRIVEN_SPLICING_PROBABILITY = 0;
-
 
     /**
      * @param testName the name of test to display on the status screen
@@ -532,7 +530,10 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 throw new GuidanceException("Too many trials without coverage; " +
                         "likely all assumption violations");
             }
-            currentInput = new Input();
+
+            // Make fresh input using either list or maps
+            infoLog("Spawning new input from thin air");
+            currentInput = DISABLE_EXECUTION_INDEXING ? new LinearInput() : new MappedInput();
         } else {
             // The number of children to produce is determined by how much of the coverage
             // pool this parent input hits
@@ -552,7 +553,8 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             Input parent = savedInputs.get(currentParentInputIdx);
 
             // Fuzz it to get a new input
-            currentInput = parent.fuzz(random, ecToInputLoc);
+            infoLog("Mutating input: %s", parent.desc);
+            currentInput = parent.fuzz(random);
             numChildrenGeneratedForCurrentParentInput++;
 
             // Write it to disk for debugging
@@ -578,18 +580,31 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                     throw new IOException("Could not compute execution index; no instrumentation?");
                 }
 
-                // Get the execution index of the last event
-                ExecutionIndex executionIndex = DISABLE_EXECUTION_INDEXING ?
-                        new ExecutionIndex(new int[]{0, bytesRead}) :
-                        eiState.getExecutionIndex(lastEvent);
+                // For linear inputs, get with key = bytesRead (which is then incremented)
+                if (currentInput instanceof LinearInput) {
+                    LinearInput linearInput = (LinearInput) currentInput;
+                    // Attempt to get a value from the list, or else generate a random value
+                    int ret = linearInput.getOrGenerateFresh(bytesRead++, random);
+                    // infoLog("read(%d) = %d", bytesRead, ret);
+                    return ret;
+                }
 
-                // Attempt to get a value from the map, or else generate a random value
-                int value = currentInput.getOrGenerateFresh(executionIndex, random);
+                // For mapped inputs, make a suitable execution index
+                else {
+                    MappedInput mappedInput = (MappedInput) currentInput;
 
-                // Keep track of how many bytes were read in this input
-                bytesRead++;
+                    // Get the execution index of the last event
+                    ExecutionIndex executionIndex = eiState.getExecutionIndex(lastEvent);
 
-                return value;
+                    // Attempt to get a value from the map, or else generate a random value
+                    int value = mappedInput.getOrGenerateFresh(executionIndex, random);
+
+                    // Keep track of how many bytes were read in this input
+                    bytesRead++;
+
+                    return value;
+
+                }
             }
         };
     }
@@ -613,7 +628,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         currentInput.gc();
 
         // It must still be non-empty
-        assert(currentInput.valuesMap.size() > 0);
+        assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
 
         boolean valid = result == Result.SUCCESS;
 
@@ -681,7 +696,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                                 "total coverage = %d",
                         numTrials,
                         savedInputs.size(),
-                        currentInput.valuesMap.size(),
+                        currentInput.size(),
                         nonZeroAfter);
 
                 // Save input to queue and to disk
@@ -790,8 +805,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
     private void writeCurrentInputToFile(File saveFile) throws IOException {
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(saveFile))) {
-            for (Object key : currentInput.orderedKeys) {
-                int b = currentInput.valuesMap.get(key);
+            for (Integer b : currentInput) {
                 assert (b >= 0 && b < 256);
                 out.write(b);
             }
@@ -835,9 +849,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             Input oldResponsible = responsibleInputs.get(b);
             if (oldResponsible != null) {
                 oldResponsible.responsibilities.remove(b);
-                infoLog("-- Stealing responsibility for %s from input %d", b, oldResponsible.id);
+                // infoLog("-- Stealing responsibility for %s from input %d", b, oldResponsible.id);
             } else {
-                infoLog("-- Assuming new responsibility for %s", b);
+                // infoLog("-- Assuming new responsibility for %s", b);
             }
             // We are now responsible
             responsibleInputs.put(b, currentInput);
@@ -849,10 +863,13 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     }
 
     private void mapEcToInputLoc(Input input) {
-        for (int offset = 0; offset < input.size(); offset++) {
-            ExecutionIndex ei = input.orderedKeys.get(offset);
-            ExecutionContext ec = new ExecutionContext(ei);
-            ecToInputLoc.get(ec).add(new InputLocation(input, offset));
+        if (input instanceof MappedInput) {
+            MappedInput mappedInput = (MappedInput) input;
+            for (int offset = 0; offset < mappedInput.size(); offset++) {
+                ExecutionIndex ei = mappedInput.orderedKeys.get(offset);
+                ExecutionContext ec = new ExecutionContext(ei);
+                ecToInputLoc.get(ec).add(new InputLocation(mappedInput, offset));
+            }
         }
 
     }
@@ -908,6 +925,243 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
         return totalCoverage;
     }
 
+    /**
+     * A candidate or saved test input that maps objects of type K to bytes.
+     */
+    public static abstract class Input<K> implements Iterable<Integer> {
+
+        /**
+         * The file where this input is saved.
+         *
+         * <p>This field is null for inputs that are not saved.</p>
+         */
+        File saveFile = null;
+
+        /**
+         * An ID for a saved input.
+         *
+         * <p>This field is -1 for inputs that are not saved.</p>
+         */
+        int id;
+
+        /**
+         * The description for this input.
+         *
+         * <p>This field is modified by the construction and mutation
+         * operations.</p>
+         */
+        String desc;
+
+        /**
+         * The run coverage for this input, if the input is saved.
+         *
+         * <p>This field is null for inputs that are not saved.</p>
+         */
+        Coverage coverage = null;
+
+        /**
+         * The number of non-zero elements in `coverage`.
+         *
+         * <p>This field is -1 for inputs that are not saved.</p>
+         *
+         * <p></p>When this field is non-negative, the information is
+         * redundant (can be computed using {@link Coverage#getNonZeroCount()}),
+         * but we store it here for performance reasons.</p>
+         */
+        int nonZeroCoverage = -1;
+
+        /**
+         * The number of mutant children spawned from this input that
+         * were saved.
+         *
+         * <p>This field is -1 for inputs that are not saved.</p>
+         */
+        int offspring = -1;
+
+        /**
+         * Whether this input resulted in a valid run.
+         */
+        boolean valid = false;
+
+        /**
+         * The set of coverage keys for which this input is
+         * responsible.
+         *
+         * <p>This field is null for inputs that are not saved.</p>
+         *
+         * <p>Each coverage key appears in the responsibility set
+         * of exactly one saved input, and all covered keys appear
+         * in at least some responsibility set. Hence, this list
+         * needs to be kept in-sync with {@link #responsibleInputs}.</p>
+         */
+        Set<Object> responsibilities = null;
+
+
+        /**
+         * Create an empty input.
+         */
+        public Input() {
+            desc = "random";
+        }
+
+        /**
+         * Create a copy of an existing input.
+         *
+         * @param toClone the input map to clone
+         */
+        public Input(Input toClone) {
+            desc = String.format("src:%06d", toClone.id);
+        }
+
+        public abstract int getOrGenerateFresh(K key, Random random);
+        public abstract int size();
+        public abstract Input fuzz(Random random);
+        public abstract void gc();
+
+
+
+        /**
+         * Returns whether this input should be favored for fuzzing.
+         *
+         * <p>An input is favored if it is responsible for covering
+         * at least one branch.</p>
+         *
+         * @return
+         */
+        private boolean isFavored() {
+            return responsibilities.size() > 0;
+        }
+
+
+        /**
+         * Sample from a geometric distribution with given mean.
+         *
+         * Utility method used in implementing mutation operations.
+         *
+         * @param random a pseudo-random number generator
+         * @param mean the mean of the distribution
+         * @return a randomly sampled value
+         */
+        protected static int sampleGeometric(Random random, double mean) {
+            double p = 1 / mean;
+            double uniform = random.nextDouble();
+            return (int) ceil(log(1 - uniform) / log(1 - p));
+        }
+    }
+
+    public class LinearInput extends Input<Integer> {
+
+        /** A list of byte values (0-255) ordered by their index. */
+        protected ArrayList<Integer> values;
+
+        /** The number of bytes requested so far */
+        protected int requested = 0;
+
+        public LinearInput() {
+            super();
+            this.values = new ArrayList<>();
+        }
+
+        public LinearInput(LinearInput other) {
+            super(other);
+            this.values = new ArrayList<>(other.values);
+        }
+
+
+        @Override
+        public int getOrGenerateFresh(Integer key, Random random) {
+            // Otherwise, make sure we are requesting just beyond the end-of-list
+            // assert (key == values.size());
+            if (key != requested) {
+                throw new IllegalStateException(String.format("Bytes from linear input out of order. " +
+                        "Size = %d, Key = %d", values.size(), key));
+            }
+
+            // Don't generate over the limit
+            if (requested >= MAX_INPUT_SIZE) {
+                return -1;
+            }
+
+            // If it exists in the list, return it
+            if (key < values.size()) {
+                requested++;
+                // infoLog("Returning old byte at key=%d, total requested=%d", key, requested);
+                return values.get(key);
+            }
+
+            // Handle end of stream
+            if (GENERATE_EOF_WHEN_OUT) {
+                return -1;
+            } else {
+                // Just generate a random input
+                int val = random.nextInt(256);
+                values.add(val);
+                requested++;
+                // infoLog("Generating fresh byte at key=%d, total requested=%d", key, requested);
+                return val;
+            }
+        }
+
+        @Override
+        public int size() {
+            return values.size();
+        }
+
+        /**
+         * Truncates the input list to remove values that were never actually requested.
+         *
+         * <p>Although this operation mutates the underlying object, the effect should
+         * not be externally visible (at least as long as the test executions are
+         * deterministic).</p>
+         */
+        @Override
+        public void gc() {
+            // Remove elements beyond "requested"
+            values = new ArrayList<>(values.subList(0, requested));
+            values.trimToSize();
+        }
+
+        @Override
+        public Input fuzz(Random random) {
+            // Clone this input to create initial version of new child
+            LinearInput newInput = new LinearInput(this);
+
+            // Stack a bunch of mutations
+            int numMutations = sampleGeometric(random, MEAN_MUTATION_COUNT);
+            newInput.desc += ",havoc:"+numMutations;
+
+            boolean setToZero = random.nextDouble() < 0.1; // one out of 10 times
+
+            for (int mutation = 1; mutation <= numMutations; mutation++) {
+
+                // Select a random offset and size
+                int offset = random.nextInt(newInput.values.size());
+                int mutationSize = sampleGeometric(random, MEAN_MUTATION_SIZE);
+
+                // desc += String.format(":%d@%d", mutationSize, idx);
+
+                // Mutate a contiguous set of bytes from offset
+                for (int i = offset; i < offset + mutationSize; i++) {
+                    // Don't go past end of list
+                    if (i >= newInput.values.size()) {
+                        break;
+                    }
+
+                    // Otherwise, apply a random mutation
+                    int mutatedValue = setToZero ? 0 : random.nextInt(256);
+                    newInput.values.set(i, mutatedValue);
+                }
+            }
+
+            return newInput;
+        }
+
+        @Override
+        public Iterator<Integer> iterator() {
+            return values.iterator();
+        }
+    }
+
 
     /**
      * A candidate test input represented as a map from execution indices
@@ -922,7 +1176,17 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
      * an input is via the {@link #fuzz} method which produces a new input
      * object with some values mutated.</p>
      */
-    public static class Input {
+    public class MappedInput extends Input<ExecutionIndex> {
+
+        /**
+         * Whether this input has been executed.
+         *
+         * When this field is {@code false}, the field {@link #orderedKeys}
+         * is not yet populated and must not be used. When this field is {@code true},
+         * the input should be considered immutable and neither {@link #orderedKeys} nor
+         * {@link #valuesMap} must be modified.
+         */
+        protected boolean executed = false;
 
         /** A map from execution indexes to the byte (0-255) to be returned at that index. */
         protected LinkedHashMap<ExecutionIndex, Integer> valuesMap;
@@ -938,90 +1202,15 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          */
         protected ArrayList<ExecutionIndex> orderedKeys = new ArrayList<>();
 
-        /**
-         * Whether this input has been executed.
-         *
-         * When this field is {@code false}, the field {@link #orderedKeys}
-         * is not yet populated and must not be used. When this field is {@code true},
-         * the input should be considered immutable and neither {@link #orderedKeys} nor
-         * {@link #valuesMap} must be modified.
-         */
-        protected boolean executed = false;
-
-        /**
-         * The file where this input is saved.
-         *
-         * <p>This field is null for inputs that are not saved.</p>
-         */
-        private File saveFile = null;
-
-        /**
-         * An ID for a saved input.
-         *
-         * <p>This field is -1 for inputs that are not saved.</p>
-         */
-        private int id;
-
-        /**
-         * The description for this input.
-         *
-         * <p>This field is modified by the construction and mutation
-         * operations.</p>
-         */
-        protected String desc;
-
-        /**
-         * The run coverage for this input, if the input is saved.
-         *
-         * <p>This field is null for inputs that are not saved.</p>
-         */
-        private Coverage coverage = null;
-
-        /**
-         * The number of non-zero elements in `coverage`.
-         *
-         * <p>This field is -1 for inputs that are not saved.</p>
-         *
-         * <p></p>When this field is non-negative, the information is
-         * redundant (can be computed using {@link Coverage#getNonZeroCount()}),
-         * but we store it here for performance reasons.</p>
-         */
-        private int nonZeroCoverage = -1;
-
-        /**
-         * The number of mutant children spawned from this input that
-         * were saved.
-         *
-         * <p>This field is -1 for inputs that are not saved.</p>
-         */
-        private int offspring = -1;
-
-        /**
-         * Whether this input resulted in a valid run.
-         */
-        private boolean valid = false;
-
-        /**
-         * The set of coverage keys for which this input is
-         * responsible.
-         *
-         * <p>This field is null for inputs that are not saved.</p>
-         *
-         * <p>Each coverage key appears in the responsibility set
-         * of exactly one saved input, and all covered keys appear
-         * in at least some responsibility set. Hence, this list
-         * needs to be kept in-sync with {@link #responsibleInputs}.</p>
-         */
-        private Set<Object> responsibilities = null;
 
         private List<InputPrefixMapping> demandDrivenSpliceMap = new ArrayList<>();
 
         /**
          * Create an empty input map.
          */
-        public Input() {
+        public MappedInput() {
+            super();
             valuesMap = new LinkedHashMap<>();
-            desc = "random";
         }
 
         /**
@@ -1029,9 +1218,9 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          *
          * @param toClone the input map to clone
          */
-        public Input(Input toClone) {
+        public MappedInput(MappedInput toClone) {
+            super(toClone);
             valuesMap = new LinkedHashMap<>(toClone.valuesMap);
-            desc = String.format("src:%06d", toClone.id);
         }
 
         /**
@@ -1055,7 +1244,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @throws IllegalStateException if this method is called before the input
          *                               has been executed
          */
-        public final int getValueAtOffset(int offset) throws IndexOutOfBoundsException, IllegalStateException {
+        private final int getValueAtOffset(int offset) throws IndexOutOfBoundsException, IllegalStateException {
             if (!executed) {
                 throw new IllegalStateException("Cannot get with offset before execution");
             }
@@ -1077,7 +1266,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @throws IllegalStateException if this method is called before the input
          *                               has been executed
          */
-        public final ExecutionIndex getKeyAtOffset(int offset) throws IndexOutOfBoundsException, IllegalStateException {
+        private final ExecutionIndex getKeyAtOffset(int offset) throws IndexOutOfBoundsException, IllegalStateException {
             if (!executed) {
                 throw new IllegalStateException("Cannot get with offset before execution");
             }
@@ -1106,6 +1295,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @throws IllegalStateException if this method is called after the input
          *                               has been executed
          */
+        @Override
         public int getOrGenerateFresh(ExecutionIndex key, Random random) throws IllegalStateException {
             if (executed) {
                 throw new IllegalStateException("Cannot generate fresh values after execution");
@@ -1172,7 +1362,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @throws IndexOutOfBoundsException if the offset is negative or
          *      larger than {@link #size}()-1
          */
-        public final Integer getValueAtKey(ExecutionIndex ei) throws IndexOutOfBoundsException {
+        protected final Integer getValueAtKey(ExecutionIndex ei) throws IndexOutOfBoundsException {
             return valuesMap.get(ei);
         }
 
@@ -1187,7 +1377,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * @throws IllegalStateException if this method is called after the input
          *                               has been executed
          */
-        public final void setValueAtKey(ExecutionIndex ei, int val) throws IndexOutOfBoundsException, IllegalStateException {
+        protected final void setValueAtKey(ExecutionIndex ei, int val) throws IndexOutOfBoundsException, IllegalStateException {
             if (executed) {
                 throw new IllegalStateException("Cannot set value before execution");
             }
@@ -1203,6 +1393,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * not be externally visible (at least as long as the test executions are
          * deterministic).</p>
          */
+        @Override
         public void gc() {
             LinkedHashMap<ExecutionIndex, Integer> newMap = new LinkedHashMap<>();
             for (ExecutionIndex key : orderedKeys) {
@@ -1214,6 +1405,17 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
             executed = true;
         }
 
+        /**
+         * Return a new input derived from this one with some values
+         * mutated.
+         *
+         * Pass-through to {@link #fuzz(Random, Map)}
+         *
+         */
+        @Override
+        public Input fuzz(Random random) {
+            return fuzz(random, ExecutionIndexingGuidance.this.ecToInputLoc);
+        }
 
         /**
          * Return a new input derived from this one with some values
@@ -1236,16 +1438,14 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          * {@link #MAX_SPLICE_SIZE}.</p>
          *
          * @param random the PRNG
-         * @param ecToInputLoc a map of execution contexts to input locations
          * @return a newly fuzzed input
          */
-        public Input fuzz(Random random, Map<ExecutionContext, ArrayList<InputLocation>> ecToInputLoc) {
+        protected MappedInput fuzz(Random random, Map<ExecutionContext, ArrayList<InputLocation>> ecToInputLoc) {
             // Derive new input from this object as source
-            Input newInput = new Input(this);
+            MappedInput newInput = new MappedInput(this);
 
             // Maybe try splicing
             boolean splicingDone = false;
-
 
             // Only splice if we have been provided the ecToInputLoc
             if (ecToInputLoc != null) {
@@ -1285,7 +1485,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
                             // Get a candidate source location with the same execution context
                             inputLocation = inputLocations.get(random.nextInt(inputLocations.size()));
-                            Input sourceInput = inputLocation.input;
+                            MappedInput sourceInput = inputLocation.input;
                             int sourceOffset = inputLocation.offset;
 
 
@@ -1395,38 +1595,38 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
         }
 
-        /**
-         * Returns whether this input should be favored for fuzzing.
-         *
-         * <p>An input is favored if it is responsible for covering
-         * at least one branch.</p>
-         *
-         * @return
-         */
-        public boolean isFavored() {
-            return responsibilities.size() > 0;
-        }
+        @Override
+        public Iterator<Integer> iterator() {
+            return new Iterator<Integer>() {
 
-        private int sampleGeometric(Random random, double mean) {
-            double p = 1 / mean;
-            double uniform = random.nextDouble();
-            return (int) ceil(log(1 - uniform) / log(1 - p));
-        }
+                Iterator<ExecutionIndex> keyIt = orderedKeys.iterator();
 
+                @Override
+                public boolean hasNext() {
+                    return keyIt.hasNext();
+                }
+
+                @Override
+                public Integer next() {
+                    return valuesMap.get(keyIt.next());
+                }
+            };
+        }
     }
 
-    public static class SeedInput extends Input {
+    public class SeedInput extends LinearInput {
         final File seedFile;
         final InputStream in;
 
         public SeedInput(File seedFile) throws IOException {
+            super();
             this.seedFile = seedFile;
             this.in = new BufferedInputStream(new FileInputStream(seedFile));
             this.desc = "seed";
         }
 
         @Override
-        public int getOrGenerateFresh(ExecutionIndex key, Random random) {
+        public int getOrGenerateFresh(Integer key, Random random) {
             int value;
             try {
                 value = in.read();
@@ -1434,15 +1634,25 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
                 throw new GuidanceException("Error reading from seed file: " + seedFile.getName(), e);
 
             }
-            if (value >= 0) {
-                valuesMap.put(key, value);
-                orderedKeys.add(key);
+
+            // assert (key == values.size())
+            if (key != values.size()) {
+                throw new IllegalStateException(String.format("Bytes from seed out of order. " +
+                        "Size = %d, Key = %d", values.size(), key));
             }
+
+            if (value >= 0) {
+                requested++;
+                values.add(value);
+            }
+
+            // If value is -1, then it is returned (as EOF) but not added to the list
             return value;
         }
 
         @Override
         public void gc() {
+            super.gc();
             try {
                 in.close();
             } catch (IOException e) {
@@ -1454,21 +1664,21 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
 
 
     static class InputLocation {
-        private final Input input;
+        private final MappedInput input;
         private final int offset;
 
-        InputLocation(Input input, int offset) {
+        InputLocation(MappedInput input, int offset) {
             this.input = input;
             this.offset = offset;
         }
     }
 
     static class InputPrefixMapping {
-        private final Input sourceInput;
+        private final MappedInput sourceInput;
         private final Prefix sourcePrefix;
         private final Prefix targetPrefix;
 
-        InputPrefixMapping(Input sourceInput, Prefix sourcePrefix, Prefix targetPrefix) {
+        InputPrefixMapping(MappedInput sourceInput, Prefix sourcePrefix, Prefix targetPrefix) {
             this.sourceInput = sourceInput;
             this.sourcePrefix = sourcePrefix;
             this.targetPrefix = targetPrefix;
