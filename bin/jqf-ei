@@ -35,4 +35,4 @@ if [ $# -lt 2 ]; then
 fi
 
 # Run the execution indexing input driver
-$ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingDriver $@
+$ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.ei.ZestDriver $@

@@ -73,18 +73,12 @@ import static java.lang.Math.ceil;
 import static java.lang.Math.log;
 
 /**
- * A guidance that performs coverage-guided fuzz testing, where inputs
- * are represented not as sequences of bytes but instead as maps of
- * execution indexes to bytes.
- *
- * <p>Whenever the input generator for a test requests a new byte, the
- * execution index of that event is used to query a value in the input
- * map. This representation retains much more structure of the input
- * than a simple linear sequence.</p>
+ * A guidance that performs coverage-guided fuzzing using two coverage maps,
+ * one for all inputs and one for valid inputs only.
  *
  * @author Rohan Padhye
  */
-public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
+public class ZestGuidance implements Guidance, TraceEventVisitor {
 
     // Currently, we only support single-threaded applications
     // This field is used to ensure that
@@ -272,7 +266,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
      * @param outputDirectory the directory where fuzzing results will be written
      * @throws IOException if the output directory could not be prepared
      */
-    public ExecutionIndexingGuidance(String testName, Duration duration, File outputDirectory) throws IOException {
+    public ZestGuidance(String testName, Duration duration, File outputDirectory) throws IOException {
         this.testName = testName;
         this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
         this.outputDirectory = outputDirectory;
@@ -298,7 +292,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
      * @param seedInputFiles one or more input files to be used as initial inputs
      * @throws IOException if the output directory could not be prepared
      */
-    public ExecutionIndexingGuidance(String testName, Duration duration, File outputDirectory, File... seedInputFiles) throws IOException {
+    public ZestGuidance(String testName, Duration duration, File outputDirectory, File... seedInputFiles) throws IOException {
         this(testName, duration, outputDirectory);
         for (File seedInputFile : seedInputFiles) {
             seedInputs.add(new SeedInput(seedInputFile));
@@ -878,7 +872,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
     @Override
     public Consumer<TraceEvent> generateCallBack(Thread thread) {
         if (appThread != null) {
-            throw new IllegalStateException(ExecutionIndexingGuidance.class +
+            throw new IllegalStateException(ZestGuidance.class +
                 " only supports single-threaded apps at the moment");
         }
         appThread = thread;
@@ -1414,7 +1408,7 @@ public class ExecutionIndexingGuidance implements Guidance, TraceEventVisitor {
          */
         @Override
         public Input fuzz(Random random) {
-            return fuzz(random, ExecutionIndexingGuidance.this.ecToInputLoc);
+            return fuzz(random, ZestGuidance.this.ecToInputLoc);
         }
 
         /**

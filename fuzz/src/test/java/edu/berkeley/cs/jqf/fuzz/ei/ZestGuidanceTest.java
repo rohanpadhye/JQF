@@ -36,8 +36,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance.MappedInput;
-import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance.InputLocation;
+import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance.MappedInput;
+import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance.InputLocation;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -50,10 +50,10 @@ import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ExecutionIndexingGuidanceTest {
+public class ZestGuidanceTest {
 
     private static Random r;
-    private ExecutionIndexingGuidance g;
+    private ZestGuidance g;
 
     private ExecutionIndex e1 = new ExecutionIndex(new int[]{1,1});
     private ExecutionIndex e2 = new ExecutionIndex(new int[]{1,1,3,4}); // Same EC as e4/e6
@@ -71,7 +71,7 @@ public class ExecutionIndexingGuidanceTest {
 
     @Before
     public void createGuidanceInstance() throws IOException {
-       g = new ExecutionIndexingGuidance("test", null, Files.createTempDirectory("fuzz-out").toFile());
+       g = new ZestGuidance("test", null, Files.createTempDirectory("fuzz-out").toFile());
     }
 
     @Test
@@ -141,7 +141,7 @@ public class ExecutionIndexingGuidanceTest {
 
 
     //@Test - argh: we cannot configure static properties for tests
-    // (need to change how config is handled in ExecutionIndexingGuidance)
+    // (need to change how config is handled in ZestGuidance)
     public void testSplice() {
         MappedInput srcInput = g.new MappedInput();
         srcInput.setValueAtKey(e1, 23);

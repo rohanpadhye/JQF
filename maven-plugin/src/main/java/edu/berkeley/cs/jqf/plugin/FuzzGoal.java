@@ -36,7 +36,7 @@ import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
-import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
+import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
@@ -184,7 +184,7 @@ public class FuzzGoal extends AbstractMojo {
         try {
             File resultsDir = new File(target, outputDirectory);
             String targetName = testClassName + "#" + testMethod;
-            guidance = new ExecutionIndexingGuidance(targetName, duration, resultsDir);
+            guidance = new ZestGuidance(targetName, duration, resultsDir);
         } catch (IOException e) {
             throw new MojoExecutionException("Could not create output directory", e);
         }
