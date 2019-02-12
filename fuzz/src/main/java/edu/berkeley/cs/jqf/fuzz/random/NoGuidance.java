@@ -55,7 +55,7 @@ public class NoGuidance implements Guidance {
     private final float maxDiscardRatio = 0.9f;
     private final PrintStream out;
     private Random random = new Random();
-    private Coverage coverage = new Coverage();
+    private Coverage coverage;
     private static boolean KEEP_GOING_ON_ERROR = true;
 
     /**
@@ -138,7 +138,7 @@ public class NoGuidance implements Guidance {
      */
     @Override
     public Consumer<TraceEvent> generateCallBack(Thread thread) {
-        return coverage::handleEvent;
+        return getCoverage()::handleEvent;
     }
 
     /**
@@ -146,6 +146,9 @@ public class NoGuidance implements Guidance {
      * @return a reference to the coverage statistics
      */
     public Coverage getCoverage() {
+        if (coverage == null) {
+            coverage = new Coverage();
+        }
         return coverage;
     }
 }
