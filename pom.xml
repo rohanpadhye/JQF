@@ -4,7 +4,7 @@
 
     <groupId>edu.berkeley.cs.jqf</groupId>
     <artifactId>jqf</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
     <packaging>pom</packaging>
 
     <name>jqf</name>
@@ -48,7 +48,7 @@
     <scm>
         <connection>scm:git:git@github.com:rohanpadhye/jqf.git</connection>
         <url>https://github.com/rohanpadhye/jqf</url>
-      <tag>HEAD</tag>
+      <tag>jqf-1.0</tag>
   </scm>
 
     <issueManagement>
@@ -97,12 +97,12 @@
             <dependency>
                 <groupId>edu.berkeley.cs.jqf</groupId>
                 <artifactId>jqf-fuzz</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>1.0</version>
             </dependency>
             <dependency>
                 <groupId>edu.berkeley.cs.jqf</groupId>
                 <artifactId>jqf-instrument</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>1.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -165,7 +165,7 @@
                 <plugin>
                     <groupId>edu.berkeley.cs.jqf</groupId>
                     <artifactId>jqf-maven-plugin</artifactId>
-                    <version>1.0-SNAPSHOT</version>
+                    <version>1.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
