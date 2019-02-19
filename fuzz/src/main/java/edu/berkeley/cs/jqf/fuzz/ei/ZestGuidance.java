@@ -415,8 +415,8 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
 
         console.printf("\033[2J");
         console.printf("\033[H");
-        console.printf("JQF: Feedback-directed Generator-based Fuzzing\n");
-        console.printf("----------------------------------------------\n");
+        console.printf("Zest: Validity Fuzzing with Parametric Generators\n");
+        console.printf("-------------------------------------------------\n");
         if (this.testName != null) {
             console.printf("Test name:            %s\n", this.testName);
         }
