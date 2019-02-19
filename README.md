@@ -12,15 +12,15 @@ Conventional fuzzing tools like [AFL](http://lcamtuf.coredump.cx/afl) and [libFu
 
 ### What is *generator-based* structured fuzzing?
 
-Structured fuzzing tools need a way to understand the input format. Some tools use [grammars](https://embed.cs.utah.edu/csmith/) or [protocol buffers](https://github.com/google/libprotobuf-mutator) as a declarative specification of input format. **JQF** uses an imperative approach for specifying the space of inputs: arbitrary ***generator*** programs whose job is to generate a single random input. 
+Structured fuzzing tools need a way to understand the input format. Some tools use declarative specifications such as [grammars](https://embed.cs.utah.edu/csmith/) or [protocol buffers](https://github.com/google/libprotobuf-mutator). **JQF** uses an imperative approach for specifying the space of inputs: arbitrary ***generator*** programs whose job is to generate a single random input. 
 
-A `Generator<T>` provides an API for producing random instances of type `T`. For example, a generator for type `Calendar` returns randomly-generated `Calendar` objects. One can easily write generators for more complex types, such as [XML documents](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/xml/XmlDocumentGenerator.java), [JavaScript programs](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/js/JavaScriptCodeGenerator.java), [JVM class files](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/bcel/JavaClassGenerator.java), SQL queries, HTTP requests, and many more -- this is **generator-based structured fuzzing**. However, simply sampling random inputs of type `T` is not usually very effective, since the generator does not know if the inputs it is producing are any good.
+A `Generator<T>` provides a method for producing random instances of type `T`. For example, a generator for type `Calendar` returns randomly-generated `Calendar` objects. One can easily write generators for more complex types, such as [XML documents](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/xml/XmlDocumentGenerator.java), [JavaScript programs](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/js/JavaScriptCodeGenerator.java), [JVM class files](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/bcel/JavaClassGenerator.java), SQL queries, HTTP requests, and many more -- this is **generator-based structured fuzzing**. However, simply sampling random inputs of type `T` is not usually very effective, since the generator does not know if the inputs it is producing are any good.
 
 **JQF uses code-coverage feedback to bias the pseudo-random source that backs your generator**, thereby encouraging the production of inputs that are both syntactically valid and find bugs deep in your test program. Once you have a generator for type `T`, you can fuzz any method that takes an instance of type `T` in its argument list. JQF automatically converts any QuickCheck-style random-input generator of type `T` into a feedback-directed fuzzer on the domain of `T`.
 
 ## What is *semantic fuzzing*?
 
-JQF supports the [Zest algorithm](https://arxiv.org/abs/1812.00078), which specializes in generating inputs that are *semantically valid* (i.e., structured inputs that satisfy specific invariants). 
+JQF supports the [Zest algorithm](https://arxiv.org/abs/1812.00078), which guides generator-based fuzzing towards producing inputs that are also *semantically valid* (i.e., structured inputs that satisfy specific invariants). 
 
 ### Tutorials
 
