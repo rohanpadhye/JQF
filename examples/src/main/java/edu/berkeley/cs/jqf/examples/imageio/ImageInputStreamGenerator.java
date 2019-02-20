@@ -32,10 +32,10 @@ import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 
-import edu.berkeley.cs.jqf.examples.common.InputStreamGenerator;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.InputStreamGenerator;
 
 /**
  * @author Rohan Padhye

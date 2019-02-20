@@ -33,7 +33,7 @@ import java.io.InputStream;
 import java.io.Reader;
 
 import com.pholser.junit.quickcheck.From;
-import edu.berkeley.cs.jqf.examples.common.InputStreamGenerator;
+import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.InputStreamGenerator;
 import edu.berkeley.cs.jqf.fuzz.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.JQF;
 import org.apache.tika.Tika;
