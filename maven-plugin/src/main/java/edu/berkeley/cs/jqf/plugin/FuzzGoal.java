@@ -37,7 +37,6 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
-import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
@@ -130,6 +129,20 @@ public class FuzzGoal extends AbstractMojo {
     private String time;
 
     /**
+     * Whether to generate inputs blindly without taking into
+     * account coverage feedback. Blind input generation is equivalent
+     * to running QuickCheck.
+     *
+     * <p>If this property is set to <tt>true</tt>, then the fuzzing
+     * algorithm does not maintain a queue. Every input is randomly
+     * generated from scratch. The program under test is still instrumented
+     * in order to provide coverage statistics. This mode is mainly useful
+     * for comparing coverage-guided fuzzing with plain-old QuickCheck. </p>
+     */
+    @Parameter(property="blind")
+    private boolean blind;
+
+    /**
      * The name of the output directory where fuzzing results will
      * be stored.
      *
@@ -145,7 +158,7 @@ public class FuzzGoal extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         ClassLoader loader;
-        Guidance guidance;
+        ZestGuidance guidance;
         Log log = getLog();
         PrintStream out = System.out; // TODO: Re-route to logger from super.getLog()
         Result result;
@@ -185,6 +198,7 @@ public class FuzzGoal extends AbstractMojo {
             File resultsDir = new File(target, outputDirectory);
             String targetName = testClassName + "#" + testMethod;
             guidance = new ZestGuidance(targetName, duration, resultsDir);
+            guidance.setBlind(blind);
         } catch (IOException e) {
             throw new MojoExecutionException("Could not create output directory", e);
         }

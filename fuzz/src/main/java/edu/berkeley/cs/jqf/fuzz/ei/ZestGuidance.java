@@ -137,6 +137,9 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
     /** Number of favored inputs in the last cycle. */
     private int numFavoredLastCycle = 0;
 
+    /** Blind fuzzing -- if true then the queue is always empty. */
+    private boolean blind;
+
     /** Number of saved inputs.
      *
      * This is usually the same as savedInputs.size(),
@@ -215,9 +218,6 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
 
     // ------------- FUZZING HEURISTICS ------------
 
-    /** Turn this on to disable all guidance (i.e. no mutations, only random fuzzing) */
-    static final boolean TOTALLY_RANDOM = Boolean.getBoolean("jqf.ei.TOTALLY_RANDOM");
-
     /** Whether to use real execution indexes as opposed to flat numbering. */
     static final boolean DISABLE_EXECUTION_INDEXING = !Boolean.getBoolean("jqf.ei.ENABLE_EXECUTION_INDEXING");
 
@@ -270,6 +270,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         this.testName = testName;
         this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
         this.outputDirectory = outputDirectory;
+        this.blind = Boolean.getBoolean("jqf.ei.TOTALLY_RANDOM");
         prepareOutputDirectory();
 
         // Try to parse the single-run timeout
@@ -422,7 +423,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         }
         console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
         if (SHOW_CONFIG) {
-            if (TOTALLY_RANDOM) {
+            if (blind) {
                 console.printf("Config:               TOTALLY_RANDOM\n");
             } else {
                 console.printf("Config:               DISABLE_EXECUTION_INDEXING = %s,\n" +
@@ -449,6 +450,10 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
                 numValid, numTrials-numValid, nonZeroValidFraction);
         appendLineToFile(statsFile, plotData);
 
+    }
+
+    public void setBlind(boolean blind) {
+        this.blind = blind;
     }
 
     private int getTargetChildrenForParent(Input parentInput) {
@@ -520,7 +525,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
 
         } else if (savedInputs.isEmpty()) {
             // If no seeds given try to start with something random
-            if (!TOTALLY_RANDOM && numTrials > 100_000) {
+            if (!blind && numTrials > 100_000) {
                 throw new GuidanceException("Too many trials without coverage; " +
                         "likely all assumption violations");
             }
@@ -820,7 +825,7 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         }
 
         // If not using guidance, do nothing else
-        if (TOTALLY_RANDOM) {
+        if (blind) {
             return;
         }
 
