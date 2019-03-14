@@ -92,7 +92,7 @@ public class ReproGoal extends AbstractMojo {
     private String testMethod;
 
     /**
-     * Input file to reproduce.
+     * Input file or directory to reproduce test case(s).
      *
      * <p>These files will typically be taken from the test corpus
      * ("queue") directory or the failures ("crashes") directory
@@ -164,18 +164,21 @@ public class ReproGoal extends AbstractMojo {
             throw new MojoExecutionException("Could not get project classpath", e);
         }
 
-        File inputFile = new File(input);
-        if (!inputFile.exists() || !inputFile.canRead()) {
-            throw new MojoExecutionException("Cannot find or open file " + input);
-        }
-
         // If a coverage dump file was provided, enable logging via system property
         if (logCoverage != null) {
             System.setProperty("jqf.repro.logUniqueBranches", "true");
         }
 
+        File inputFile = new File(input);
+        if (!inputFile.exists() || !inputFile.canRead()) {
+            throw new MojoExecutionException("Cannot find or open file " + input);
+        }
 
-        guidance = new ReproGuidance(inputFile, null);
+        if (inputFile.isDirectory()) {
+            guidance = new ReproGuidance(inputFile.listFiles(), null);
+        } else {
+            guidance = new ReproGuidance(inputFile, null);
+        }
 
         try {
             result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
