@@ -38,12 +38,12 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
             if (inst.isModifiableClass(clazz)) {
               inst.retransformClasses(clazz);
             } else {
-              println("[JANALA] Could not instrument " + clazz + " :-(");
+              println("[WARNING] Could not instrument " + clazz);
             }
           }
         } catch (Exception e){
           if (verbose) {
-            println("[JANALA] Could not instrument " + clazz + " :-(");
+            println("[WARNING] Could not instrument " + clazz);
             e.printStackTrace();
           }
         }
@@ -92,7 +92,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
     boolean toInstrument = !shouldExclude(cname);
 
     if (toInstrument) {
-      print("[JANALA] ");
+      print("[INFO] ");
       if (classBeingRedefined != null) {
         print("* ");
       }
@@ -134,7 +134,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
 
         ret = cw.toByteArray();
       } catch (Throwable e) {
-        System.err.println("\n[JANALA] Error instrumenting class " + cname);
+        println("\n[WARNING] Could not instrument " + cname);
         if (verbose) {
           e.printStackTrace();
         }
