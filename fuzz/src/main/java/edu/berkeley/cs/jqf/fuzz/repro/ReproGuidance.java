@@ -172,15 +172,13 @@ public class ReproGuidance implements Guidance {
             throw new GuidanceException(e);
         }
 
-
-        // Show errors for invalid tests
-        if (result == Result.INVALID && error != null) {
-            File inputFile = getCurrentInputFile();
-            System.err.println(inputFile.getName() + ": Test run was invalid");
-            // error.printStackTrace();
+        // Print result
+        File inputFile = getCurrentInputFile();
+        if (result == Result.FAILURE) {
+            System.out.printf("%s: %s (%s)\n", inputFile.getName(), result, error.getClass().getName());
+        } else {
+            System.out.printf("%s: %s\n", inputFile.getName(), result);
         }
-
-
 
         // Possibly accumulate coverage
         if (allBranchesCovered != null && (ignoreInvalidCoverage == false || result == Result.SUCCESS)) {
