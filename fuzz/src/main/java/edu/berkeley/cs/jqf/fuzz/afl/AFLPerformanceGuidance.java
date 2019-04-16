@@ -156,6 +156,9 @@ public class AFLPerformanceGuidance extends AFLGuidance {
             // Increment the total branch count (holds max 16 bits)
             totalBranchCount++;
 
+            // Check for possible timeouts every so often
+            checkForTimeouts();
+
         } else if (e instanceof ReadEvent) {
             ReadEvent read = (ReadEvent) e;
             if (perfFeedbackType == PerfFeedbackType.REDUNDANCY_SCORES) {

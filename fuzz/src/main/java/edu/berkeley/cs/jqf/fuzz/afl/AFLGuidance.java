@@ -361,14 +361,7 @@ public class AFLGuidance implements Guidance {
             incrementTraceBits(edgeId);
 
             // Check for possible timeouts every so often
-            if (this.singleRunTimeoutMillis > 0 &&
-                    this.runStart != null && (++this.branchCount) % 10_000 == 0) {
-                long elapsed = new Date().getTime() - runStart.getTime();
-                if (elapsed > this.singleRunTimeoutMillis) {
-                    timeoutHasOccurred = true;
-                    throw new TimeoutException(elapsed, this.singleRunTimeoutMillis);
-                }
-            }
+            checkForTimeouts();
 
         } else if (e instanceof CallEvent) {
 
@@ -401,6 +394,17 @@ public class AFLGuidance implements Guidance {
         ((Buffer) feedback).rewind();
         feedback.put(FEEDBACK_ZEROS);
         ((Buffer) feedback).rewind();
+    }
+
+    protected void checkForTimeouts() throws TimeoutException {
+        if (this.singleRunTimeoutMillis > 0 &&
+                this.runStart != null && (++this.branchCount) % 10_000 == 0) {
+            long elapsed = new Date().getTime() - runStart.getTime();
+            if (elapsed > this.singleRunTimeoutMillis) {
+                timeoutHasOccurred = true;
+                throw new TimeoutException(elapsed, this.singleRunTimeoutMillis);
+            }
+        }
     }
 
 
