@@ -14,22 +14,9 @@ print_usage() {
   echo "  -o OUTPUT_FILE     File to write the trace data to (default is 'afl.map')"
   echo "  -m MEM_LIMIT       Set a memory limit in MB (default is 8192)"
   echo "  -t TIMEOUT         Set a single-run timeout in milliseconds (default is 10000)"
+  echo "  -x                 Launch 'afl-showmax -x' instead of 'afl-showmap' (PerfFuzz only)"
   echo "  -v                 Enable verbose logging (in file 'jqf.log')"
 }
-
-# Ensure that afl-showmap can be found
-if [ -n "$AFL_DIR" ]; then
-  AFL_SHOWMAP="$AFL_DIR/afl-showmap"
-else
-  AFL_SHOWMAP=$(which afl-showmap)
-fi
-if [ ! -x "$AFL_SHOWMAP" ]; then
-  echo "The program 'afl-showmap' cannot be found" >&2
-  echo "Fix this in one of two ways:" >&2
-  echo "   1. Make sure 'afl-showmap' is in your PATH" >&2
-  echo "   2. Set the env var AFL_DIR to point to where AFL is installed" >&2
-  exit 2
-fi
 
 
 # Ensure that AFL proxy is built
@@ -44,6 +31,7 @@ if [ -z "$JQF_TMP_DIR" ]; then
 fi
 
 # Build AFL command-line
+program="afl-showmap"
 afl_options=""
 classpath="."
 mem_limit="8192"
@@ -51,7 +39,7 @@ target_options=""
 out_file="afl.map"
 timeout="10000"
 
-while getopts ":c:o:m:vt:" opt; do
+while getopts ":c:o:m:vt:x" opt; do
   case $opt in
     /?)
       echo "Invalid option: -$OPTARG" >&2
@@ -74,6 +62,10 @@ while getopts ":c:o:m:vt:" opt; do
     t)
       timeout="$OPTARG"
       ;;
+    x)
+      program="afl-showmax"
+      target_options="$target_options -r"
+      ;;
   esac
 done
 shift $((OPTIND-1))
@@ -83,6 +75,20 @@ shift $((OPTIND-1))
 if [ $# -lt 3 ]; then
   print_usage >&2
   exit 1
+fi
+
+# Ensure that afl-showmap can be found
+if [ -n "$AFL_DIR" ]; then
+  AFL_SHOWMAP="$AFL_DIR/$program"
+else
+  AFL_SHOWMAP=$(which $program)
+fi
+if [ ! -x "$AFL_SHOWMAP" ]; then
+  echo "The program '$program' cannot be found" >&2
+  echo "Fix this in one of two ways:" >&2
+  echo "   1. Make sure '$program' is in your PATH" >&2
+  echo "   2. Set the env var AFL_DIR to point to where AFL is installed" >&2
+  exit 2
 fi
 
 class="$1"
