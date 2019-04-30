@@ -1,4 +1,4 @@
-# JQF: Generator-based Structured Fuzzing for Java 
+# JQF: Coverage-guided structured fuzzing for Java
 
 JQF is a feedback-directed structured fuzz testing platform for Java. JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck), which itself lets you write [Quickcheck](http://www.cse.chalmers.se/~rjmh/QuickCheck/manual.html)-like **generators** and properties in a [Junit](http://junit.org)-style test class. JQF enables better input generation using **coverage-guided** fuzzing algorithms.
 
