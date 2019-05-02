@@ -26,7 +26,7 @@ A `Generator<T>` provides a method for producing random instances of type `T`. F
 
 ### What is *semantic fuzzing* (Zest)?
 
-JQF supports the **[*Zest algorithm*](https://arxiv.org/abs/1812.00078), which uses code-coverage feedback to bias a QuickCheck-style generator** towards generating structured inputs that can reveal deep semantic bugs. Zest can also bias input generation towards inputs that are *semantically valid* (i.e., structured inputs that satisfy specific invariants), using JUnit's [`Assume`](https://junit.org/junit4/javadoc/4.12/org/junit/Assume.html) API. An assumption violation corresponds to semantic invalidity.
+JQF supports the **[*Zest algorithm*](https://arxiv.org/abs/1812.00078), which uses code-coverage and input-validity feedback to bias a QuickCheck-style generator** towards generating structured inputs that can reveal deep semantic bugs. JQF extracts code coverage using bytecode instrumentation, and input validity using JUnit's [`Assume`](https://junit.org/junit4/javadoc/4.12/org/junit/Assume.html) API. An input is valid if no assumptions are violated.
 
 
 ## Documentation
