@@ -57,7 +57,7 @@ output_dir="fuzz-results"
 timeout="10000"
 slave_id=""
 
-while getopts ":c:i:o:x:m:dpsrvt:S:T:" opt; do
+while getopts ":c:i:o:x:m:dpN:vt:S:T:" opt; do
   case $opt in
     /?)
       echo "Invalid option: -$OPTARG" >&2
@@ -84,12 +84,10 @@ while getopts ":c:i:o:x:m:dpsrvt:S:T:" opt; do
       ;;
     p)
       afl_options="$afl_options -p"
-      ;;
-    s)
-      afl_options="$afl_options -s"
-      ;;
-    r)
       target_options="$target_options -r"
+      ;;
+    N)
+      afl_options="$afl_options -N $OPTARG"
       ;;
     v)
       target_options="$target_options -v"
