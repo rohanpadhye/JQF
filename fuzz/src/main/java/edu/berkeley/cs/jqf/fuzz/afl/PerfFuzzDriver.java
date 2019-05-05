@@ -35,11 +35,11 @@ import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 /**
  * @author Rohan Padhye
  */
-public class AFLPerformanceDriver {
+public class PerfFuzzDriver {
 
     public static void main(String[] args) {
         if (args.length != 5){
-            System.err.println("Usage: java " + AFLPerformanceDriver.class + " TEST_CLASS TEST_METHOD TEST_INPUT_FILE AFL_TO_JAVA_PIPE JAVA_TO_AFL_PIPE");
+            System.err.println("Usage: java " + PerfFuzzDriver.class + " TEST_CLASS TEST_METHOD TEST_INPUT_FILE AFL_TO_JAVA_PIPE JAVA_TO_AFL_PIPE");
             System.exit(1);
         }
 
@@ -52,7 +52,7 @@ public class AFLPerformanceDriver {
 
         try {
             // Load the guidance
-            Guidance guidance = new AFLPerformanceGuidance(testInputFile, a2jPipe, j2aPipe);
+            Guidance guidance = new PerfFuzzGuidance(testInputFile, a2jPipe, j2aPipe);
 
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);

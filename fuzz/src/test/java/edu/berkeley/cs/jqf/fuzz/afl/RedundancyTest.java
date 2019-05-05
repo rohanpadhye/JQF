@@ -46,7 +46,7 @@ public class RedundancyTest {
     @Property
     public void testDiscretization(@InRange(minDouble=0.0, maxDouble=1.0) Double score) {
         // Discretize a redundancy score
-        int discrete = AFLPerformanceGuidance.discretizeScore(score);
+        int discrete = PerfFuzzGuidance.discretizeScore(score);
 
         // Ensure that the discretization is within the byte range
         Assert.assertTrue(discrete >= 0 && discrete <= Integer.MAX_VALUE);
@@ -75,13 +75,13 @@ public class RedundancyTest {
         Assert.assertTrue(sum(redundantCounts) == squareSum);
 
         // Compute redundancy score for some memory accesses
-        double score = AFLPerformanceGuidance.computeRedundancyScore(counts);
+        double score = PerfFuzzGuidance.computeRedundancyScore(counts);
 
         // Ensure that scores are in [0, 1)
         Assert.assertTrue(score >= 0 && score < 1);
 
         // Ensure that it is not more than the max possible
-        double maxScore = AFLPerformanceGuidance.computeRedundancyScore(redundantCounts);
+        double maxScore = PerfFuzzGuidance.computeRedundancyScore(redundantCounts);
         Assert.assertTrue(maxScore >= score);
 
 

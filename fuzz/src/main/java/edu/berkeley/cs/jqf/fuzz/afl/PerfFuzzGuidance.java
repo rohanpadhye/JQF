@@ -56,23 +56,24 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  *
  * <p>This class extends {@link AFLGuidance} to additionally provide
  * feedback about performance measures such as branch counts
- * or allocation sizes.
+ * or allocation sizes.</p>
  *
  * <p>The type of performance metric used is configured by a system
  * property: <tt>jqf.afl.perfFeedbackType</tt>, which must have
  * one of the values specified in the enum {@link PerfFeedbackType}.
  * This guidance must be used in accordance with the right run
  * scripts that configure the instrumentation to emit trace events
- * related to events such as heap-memory loads and allocations.
+ * related to events such as heap-memory loads and allocations.</p>
  *
- * <p>This guidance class only works with a modified version of AFL
+ * <p>This guidance class only works with a
+ * <a href="https://github.com/carolemieux/perffuzz">modified version of AFL</a>
  * that is designed to maximize performance counters. It will not
  * work properly with stock AFL since it attempts to send more
- * data to AFL than it usually expects.
+ * data to AFL than it usually expects.</p>
  *
  * @author Rohan Padhye
  */
-public class AFLPerformanceGuidance extends AFLGuidance {
+public class PerfFuzzGuidance extends AFLGuidance {
 
     /** The size of the "performance" map that will be sent to AFL. */
     protected static final int PERF_MAP_SIZE = 1 << 14;
@@ -110,13 +111,13 @@ public class AFLPerformanceGuidance extends AFLGuidance {
     /** The feedback to be used by this guidance instance. */
     private final PerfFeedbackType perfFeedbackType;
 
-    public AFLPerformanceGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
+    public PerfFuzzGuidance(File inputFile, File inPipe, File outPipe) throws IOException {
         super(inputFile, inPipe, outPipe);
         this.perfFeedbackType = PerfFeedbackType.valueOf(System.getProperty("jqf.afl.perfFeedbackType", "BRANCH_COUNTS"));
         System.out.println(this.perfFeedbackType);
     }
 
-    public AFLPerformanceGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
+    public PerfFuzzGuidance(String inputFileName, String inPipeName, String outPipeName) throws IOException {
         this(new File(inputFileName), new File(inPipeName), new File(outPipeName));
     }
 
