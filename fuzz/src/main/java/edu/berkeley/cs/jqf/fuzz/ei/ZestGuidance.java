@@ -416,8 +416,13 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
 
         console.printf("\033[2J");
         console.printf("\033[H");
-        console.printf("Zest: Validity Fuzzing with Parametric Generators\n");
-        console.printf("-------------------------------------------------\n");
+        if (blind) {
+            console.printf("Generator-based random fuzzing (no guidance)\n");
+            console.printf("--------------------------------------------\n");
+        } else {
+            console.printf("Semantic Fuzzing with Zest\n");
+            console.printf("--------------------------\n");
+        }
         if (this.testName != null) {
             console.printf("Test name:            %s\n", this.testName);
         }
@@ -441,8 +446,8 @@ public class ZestGuidance implements Guidance, TraceEventVisitor {
         console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
         console.printf("Current parent input: %s\n", currentParentInputDesc);
         console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
-        console.printf("Total coverage:       %,d (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
-        console.printf("Valid coverage:       %,d (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
+        console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
+        console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
 
         String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%",
                 TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
