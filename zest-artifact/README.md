@@ -43,7 +43,7 @@ The remaining sections of this document assume that you are inside the container
 The default directory in the container, `/zest-artifact`, contains the following contents:
 - `README.txt`: This file.
 - `afl`: This is AFL v2.52b, cloned from https://github.com/mcarpenter/afl.
-- `jqf`: This is the Java fuzzing platform, cloned from https://github.com/rohanpadhye/jqf.
+- `jqf`: This is the Java fuzzing platform, cloned from https://github.com/rohanpadhye/jqf. Zest is implemented as a plug-in "guidance" within JQF.
 - `scripts`: Contains various scripts used for running experiments and generating figures from the paper.
 - `pre-baked`: Contains results of the experiments that were run on the authors' machine, which took 900 compute-hours to generate. 
 - `fresh-baked`: This will contain the results of the experiments that you run, after following Part One (next section).
@@ -171,3 +171,15 @@ mvn jqf:repro -Dclass=PatriciaTrieTest -Dmethod=testMap2Trie -Dinput=target/resu
 ```
 
 The above command should result in a stack-trace showing the Assertion Violation. To find the actual source of the bug, one should add appropriate print statements or perform step-through debugging, whose description is not in the scope of this document. The test described here helps find the bug https://issues.apache.org/jira/browse/COLLECTIONS-714.
+
+Note that this bug cannot be easily found using conventional QuickCheck-like random testing. To verifiy this, run the `mvn jqf:fuzz` command as above but with the additional `-Dblind` option to indicate that all inputs should be randomly generated from scratch:
+
+```
+mvn jqf:fuzz -Dclass=PatriciaTrieTest -Dmethod=testMap2Trie -Dout=results -Dblind
+```
+
+The above command usually results in very low coverage and no test failures even after several minutes of fuzzing. Press CTRL+C to exit. This exercise shows the benefit of using the Zest algorithm and also the ease of using Zest via the JQF Maven Plugin.
+
+For further reading, we've added tutorials to the JQF wiki for tips on writing generators and fuzzing with Zest:
+- https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest 
+- https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler
