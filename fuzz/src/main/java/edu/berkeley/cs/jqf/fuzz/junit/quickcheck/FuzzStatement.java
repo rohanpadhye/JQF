@@ -185,10 +185,10 @@ public class FuzzStatement extends Statement {
                         error = e;
                         failures.add(e);
                     }
-                } finally {
-                    // Inform guidance about the outcome of this trial
-                    guidance.handleResult(result, error);
                 }
+
+                // Inform guidance about the outcome of this trial
+                guidance.handleResult(result, error);
 
 
             }
