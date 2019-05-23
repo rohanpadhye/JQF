@@ -34,5 +34,5 @@ if [ $# -lt 2 ]; then
   exit 1
 fi
 
-# Run the execution indexing input driver
+# Run the Zest input driver
 $ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.ei.ZestDriver $@

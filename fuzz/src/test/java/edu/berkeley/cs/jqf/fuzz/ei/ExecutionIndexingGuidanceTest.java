@@ -36,24 +36,23 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance.MappedInput;
-import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance.InputLocation;
+import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance.InputLocation;
+import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance.MappedInput;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ZestGuidanceTest {
+public class ExecutionIndexingGuidanceTest {
 
     private static Random r;
-    private ZestGuidance g;
+    private ExecutionIndexingGuidance g;
 
     private ExecutionIndex e1 = new ExecutionIndex(new int[]{1,1});
     private ExecutionIndex e2 = new ExecutionIndex(new int[]{1,1,3,4}); // Same EC as e4/e6
@@ -71,7 +70,7 @@ public class ZestGuidanceTest {
 
     @Before
     public void createGuidanceInstance() throws IOException {
-       g = new ZestGuidance("test", null, Files.createTempDirectory("fuzz-out").toFile());
+       g = new ExecutionIndexingGuidance("test", null, Files.createTempDirectory("fuzz-out").toFile());
     }
 
     @Test

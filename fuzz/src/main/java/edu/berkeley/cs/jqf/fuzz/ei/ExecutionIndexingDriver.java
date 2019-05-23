@@ -34,15 +34,15 @@ import java.io.File;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
 /**
- * Entry point for fuzzing with Zest.
+ * Entry point for fuzzing with Execution Indexing.
  *
  * @author Rohan Padhye
  */
-public class ZestDriver {
+public class ExecutionIndexingDriver {
 
     public static void main(String[] args) {
         if (args.length < 2){
-            System.err.println("Usage: java " + ZestDriver.class + " TEST_CLASS TEST_METHOD [OUTPUT_DIR [SEEDS...]]");
+            System.err.println("Usage: java " + ExecutionIndexingDriver.class + " TEST_CLASS TEST_METHOD [OUTPUT_DIR [SEEDS...]]");
             System.exit(1);
         }
 
@@ -62,8 +62,11 @@ public class ZestDriver {
             // Load the guidance
             String title = testClassName+"#"+testMethodName;
             ZestGuidance guidance = seedFiles != null ?
-                    new ZestGuidance(title, null, outputDirectory, seedFiles) :
-                    new ZestGuidance(title, null, outputDirectory);
+                    new ExecutionIndexingGuidance(title, null, outputDirectory, seedFiles) :
+                    new ExecutionIndexingGuidance(title, null, outputDirectory, new File[]{});
+
+            // Ensure that generators are being traced
+            System.setProperty("jqf.traceGenerators", "true");
 
             // Run the Junit test
             GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);

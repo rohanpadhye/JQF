@@ -1,1 +1,38 @@
-jqf-zest
+#!/bin/bash
+
+# Figure out script absolute path
+pushd `dirname $0` > /dev/null
+BIN_DIR=`pwd`
+popd > /dev/null
+
+ROOT_DIR=`dirname $BIN_DIR`
+
+print_usage() {
+  echo "Usage: $0 [-c CLASSPATH] [-v] TEST_CLASS TEST_METHOD [OUT_DIR [SEED_FILES...]]"
+}
+
+while getopts ":c:v" opt; do
+  case $opt in
+    /?)
+      echo "Invalid option: -$OPTARG" >&2
+      print_usage >&1
+      exit 1
+      ;;
+    c)
+      export CLASSPATH="$OPTARG"
+      ;;
+    v)
+      export JVM_OPTS="$JVM_OPTS -Djqf.logCoverage=true"
+      ;;
+  esac
+done
+shift $((OPTIND-1))
+
+# Check arguments
+if [ $# -lt 2 ]; then
+  print_usage >&1
+  exit 1
+fi
+
+# Run the execution indexing input driver
+$ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingDriver $@

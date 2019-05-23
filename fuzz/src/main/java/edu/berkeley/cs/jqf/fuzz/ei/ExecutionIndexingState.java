@@ -36,6 +36,7 @@ import edu.berkeley.cs.jqf.fuzz.util.NonZeroCachingCounter;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEventVisitor;
 
 /**
  * A mutable state representing the current call stack with prefix counts,
@@ -45,7 +46,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  *
  * @author Rohan Padhye
  */
-public class ExecutionIndexingState {
+public class ExecutionIndexingState implements TraceEventVisitor {
     private final int COUNTER_SIZE = 6151;
     private final int MAX_SUPPORTED_DEPTH = 1024; // Nothing deeper than this
 
@@ -105,5 +106,15 @@ public class ExecutionIndexingState {
 
         // Create an execution index
         return new ExecutionIndex(ei);
+    }
+
+    @Override
+    public void visitCallEvent(CallEvent c) {
+        this.pushCall(c);
+    }
+
+    @Override
+    public void visitReturnEvent(ReturnEvent r) {
+        this.popReturn(r);
     }
 }
