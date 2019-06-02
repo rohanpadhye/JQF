@@ -9,6 +9,8 @@ JQF is a modular framework, supporting the following pluggable fuzzing front-end
 * Semantic fuzzing with **[Zest](https://cs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf) [ISSTA'19]** ([tutorial 1](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest)) ([tutorial 2](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler))
 * Complexity fuzzing with **[PerfFuzz](https://people.eecs.berkeley.edu/~rohanpadhye/files/perffuzz-issta18.pdf) [ISSTA'18]**
 
+Read more about JQF in the [ISSTA'19 tool paper](https://people.eecs.berkeley.edu/~rohanpadhye/files/jqf-issta19.pdf).
+
 ## Overview
 
 ### What is *structured fuzzing*?
