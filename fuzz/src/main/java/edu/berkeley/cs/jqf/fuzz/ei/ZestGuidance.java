@@ -127,6 +127,9 @@ public class ZestGuidance implements Guidance {
     /** Blind fuzzing -- if true then the queue is always empty. */
     protected boolean blind;
 
+    /** Validity fuzzing -- if true then save valid inputs that increase valid coverage */
+    protected boolean validityFuzzing;
+
     /** Number of saved inputs.
      *
      * This is usually the same as savedInputs.size(),
@@ -235,6 +238,7 @@ public class ZestGuidance implements Guidance {
         this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
         this.outputDirectory = outputDirectory;
         this.blind = Boolean.getBoolean("jqf.ei.TOTALLY_RANDOM");
+        this.validityFuzzing = !Boolean.getBoolean("jqf.ei.DISABLE_VALIDITY_FUZZING");
         prepareOutputDirectory();
 
         // Try to parse the single-run timeout
@@ -627,7 +631,8 @@ public class ZestGuidance implements Guidance {
                 why = why + "+cov";
             }
 
-            if (validNonZeroAfter > validNonZeroBefore) {
+            // Save if new valid coverage is found
+            if (this.validityFuzzing && validNonZeroAfter > validNonZeroBefore) {
                 // Must be responsible for some branch
                 assert(responsibilities.size() > 0);
                 currentInput.valid = true;
