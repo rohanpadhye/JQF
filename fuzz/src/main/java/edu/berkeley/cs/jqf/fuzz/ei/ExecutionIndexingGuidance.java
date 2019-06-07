@@ -39,11 +39,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Prefix;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Suffix;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.util.ProducerHashMap;
+import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
+import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
@@ -65,10 +68,17 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
     private Map<ExecutionContext, ArrayList<InputLocation>> ecToInputLoc
             = new ProducerHashMap<>(() -> new ArrayList<>());
 
+    /** The thread being instrumented for coverage-guided fuzzing. */
+    protected Thread appThread;
+
+    /** The entry point to the test method we are fuzzing. */
+    protected String entryPoint;
+
+    /** Whether the the entry point has been encountered in the current run. */
+    protected boolean testEntered;
 
     /** The last event handled by this guidance */
     protected TraceEvent lastEvent;
-
 
     /** Max number of contiguous bytes to splice in from another input during the splicing stage. */
     static final int MAX_SPLICE_SIZE = 64; // Bytes
@@ -149,6 +159,9 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
         // First, reset execution indexing state
         eiState = new ExecutionIndexingState();
 
+        // Unmark "test started"
+        testEntered = false;
+
         // Then, do the same logic as ZestGuidance (e.g. returning seeds, mutated inputs, or new input)
         return super.getInput();
     }
@@ -192,14 +205,45 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
 
     }
 
+
+    @Override
+    public Consumer<TraceEvent> generateCallBack(Thread thread) {
+        if (appThread != null) {
+            throw new IllegalStateException(ExecutionIndexingGuidance.class +
+                    " only supports single-threaded apps at the moment");
+        }
+        appThread = thread;
+        entryPoint = SingleSnoop.entryPoints.get(thread).replace('.', '/');
+        assert entryPoint != null : ExecutionIndexingGuidance.class + " must be able to determine an entry point";
+
+        return this::handleEvent;
+
+    }
+
     /** Handles a trace event generated during test execution */
     @Override
     protected void handleEvent(TraceEvent e) {
         // Set last event to this event
         lastEvent = e;
 
-        // Update execution indexing logic
+        // Update execution indexing logic regardless of whether we are in generator or test method
         e.applyVisitor(eiState);
+
+        // Do not handle code coverage unless test has been entered
+        if (!testEntered) {
+            // Check if this event enters the test method
+            if (e instanceof CallEvent) {
+                CallEvent callEvent = (CallEvent) e;
+                if (callEvent.getInvokedMethodName().startsWith(entryPoint)) {
+                    testEntered = true;
+                }
+            }
+
+            // If test method has not yet been entered, then ignore code coverage
+            if (!testEntered) {
+                return;
+            }
+        }
 
         // Delegate to ZestGuidance for handling code coverage
         super.handleEvent(e);
