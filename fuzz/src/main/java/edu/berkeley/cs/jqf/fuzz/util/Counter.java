@@ -29,6 +29,7 @@
 package edu.berkeley.cs.jqf.fuzz.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -76,9 +77,7 @@ public class Counter {
      * Clears the counter by setting all values to zero.
      */
     public void clear() {
-        for (int i = 0; i < counts.length; i++) {
-            this.counts[i] = 0;
-        }
+        Arrays.fill(this.counts, 0);
     }
 
     private int idx(int key) {
