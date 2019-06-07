@@ -35,15 +35,17 @@ import janala.logger.inst.MemberRef;
  */
 public class CallEvent extends TraceEvent {
     protected final MemberRef invokedMethod;
-    private final String str;
+    private String str;
 
     public CallEvent(int iid, MemberRef containingMethod, int lineNumber, MemberRef invokedMethod) {
         super(iid, containingMethod, lineNumber);
         this.invokedMethod = invokedMethod;
-        this.str = invokedMethod.getOwner() + "#" + invokedMethod.getName() + invokedMethod.getDesc();
     }
 
     public String getInvokedMethodName() {
+        if (str == null) {
+            this.str = invokedMethod.getOwner() + "#" + invokedMethod.getName() + invokedMethod.getDesc();
+        }
         return str;
     }
 
