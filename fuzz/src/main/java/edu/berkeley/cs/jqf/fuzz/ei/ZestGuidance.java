@@ -60,6 +60,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
+import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 import static java.lang.Math.ceil;
@@ -575,12 +576,6 @@ public class ZestGuidance implements Guidance {
         // Increment run count
         this.numTrials++;
 
-        // Trim input (remove unused keys)
-        currentInput.gc();
-
-        // It must still be non-empty
-        assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
-
         boolean valid = result == Result.SUCCESS;
 
         if (valid) {
@@ -642,6 +637,13 @@ public class ZestGuidance implements Guidance {
 
             if (toSave) {
 
+                // Trim input (remove unused keys)
+                currentInput.gc();
+
+                // It must still be non-empty
+                assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
+
+
                 infoLog("Saving new input (at run %d): " +
                                 "input #%d " +
                                 "of size %d; " +
@@ -670,6 +672,12 @@ public class ZestGuidance implements Guidance {
 
             // Attempt to add this to the set of unique failures
             if (uniqueFailures.add(Arrays.asList(rootCause.getStackTrace()))) {
+
+                // Trim input (remove unused keys)
+                currentInput.gc();
+
+                // It must still be non-empty
+                assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
 
                 // Save crash to disk
                 try {
