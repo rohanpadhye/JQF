@@ -60,7 +60,6 @@ import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
-import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 import static java.lang.Math.ceil;
@@ -518,7 +517,7 @@ public class ZestGuidance implements Guidance {
             }
 
             // Make fresh input using either list or maps
-            infoLog("Spawning new input from thin air");
+            // infoLog("Spawning new input from thin air");
             currentInput = createFeshInput();
         } else {
             // The number of children to produce is determined by how much of the coverage
@@ -539,7 +538,7 @@ public class ZestGuidance implements Guidance {
             Input parent = savedInputs.get(currentParentInputIdx);
 
             // Fuzz it to get a new input
-            infoLog("Mutating input: %s", parent.desc);
+            // infoLog("Mutating input: %s", parent.desc);
             currentInput = parent.fuzz(random);
             numChildrenGeneratedForCurrentParentInput++;
 
