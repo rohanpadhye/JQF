@@ -133,7 +133,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
 
     /** Spawns a new input from thin air (i.e., actually random) */
     @Override
-    protected Input<?> createFeshInput() {
+    protected Input<?> createFreshInput() {
         return new MappedInput();
     }
 

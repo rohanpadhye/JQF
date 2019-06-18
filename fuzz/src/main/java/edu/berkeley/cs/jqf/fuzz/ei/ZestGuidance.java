@@ -474,7 +474,7 @@ public class ZestGuidance implements Guidance {
     }
 
     /** Spawns a new input from thin air (i.e., actually random) */
-    protected Input<?> createFeshInput() {
+    protected Input<?> createFreshInput() {
         return new LinearInput();
     }
 
@@ -524,7 +524,7 @@ public class ZestGuidance implements Guidance {
 
             // Make fresh input using either list or maps
             // infoLog("Spawning new input from thin air");
-            currentInput = createFeshInput();
+            currentInput = createFreshInput();
         } else {
             // The number of children to produce is determined by how much of the coverage
             // pool this parent input hits
