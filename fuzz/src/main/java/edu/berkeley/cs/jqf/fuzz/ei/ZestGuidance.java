@@ -315,7 +315,8 @@ public class ZestGuidance implements Guidance {
 
     }
 
-    private void appendLineToFile(File file, String line) throws GuidanceException {
+    /** Writes a line of text to a given log file. */
+    protected void appendLineToFile(File file, String line) throws GuidanceException {
         try (PrintWriter out = new PrintWriter(new FileWriter(file, true))) {
             out.println(line);
         } catch (IOException e) {
@@ -324,7 +325,8 @@ public class ZestGuidance implements Guidance {
 
     }
 
-    private void infoLog(String str, Object... args) {
+    /** Writes a line of text to the log file. */
+    protected void infoLog(String str, Object... args) {
         if (verbose) {
             String line = String.format(str, args);
             if (logFile != null) {
