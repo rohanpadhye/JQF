@@ -80,14 +80,26 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
     /** The last event handled by this guidance */
     protected TraceEvent lastEvent;
 
+    /** Mean number of mutations to perform in each round. */
+    static final double MEAN_MUTATION_COUNT = 2.0;
+
+    /** Mean number of contiguous bytes to mutate in each mutation. */
+    static final double MEAN_MUTATION_SIZE = 4.0; // Bytes
+
+    /** Probability that a standard mutation sets the byte to just zero instead of a random value. */
+    static final double MUTATION_ZERO_PROBABILITY = 0.05;
+
     /** Max number of contiguous bytes to splice in from another input during the splicing stage. */
     static final int MAX_SPLICE_SIZE = 64; // Bytes
 
     /** Whether to splice only in the same sub-tree */
     static final boolean SPLICE_SUBTREE = Boolean.getBoolean("jqf.ei.SPLICE_SUBTREE");
 
-    /** Probability of splicing in getOrGenerateFresh() */
-    static final double DEMAND_DRIVEN_SPLICING_PROBABILITY = 0;
+    /** Probability of splicing in {@link MappedInput#fuzz(Random, Map)} */
+    static final double STANDARD_SPLICING_PROBABILITY = 0.0;
+
+    /** Probability of splicing in {@link MappedInput#getOrGenerateFresh(ExecutionIndex, Random)}  */
+    static final double DEMAND_DRIVEN_SPLICING_PROBABILITY = 0.0;
 
     /**
      * Constructs a new guidance instance.
@@ -538,8 +550,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
             // Only splice if we have been provided the ecToInputLoc
             if (ecToInputLoc != null) {
 
-                // TODO: Do we really want splicing to be this frequent?
-                if (random.nextBoolean()) {
+                if (random.nextDouble() < STANDARD_SPLICING_PROBABILITY) {
                     final int MIN_TARGET_ATTEMPTS = 3;
                     final int MAX_TARGET_ATTEMPTS = 6;
 
@@ -653,27 +664,40 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                 int numMutations = sampleGeometric(random, MEAN_MUTATION_COUNT);
                 newInput.desc += ",havoc:"+numMutations;
 
-                boolean setToZero = random.nextDouble() < 0.1; // one out of 10 times
-
                 for (int mutation = 1; mutation <= numMutations; mutation++) {
 
                     // Select a random offset and size
                     int offset = random.nextInt(newInput.valuesMap.size());
                     int mutationSize = sampleGeometric(random, MEAN_MUTATION_SIZE);
+                    // infoLog("[%d] Mutating %d bytes at offset %d", mutation, mutationSize, offset);
 
-                    // desc += String.format(":%d@%d", mutationSize, idx);
+                    newInput.desc += String.format("(%d@%d)", mutationSize, offset);
+
+                    boolean setToZero = random.nextDouble() < MUTATION_ZERO_PROBABILITY; // one out of 10 times
+                    if (setToZero) {
+                        newInput.desc += "=0";
+                    }
 
                     // Iterate over all entries in the value map
                     Iterator<Map.Entry<ExecutionIndex, Integer>> entryIterator
                             = newInput.valuesMap.entrySet().iterator();
+                    ExecutionContext ecToMutate = null;
                     for (int i = 0; entryIterator.hasNext(); i++) {
                         Map.Entry<ExecutionIndex, Integer> e = entryIterator.next();
                         // Only mutate `mutationSize` contiguous entries from
                         // the randomly selected `idx`.
                         if (i >= offset && i < (offset + mutationSize)) {
+                            ExecutionContext currentEc = new ExecutionContext(e.getKey());
+                            if (ecToMutate == null) {
+                                ecToMutate = currentEc;
+                            } else if (!ecToMutate.equals(currentEc)) {
+                                break;
+                            }
+                            // infoLog("Mutating: %s", e.getKey());
                             // Apply a random mutation
                             int mutatedValue = setToZero ? 0 : random.nextInt(256);
                             e.setValue(mutatedValue);
+
                         }
                     }
                 }
