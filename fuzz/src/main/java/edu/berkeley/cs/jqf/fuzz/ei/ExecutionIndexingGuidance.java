@@ -124,8 +124,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
     /** Returns the banner to be displayed on the status screen */
     protected String getTitle() {
         if (blind) {
-            return  "Generator-based random fuzzing (no guidance)\n" +
-                    "--------------------------------------------\n";
+            return super.getTitle();
         } else {
             return  "Semantic Fuzzing with Execution Indexes\n" +
                     "---------------------------------------\n";
