@@ -84,6 +84,10 @@ public class Counter {
         return Hashing.hash(key, size);
     }
 
+    private int idx1(int k1, int k2) {
+        return Hashing.hash1(k1, k2, size);
+    }
+
     protected int incrementAtIndex(int index, int delta) {
         return (this.counts[index] += delta);
     }
@@ -101,6 +105,22 @@ public class Counter {
     public int increment(int key) {
         return incrementAtIndex(idx(key), 1);
     }
+
+    /**
+     * Increments the count at the given key pair.
+     *
+     * <p>Note that the key pair is hashed and therefore the count
+     * to increment may be shared with another key pair that hashes
+     * to the same value. </p>
+     *
+     * @param k1 the key (part 1) whose count to increment
+     * @param k2 the key (part 2) whose count to increment
+     * @return the new value after incrementing the count
+     */
+    public int increment1(int k1, int k2) {
+        return incrementAtIndex(idx1(k1, k2), 1);
+    }
+
 
     /**
      *

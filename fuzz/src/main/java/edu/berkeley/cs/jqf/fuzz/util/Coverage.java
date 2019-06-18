@@ -88,7 +88,7 @@ public class Coverage implements TraceEventVisitor {
 
     @Override
     public void visitBranchEvent(BranchEvent b) {
-        counter.increment(b.getIid() * 31 + b.getArm());
+        counter.increment1(b.getIid(), b.getArm());
     }
 
     @Override
@@ -114,7 +114,7 @@ public class Coverage implements TraceEventVisitor {
         return counter.getNonZeroIndices();
     }
 
-
+    /** Returns a set of edges in this coverage that don't exist in baseline */
     public Collection<?> computeNewCoverage(Coverage baseline) {
         Collection<Integer> newCoverage = new ArrayList<>();
         for (int idx : this.counter.getNonZeroIndices()) {
@@ -125,8 +125,6 @@ public class Coverage implements TraceEventVisitor {
         return newCoverage;
 
     }
-
-
 
     /**
      * Clears the coverage map.
