@@ -29,6 +29,7 @@
 package edu.berkeley.cs.jqf.fuzz.util;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
@@ -187,5 +188,15 @@ public class Coverage implements TraceEventVisitor {
         return changed;
     }
 
+    /** Returns a hash code of the edge counts in the coverage map. */
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(counter.counts);
+    }
+
+    /** Returns a hash code of the list of edges that have been covered at least once. */
+    public int nonZeroHashCode() {
+        return counter.getNonZeroIndices().hashCode();
+    }
 
 }
