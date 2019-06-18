@@ -28,7 +28,9 @@
  */
 package edu.berkeley.cs.jqf.fuzz.ei;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
@@ -112,7 +114,10 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
      * @throws IOException if the output directory could not be prepared
      */
     public ExecutionIndexingGuidance(String testName, Duration duration, File outputDirectory, File... seedInputFiles) throws IOException {
-        super(testName, duration, outputDirectory, seedInputFiles);
+        super(testName, duration, outputDirectory);
+        for (File seedInputFile : seedInputFiles) {
+            seedInputs.add(new MappedSeedInput(seedInputFile));
+        }
     }
 
 
@@ -746,6 +751,61 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
             this.sourcePrefix = sourcePrefix;
             this.targetPrefix = targetPrefix;
         }
+    }
+
+    public class MappedSeedInput extends MappedInput {
+        final File seedFile;
+        final InputStream in;
+
+        public MappedSeedInput(File seedFile) throws IOException {
+            super();
+            this.seedFile = seedFile;
+            this.in = new BufferedInputStream(new FileInputStream(seedFile));
+            this.desc = "seed";
+        }
+
+        @Override
+        public int getOrGenerateFresh(ExecutionIndex key, Random random) {
+            int value;
+            try {
+                value = in.read();
+            } catch (IOException e) {
+                throw new GuidanceException("Error reading from seed file: " + seedFile.getName(), e);
+
+            }
+
+            // Check for EOF (ideally, should not happen since generators are expected to be deterministic)
+            if (value == -1) {
+                // Bail if configured to do so
+                if (GENERATE_EOF_WHEN_OUT) {
+                    // Returned as EOF but not added to the map
+                    return -1;
+                }
+
+                // More commonly, generate a random value
+                value = random.nextInt(256);
+            }
+
+            // Populate the value map
+            orderedKeys.add(key);
+            valuesMap.put(key, value);
+
+            return value;
+        }
+
+        @Override
+        public void gc() {
+            // Set the `executed` flag
+            executed = true;
+
+            // Close the seed file
+            try {
+                in.close();
+            } catch (IOException e) {
+                throw new GuidanceException("Error closing seed file:" + seedFile.getName(), e);
+            }
+        }
+
     }
 
 }

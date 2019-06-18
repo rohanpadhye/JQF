@@ -107,7 +107,7 @@ public class ZestGuidance implements Guidance {
     protected ArrayList<Input> savedInputs = new ArrayList<>();
 
     /** Queue of seeds to fuzz. */
-    protected Deque<SeedInput> seedInputs = new ArrayDeque<>();
+    protected Deque<Input> seedInputs = new ArrayDeque<>();
 
     /** Current input that's running -- valid after getInput() and before handleResult(). */
     protected Input<?> currentInput;
