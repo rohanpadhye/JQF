@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,6 +47,8 @@ import java.util.function.Consumer;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Prefix;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Suffix;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
+import edu.berkeley.cs.jqf.fuzz.guidance.Result;
+import edu.berkeley.cs.jqf.fuzz.util.Coverage;
 import edu.berkeley.cs.jqf.fuzz.util.ProducerHashMap;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
@@ -81,6 +84,9 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
 
     /** The last event handled by this guidance */
     protected TraceEvent lastEvent;
+
+    /** Maps a hash code of coverage bits to an index in savedInputs queue. */
+    protected Map<Integer, Integer> coverageHashToSavedInputIdx = new HashMap<>();
 
     /** Mean number of mutations to perform in each round. */
     static final double MEAN_MUTATION_COUNT = 2.0;
@@ -180,6 +186,79 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
 
         // Then, do the same logic as ZestGuidance (e.g. returning seeds, mutated inputs, or new input)
         return super.getInput();
+    }
+
+    /**
+     * Handles the result of a test execution.
+     *
+     * This method mostly delegates to the {@link ZestGuidance}, but additionally
+     * incorporates some custom logic to support minimization
+     */
+    @Override
+    public void handleResult(Result result, Throwable error) throws GuidanceException {
+        int numSavedInputsBefore = savedInputs.size();
+        super.handleResult(result, error);
+
+        // Was this a good input?
+        if (result == Result.SUCCESS) {
+            // Get hash for the current run's coverage
+            int coverageHash = runCoverage.hashCode();
+            // Was this saved?
+            if (savedInputs.size() > numSavedInputsBefore) {
+                // If yes, map the hash to the last saved input index
+                assert numSavedInputsBefore == savedInputs.size() - 1 : "savedInputs can only grow by 1 at a time";
+                coverageHashToSavedInputIdx.put(coverageHash, numSavedInputsBefore);
+            } else {
+                // If the current input was not saved (maybe no new coverage),
+                // then see if it can replace an existing input with save coverage
+                if (coverageHashToSavedInputIdx.containsKey(coverageHash)) {
+                    int otherIdx = coverageHashToSavedInputIdx.get(coverageHash);
+                    Input<?> otherInput = savedInputs.get(otherIdx);
+
+                    // Let's compare input sizes of this input and the other input
+                    // But first, we need to run gc on the current input to get the right size
+                    currentInput.gc();
+
+                    if (otherInput != null && currentInput.size() < otherInput.size()) {
+                        // Bingo! We have the same coverage as someone else but smaller input size :-)
+                        infoLog("Minimzation successful! Replacing input %d with %s (size %d ==> %d bytes)",
+                                otherIdx, currentInput.desc, otherInput.size(), currentInput.size());
+
+                        // First, replace in saved inputs
+                        savedInputs.set(otherIdx, currentInput);
+
+                        // Second, update responsibilities
+                        for (Object b : otherInput.responsibilities) {
+                            // Subsume responsibility
+                            // infoLog("-- Stealing responsibility for %s from old input %d", b, otherIdx);
+                            // We are now responsible
+                            responsibleInputs.put(b, currentInput);
+                        }
+                        currentInput.responsibilities = otherInput.responsibilities;
+
+
+                        // Third, store basic book-keeping data
+                        currentInput.id = otherIdx;
+                        currentInput.saveFile = otherInput.saveFile;
+                        currentInput.coverage = new Coverage(runCoverage);
+                        currentInput.nonZeroCoverage = runCoverage.getNonZeroCount();
+                        currentInput.offspring = 0;
+                        savedInputs.get(currentParentInputIdx).offspring += 1;
+
+                        // Finally, overwrite the saved input file on disc
+                        try {
+                            writeCurrentInputToFile(currentInput.saveFile);
+                        } catch (IOException e) {
+                            throw new GuidanceException(e);
+                        }
+
+
+                        // Note: coverageHashToSavedInputIdx does not need to be updated, as the mapping is the same
+
+                    }
+                }
+            }
+        }
     }
 
 
@@ -504,6 +583,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                 newMap.put(key, valuesMap.get(key));
             }
             valuesMap = newMap;
+            assert valuesMap.size() == orderedKeys.size() : "valuesMap and orderedKeys must be of same size";
 
             // Set the `executed` flag
             executed = true;

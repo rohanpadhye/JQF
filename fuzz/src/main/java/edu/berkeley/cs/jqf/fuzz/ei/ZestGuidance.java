@@ -437,7 +437,7 @@ public class ZestGuidance implements Guidance {
             target = (NUM_CHILDREN_BASELINE * parentInput.nonZeroCoverage) / maxCoverage;
         }
 
-        // We absolutey love favored inputs, so fuzz them more
+        // We absolutely love favored inputs, so fuzz them more
         if (parentInput.isFavored()) {
             target = target * NUM_CHILDREN_MULTIPLIER_FAVORED;
         }
@@ -764,7 +764,7 @@ public class ZestGuidance implements Guidance {
         return result;
     }
 
-    private void writeCurrentInputToFile(File saveFile) throws IOException {
+    protected void writeCurrentInputToFile(File saveFile) throws IOException {
         try (BufferedOutputStream out = new BufferedOutputStream(new FileOutputStream(saveFile))) {
             for (Integer b : currentInput) {
                 assert (b >= 0 && b < 256);
