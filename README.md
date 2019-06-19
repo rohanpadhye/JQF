@@ -6,14 +6,16 @@ JQF has been successful in [discovering a number of bugs in widely used open-sou
 
 JQF is a modular framework, supporting the following pluggable fuzzing front-ends called *guidances*:
 * Binary fuzzing with [AFL](http://lcamtuf.coredump.cx/afl) ([tutorial](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-AFL))
-* Semantic fuzzing with **[Zest](https://cs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf) [ISSTA'19]** ([tutorial 1](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest)) ([tutorial 2](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler))
-* Complexity fuzzing with **[PerfFuzz](https://people.eecs.berkeley.edu/~rohanpadhye/files/perffuzz-issta18.pdf) [ISSTA'18]**
+* Semantic fuzzing with **[Zest](http://arxiv.org/abs/1812.00078)** [[ISSTA'19 paper](https://cs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf)] ([tutorial 1](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest)) ([tutorial 2](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler))
+* Complexity fuzzing with **[PerfFuzz](https://github.com/carolemieux/perffuzz)** [[ISSTA'18 paper](https://people.eecs.berkeley.edu/~rohanpadhye/files/perffuzz-issta18.pdf)]
 
 ### Tool paper
 
 If you are using JQF in your research, we request you to cite our [ISSTA'19 tool paper](https://people.eecs.berkeley.edu/~rohanpadhye/files/jqf-issta19.pdf), as follows:
 
-> Rohan Padhye, Caroline Lemieux, and Koushik Sen. 2019. JQF: CoverageGuided Property-Based Testing in Java. In Proceedings of the 28th ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA ’19), July 15–19, 2019, Beijing, China. ACM, New York, NY, USA, 4 pages. https://doi.org/10.1145/3293882.3339002
+> Rohan Padhye, Caroline Lemieux, and Koushik Sen. 2019. JQF: Coverage-Guided Property-Based Testing in Java. In Proceedings of the 28th ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA ’19), July 15–19, 2019, Beijing, China. ACM, New York, NY, USA, 4 pages. https://doi.org/10.1145/3293882.3339002
+
+(the DOI URL may not have been activated until after the conference)
 
 ## Overview
 
