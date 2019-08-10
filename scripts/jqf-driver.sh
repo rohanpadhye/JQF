@@ -9,7 +9,7 @@ ROOT_DIR=`dirname $SCRIPT_DIR`
 
 # Find JQF classes and JARs
 project="jqf"
-version="1.2-SNAPSHOT"
+version="1.3-SNAPSHOT"
 
 FUZZ_DIR="${ROOT_DIR}/fuzz/target/"
 INST_DIR="${ROOT_DIR}/instrument/target/"
