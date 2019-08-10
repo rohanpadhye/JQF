@@ -13,11 +13,9 @@ JQF has been successful in [discovering a number of bugs in widely used open-sou
 
 ### Tool paper
 
-If you are using JQF in your research, we request you to cite our [ISSTA'19 tool paper](https://people.eecs.berkeley.edu/~rohanpadhye/files/jqf-issta19.pdf), as follows:
+If you are using JQF in your research, we request you to cite our [ISSTA'19 tool paper](https://people.eecs.berkeley.edu/~rohanpadhye/files/jqf-issta19.pdf) as follows:
 
 > Rohan Padhye, Caroline Lemieux, and Koushik Sen. 2019. JQF: Coverage-Guided Property-Based Testing in Java. In Proceedings of the 28th ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA ’19), July 15–19, 2019, Beijing, China. ACM, New York, NY, USA, 4 pages. https://doi.org/10.1145/3293882.3339002
-
-(the DOI URL may not have been activated until after the conference)
 
 ## Overview
 
