@@ -155,6 +155,16 @@ public class FuzzGoal extends AbstractMojo {
     @Parameter(property="out")
     private String outputDirectory;
 
+    /**
+     * Whether to stop fuzzing once a crash is found.
+     *
+     * <p>If this property is set to <tt>true</tt>, then the fuzzing
+     * will exit on first crash. Useful for continuous fuzzing when you dont wont to consume resource
+     * once a crash is found. Also fuzzing will be more effective once the crash is fixed.</p>
+     */
+    @Parameter(property="exitOnCrash")
+    private String exitOnCrash;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         ClassLoader loader;
@@ -169,6 +179,11 @@ public class FuzzGoal extends AbstractMojo {
         }
         if (includes != null) {
             System.setProperty("janala.includes", includes);
+        }
+
+        // Configure Zest Guidance
+        if (exitOnCrash != null) {
+            System.setProperty("jqf.ei.EXIT_ON_CRASH", exitOnCrash);
         }
 
         Duration duration = null;
