@@ -138,6 +138,22 @@ public class ReproGoal extends AbstractMojo {
     @Parameter(property="includes")
     private String includes;
 
+    /**
+     * Whether to print the args to each test case.
+     *
+     * <p>The input file being repro'd is usually a sequence of bytes
+     * that is decoded by the junit-quickcheck generators corresponding
+     * to the parameters declared in the test method. Unless the test method
+     * contains just one arg of type InputStream, the input file itself
+     * does not directly correspond to the args sent to the test method.</p>
+     *
+     * <p>If this file is set, then the args decoded from a repro'd input
+     * file are first printed to standard output before invoking the test
+     * method.</p>
+     */
+    @Parameter(property="printArgs")
+    private boolean printArgs;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         ClassLoader loader;
@@ -167,6 +183,11 @@ public class ReproGoal extends AbstractMojo {
         // If a coverage dump file was provided, enable logging via system property
         if (logCoverage != null) {
             System.setProperty("jqf.repro.logUniqueBranches", "true");
+        }
+
+        // If args should be printed, set system property
+        if (printArgs) {
+            System.setProperty("jqf.repro.printArgs", "true");
         }
 
         File inputFile = new File(input);

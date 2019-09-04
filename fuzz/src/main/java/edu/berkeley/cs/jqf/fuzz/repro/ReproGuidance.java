@@ -78,6 +78,7 @@ public class ReproGuidance implements Guidance {
     private Set<String> branchesCoveredInCurrentRun;
     private Set<String> allBranchesCovered;
     private boolean ignoreInvalidCoverage;
+    private boolean printArgs;
 
     HashMap<Integer, String> branchDescCache = new HashMap<>();
 
@@ -99,8 +100,8 @@ public class ReproGuidance implements Guidance {
             allBranchesCovered = new HashSet<>();
             branchesCoveredInCurrentRun = new HashSet<>();
             ignoreInvalidCoverage = Boolean.getBoolean("jqf.repro.ignoreInvalidCoverage");
-
         }
+        printArgs = Boolean.getBoolean("jqf.repro.printArgs");
     }
 
     /**
@@ -147,6 +148,16 @@ public class ReproGuidance implements Guidance {
         return nextFileIdx < inputFiles.length;
     }
 
+    @Override
+    public void observeGeneratedArgs(Object[] args) {
+        if (printArgs) {
+            String inputFileName = getCurrentInputFile().getName();
+            for (int i = 0; i < args.length; i++) {
+                System.out.printf("%s[%d]: %s\n", inputFileName, i, String.valueOf(args[i]));
+            }
+        }
+    }
+
     /**
      * Returns the input file which is currently being repro'd.
      * @return the current input file
@@ -175,9 +186,9 @@ public class ReproGuidance implements Guidance {
         // Print result
         File inputFile = getCurrentInputFile();
         if (result == Result.FAILURE) {
-            System.out.printf("%s: %s (%s)\n", inputFile.getName(), result, error.getClass().getName());
+            System.out.printf("%s ::= %s (%s)\n", inputFile.getName(), result, error.getClass().getName());
         } else {
-            System.out.printf("%s: %s\n", inputFile.getName(), result);
+            System.out.printf("%s ::= %s\n", inputFile.getName(), result);
         }
 
         // Possibly accumulate coverage

@@ -109,6 +109,27 @@ public interface Guidance {
     boolean hasInput();
 
     /**
+     * Callback for observing actual arguments passed to the test method.
+     *
+     * <p>This method is invoked exactly once after each call to
+     * {@link #getInput()}. The arguments to this callback are
+     * the structured inputs that are produced by junit-quickcheck
+     * generators, which in turn decode the bytes produced by
+     * {@link #getInput()}.</p>
+     *
+     * <p>This method is useful for logging the generated args or for
+     * calculating the size of the generated args. The default implementation
+     * does nothing.</p>
+     *
+     * @param args an array of arguments that will be passed to the test
+     *             method; the size of this array is equal to the number of
+     *             formal parameters to the test method
+     */
+    default void observeGeneratedArgs(Object[] args) {
+        // Do nothing
+    }
+
+    /**
      * Handles the end of a fuzzing trial.
      *
      * <p>This method is guaranteed to be invoked by JQF
