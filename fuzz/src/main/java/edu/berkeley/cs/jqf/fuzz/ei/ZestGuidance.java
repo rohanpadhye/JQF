@@ -184,6 +184,9 @@ public class ZestGuidance implements Guidance {
     /** The currently executing input (for debugging purposes). */
     protected File currentInputFile;
 
+    /** Use libFuzzer like output instead of AFL like stats screen (https://llvm.org/docs/LibFuzzer.html#output) **/
+    static final boolean LIBFUZZER_COMPAT_OUTPUT = Boolean.getBoolean("jqf.ei.LIBFUZZER_COMPAT_OUTPUT");
+
     // ------------- TIMEOUT HANDLING ------------
 
     /** Timeout for an individual run. */
@@ -386,24 +389,28 @@ public class ZestGuidance implements Guidance {
         int nonZeroValidCount = validCoverage.getNonZeroCount();
         double nonZeroValidFraction = nonZeroValidCount * 100.0 / validCoverage.size();
 
-        console.printf("\033[2J");
-        console.printf("\033[H");
-        console.printf(this.getTitle() + "\n");
-        if (this.testName != null) {
-            console.printf("Test name:            %s\n", this.testName);
+        if (LIBFUZZER_COMPAT_OUTPUT) {
+            console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, intervalExecsPerSec, currentInput.size());
+        } else {
+            console.printf("\033[2J");
+            console.printf("\033[H");
+            console.printf(this.getTitle() + "\n");
+            if (this.testName != null) {
+                console.printf("Test name:            %s\n", this.testName);
+            }
+            console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
+            console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
+                    maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
+            console.printf("Number of executions: %,d\n", numTrials);
+            console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
+            console.printf("Cycles completed:     %d\n", cyclesCompleted);
+            console.printf("Unique failures:      %,d\n", uniqueFailures.size());
+            console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
+            console.printf("Current parent input: %s\n", currentParentInputDesc);
+            console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
+            console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
+            console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
         }
-        console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
-        console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
-                maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
-        console.printf("Number of executions: %,d\n", numTrials);
-        console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid*100.0/numTrials);
-        console.printf("Cycles completed:     %d\n", cyclesCompleted);
-        console.printf("Unique failures:      %,d\n", uniqueFailures.size());
-        console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
-        console.printf("Current parent input: %s\n", currentParentInputDesc);
-        console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
-        console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
-        console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
 
         String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%",
                 TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
@@ -644,6 +651,10 @@ public class ZestGuidance implements Guidance {
                 // It must still be non-empty
                 assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
 
+                // libFuzzerCompat stats are only displayed when they hit new coverage
+                if (console != null && LIBFUZZER_COMPAT_OUTPUT) {
+                    displayStats();
+                }
 
                 infoLog("Saving new input (at run %d): " +
                                 "input #%d " +
@@ -690,6 +701,12 @@ public class ZestGuidance implements Guidance {
                     String how = currentInput.desc;
                     String why = result == Result.FAILURE ? "+crash" : "+hang";
                     infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
+
+                    // libFuzzerCompat stats are only displayed when they hit new coverage or crashes
+                    if (console != null && LIBFUZZER_COMPAT_OUTPUT) {
+                        displayStats();
+                    }
+
                 } catch (IOException e) {
                     throw new GuidanceException(e);
                 }
@@ -697,7 +714,8 @@ public class ZestGuidance implements Guidance {
             }
         }
 
-        if (console != null) {
+        // displaying stats on every interval is only enabled for AFL-like stats screen
+        if (console != null && !LIBFUZZER_COMPAT_OUTPUT) {
             displayStats();
         }
 

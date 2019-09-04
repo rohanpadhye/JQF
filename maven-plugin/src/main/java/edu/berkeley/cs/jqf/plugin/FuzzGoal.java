@@ -155,6 +155,17 @@ public class FuzzGoal extends AbstractMojo {
     @Parameter(property="out")
     private String outputDirectory;
 
+    /**
+     * Weather to use libFuzzer like output instead of AFL like stats
+     * screen
+     *
+     * <p>If this property is set to <tt>true</>, then output will look like libFuzzer output
+     * https://llvm.org/docs/LibFuzzer.html#output
+     * .</p>
+     */
+    @Parameter(property="libFuzzerCompatOutput")
+    private String libFuzzerCompatOutput;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         ClassLoader loader;
@@ -169,6 +180,11 @@ public class FuzzGoal extends AbstractMojo {
         }
         if (includes != null) {
             System.setProperty("janala.includes", includes);
+        }
+
+        // Configure Zest Guidance
+        if (libFuzzerCompatOutput != null) {
+            System.setProperty("jqf.ei.LIBFUZZER_COMPAT_OUTPUT", libFuzzerCompatOutput);
         }
 
         Duration duration = null;
