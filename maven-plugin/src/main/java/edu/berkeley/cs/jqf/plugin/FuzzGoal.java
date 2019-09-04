@@ -165,6 +165,17 @@ public class FuzzGoal extends AbstractMojo {
      */
     @Parameter(property="libFuzzerCompatOutput")
     private String libFuzzerCompatOutput;
+  
+    /**
+     * Whether to stop fuzzing once a crash is found.
+     *
+     * <p>If this property is set to <tt>true</tt>, then the fuzzing
+     * will exit on first crash. Useful for continuous fuzzing when you dont wont to consume resource
+     * once a crash is found. Also fuzzing will be more effective once the crash is fixed.</p>
+     */
+    @Parameter(property="exitOnCrash")
+    private String exitOnCrash;
+
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -185,6 +196,9 @@ public class FuzzGoal extends AbstractMojo {
         // Configure Zest Guidance
         if (libFuzzerCompatOutput != null) {
             System.setProperty("jqf.ei.LIBFUZZER_COMPAT_OUTPUT", libFuzzerCompatOutput);
+        }
+        if (exitOnCrash != null) {
+            System.setProperty("jqf.ei.EXIT_ON_CRASH", exitOnCrash);
         }
 
         Duration duration = null;

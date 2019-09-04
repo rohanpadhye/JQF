@@ -198,6 +198,9 @@ public class ZestGuidance implements Guidance {
     /** Number of conditional jumps since last run was started. */
     protected long branchCount;
 
+    /** Whether to stop/exit once a crash is found. **/
+    static final boolean EXIT_ON_CRASH = Boolean.getBoolean("jqf.ei.EXIT_ON_CRASH");
+
     // ------------- FUZZING HEURISTICS ------------
 
     /** Whether to save only valid inputs **/
@@ -573,6 +576,10 @@ public class ZestGuidance implements Guidance {
     public boolean hasInput() {
         Date now = new Date();
         long elapsedMilliseconds = now.getTime() - startTime.getTime();
+        if (EXIT_ON_CRASH && uniqueFailures.size() >= 1) {
+            // exit
+            return false;
+        }
         return elapsedMilliseconds < maxDurationMillis;
     }
 
