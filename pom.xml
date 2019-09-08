@@ -30,6 +30,11 @@
             <organization>University of California, Berkeley</organization>
             <url>http://www.carolemieux.com</url>
         </developer>
+        <developer>
+            <name>Yevgeny Pats</name>
+            <email>yp@fuzzit.dev</email>
+            <url>https://fuzzit.dev</url>
+        </developer>
     </developers>
 
     <contributors>
