@@ -6,7 +6,7 @@
 
 JQF is a feedback-directed fuzz testing platform for Java, which uses the abstraction of *property-based testing*. JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck): a tool for generating random arguments for parametric [Junit](http://junit.org) test methods. JQF enables better input generation using **coverage-guided** fuzzing algorithms such as **Zest**.
 
-[Zest](https://people.eecs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf) is an algorithm that biases coverage-guided fuzzing towards producing *semantically valid* inputs; that is, inputs that satisfy structural and semantic properties while maximizing code coverage. Zest's goal is to find deep semantic bugs that cannot be found by conventional fuzzing tools, which mostly stress error-handling logic only. By default, JQF runs Zest via the simple command: `mvn jqf:fuzz`.
+[Zest][ISSTA'19 paper] is an algorithm that biases coverage-guided fuzzing towards producing *semantically valid* inputs; that is, inputs that satisfy structural and semantic properties while maximizing code coverage. Zest's goal is to find deep semantic bugs that cannot be found by conventional fuzzing tools, which mostly stress error-handling logic only. By default, JQF runs Zest via the simple command: `mvn jqf:fuzz`.
 
 JQF is a modular framework, supporting the following pluggable fuzzing front-ends called *guidances*:
 * Binary fuzzing with [AFL](http://lcamtuf.coredump.cx/afl) ([tutorial](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-AFL))
@@ -46,7 +46,7 @@ A `Generator<T>` provides a method for producing random instances of type `T`. F
 
 ### What is *semantic fuzzing* (Zest)?
 
-JQF supports the **[*Zest algorithm*](https://cs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf), which uses code-coverage and input-validity feedback to bias a QuickCheck-style generator** towards generating structured inputs that can reveal deep semantic bugs. JQF extracts code coverage using bytecode instrumentation, and input validity using JUnit's [`Assume`](https://junit.org/junit4/javadoc/4.12/org/junit/Assume.html) API. An input is valid if no assumptions are violated.
+JQF supports the **[*Zest algorithm*][ISSTA'19 paper], which uses code-coverage and input-validity feedback to bias a QuickCheck-style generator** towards generating structured inputs that can reveal deep semantic bugs. JQF extracts code coverage using bytecode instrumentation, and input validity using JUnit's [`Assume`](https://junit.org/junit4/javadoc/4.12/org/junit/Assume.html) API. An input is valid if no assumptions are violated.
 
 
 ## Documentation
