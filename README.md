@@ -17,12 +17,12 @@ JQF has been successful in [discovering a number of bugs in widely used open-sou
 
 ### Zest Research Paper
 
-To reference Zest in your research, we request you to cite our [ISSTA'19 paper]
+To reference Zest in your research, we request you to cite our [ISSTA'19 paper]:
 
 > Rohan Padhye, Caroline Lemieux, Koushik Sen, Mike Papadakis, and Yves Le Traon. 2019. **Semantic Fuzzing with Zest**. In Proceedings of the 28th ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA’19), July 15–19, 2019, Beijing, China. ACM, New York, NY, USA, 12 pages. https://doi.org/10.1145/3293882.3330576
 
 
-### JQF Tool Paper
+#### JQF Tool Paper
 
 If you are using the JQF framework to build new fuzzers, we request you to cite our [ISSTA'19 tool paper] as follows:
 
