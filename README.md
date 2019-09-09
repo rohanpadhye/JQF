@@ -1,21 +1,33 @@
 # JQF + Zest: Semantic Fuzzing for Java
 
+[ISSTA'19 paper]: https://cs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf
+[ISSTA'18 paper]: https://people.eecs.berkeley.edu/~rohanpadhye/files/perffuzz-issta18.pdf
+[ISSTA'19 tool paper]: https://people.eecs.berkeley.edu/~rohanpadhye/files/jqf-issta19.pdf
+
 JQF is a feedback-directed fuzz testing platform for Java, which uses the abstraction of *property-based testing*. JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck): a tool for generating random arguments for parametric [Junit](http://junit.org) test methods. JQF enables better input generation using **coverage-guided** fuzzing algorithms such as **Zest**.
 
 [Zest](https://people.eecs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf) is an algorithm that biases coverage-guided fuzzing towards producing *semantically valid* inputs; that is, inputs that satisfy structural and semantic properties while maximizing code coverage. Zest's goal is to find deep semantic bugs that cannot be found by conventional fuzzing tools, which mostly stress error-handling logic only. By default, JQF runs Zest via the simple command: `mvn jqf:fuzz`.
 
 JQF is a modular framework, supporting the following pluggable fuzzing front-ends called *guidances*:
 * Binary fuzzing with [AFL](http://lcamtuf.coredump.cx/afl) ([tutorial](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-AFL))
-* Semantic fuzzing with **[Zest](http://arxiv.org/abs/1812.00078)** [[ISSTA'19 paper](https://cs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf)] ([tutorial 1](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest)) ([tutorial 2](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler))
-* Complexity fuzzing with **[PerfFuzz](https://github.com/carolemieux/perffuzz)** [[ISSTA'18 paper](https://people.eecs.berkeley.edu/~rohanpadhye/files/perffuzz-issta18.pdf)]
+* Semantic fuzzing with **[Zest](http://arxiv.org/abs/1812.00078)** [[ISSTA'19 paper]] ([tutorial 1](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest)) ([tutorial 2](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler))
+* Complexity fuzzing with **[PerfFuzz](https://github.com/carolemieux/perffuzz)** [[ISSTA'18 paper]]
 
 JQF has been successful in [discovering a number of bugs in widely used open-source software](#trophies) such as OpenJDK, Apache Maven and the Google Closure Compiler.
 
-### Tool paper
+### Zest Research Paper
 
-If you are using JQF in your research, we request you to cite our [ISSTA'19 tool paper](https://people.eecs.berkeley.edu/~rohanpadhye/files/jqf-issta19.pdf) as follows:
+To reference Zest in your research, we request you to cite our [ISSTA'19 paper]
 
-> Rohan Padhye, Caroline Lemieux, and Koushik Sen. 2019. JQF: Coverage-Guided Property-Based Testing in Java. In Proceedings of the 28th ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA ’19), July 15–19, 2019, Beijing, China. ACM, New York, NY, USA, 4 pages. https://doi.org/10.1145/3293882.3339002
+> Rohan Padhye, Caroline Lemieux, Koushik Sen, Mike Papadakis, and Yves Le Traon. 2019. **Semantic Fuzzing with Zest**. In Proceedings of the 28th ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA’19), July 15–19, 2019, Beijing, China. ACM, New York, NY, USA, 12 pages. https://doi.org/10.1145/3293882.3330576
+
+
+### JQF Tool Paper
+
+If you are using the JQF framework to build new fuzzers, we request you to cite our [ISSTA'19 tool paper] as follows:
+
+> Rohan Padhye, Caroline Lemieux, and Koushik Sen. 2019. **JQF: Coverage-Guided Property-Based Testing in Java**. In Proceedings of the 28th ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA ’19), July 15–19, 2019, Beijing, China. ACM, New York, NY, USA, 4 pages. https://doi.org/10.1145/3293882.3339002
+
 
 ## Overview
 
