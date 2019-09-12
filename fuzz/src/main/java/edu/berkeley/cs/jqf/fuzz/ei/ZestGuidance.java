@@ -100,7 +100,7 @@ public class ZestGuidance implements Guidance {
     /** The directory where saved inputs are written. */
     protected File savedInputsDirectory;
 
-    /** The directory where saved inputs are written. */
+    /** The directory where saved failures are written. */
     protected File savedFailuresDirectory;
 
     /** Set of saved inputs to fuzz. */
@@ -155,6 +155,8 @@ public class ZestGuidance implements Guidance {
     /** The set of unique failures found so far. */
     protected Set<List<StackTraceElement>> uniqueFailures = new HashSet<>();
 
+    /** Run only through provided files in seed and corpus directory i.e regression test */
+    static final boolean REGRESSION = Boolean.getBoolean("jqf.ei.REGRESSION");
     // ---------- LOGGING / STATS OUTPUT ------------
 
     /** Whether to print log statements to stderr (debug option; manually edit). */
@@ -518,6 +520,17 @@ public class ZestGuidance implements Guidance {
         // Clear coverage stats for this run
         runCoverage.clear();
 
+        if (REGRESSION) {
+            // Choose an input to execute based on state of queues
+            if (!seedInputs.isEmpty()) {
+                // First, if we have some specific seeds, use those
+                currentInput = seedInputs.removeFirst();
+            }
+            // here we should also pull input from corpus
+
+            return createParameterStream();
+        }
+
         // Choose an input to execute based on state of queues
         if (!seedInputs.isEmpty()) {
             // First, if we have some specific seeds, use those
@@ -576,6 +589,10 @@ public class ZestGuidance implements Guidance {
     public boolean hasInput() {
         Date now = new Date();
         long elapsedMilliseconds = now.getTime() - startTime.getTime();
+        if (REGRESSION && this.seedInputs.size() == 0) {
+            return true;
+        }
+
         if (EXIT_ON_CRASH && uniqueFailures.size() >= 1) {
             // exit
             return false;
