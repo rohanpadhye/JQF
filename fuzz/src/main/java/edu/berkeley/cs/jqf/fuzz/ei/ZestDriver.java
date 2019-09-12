@@ -30,8 +30,10 @@
 package edu.berkeley.cs.jqf.fuzz.ei;
 
 import java.io.File;
+import java.util.List;
 
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
+import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
 import org.junit.runner.Result;
 
 /**
@@ -60,6 +62,13 @@ public class ZestDriver {
         }
 
         try {
+            //List<String> classpathElements = project.getTestClasspathElements();
+
+            // TODO: either add variable to use "inline instrumenting" + figure why this instrumenting doesn't work
+            ClassLoader loader = new InstrumentingClassLoader(
+                    new String[]{System.getProperty("java.class.path")},
+                    ZestDriver.class.getClassLoader());
+
             // Load the guidance
             String title = testClassName+"#"+testMethodName;
             ZestGuidance guidance = seedFiles != null ?
@@ -67,7 +76,7 @@ public class ZestDriver {
                     new ZestGuidance(title, null, outputDirectory);
 
             // Run the Junit test
-            Result res = GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
+            Result res = GuidedFuzzing.run(testClassName, testMethodName, loader, guidance, System.out);
             if (Boolean.getBoolean("jqf.logCoverage")) {
                 System.out.println(String.format("Covered %d edges.",
                         guidance.getTotalCoverage().getNonZeroCount()));
