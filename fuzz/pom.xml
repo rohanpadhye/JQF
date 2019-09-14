@@ -21,11 +21,11 @@
         </dependency>
         <dependency>
             <groupId>com.pholser</groupId>
-            <artifactId>junit-quickcheck-core</artifactId>
+            <artifactId>junit-quickcheck-generators</artifactId>
         </dependency>
         <dependency>
             <groupId>com.pholser</groupId>
-            <artifactId>junit-quickcheck-generators</artifactId>
+            <artifactId>junit-quickcheck-core</artifactId>
         </dependency>
         <dependency>
             <groupId>edu.berkeley.cs.jqf</groupId>
@@ -45,6 +45,11 @@
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-library</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.0.4</version>
         </dependency>
     </dependencies>
 
@@ -84,6 +89,31 @@
 		                </execution> 
 		        </executions> 
 			</plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.1.1</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/assembly/assembly.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <mainClass>edu.berkeley.cs.jqf.fuzz.ei.ZestCLI</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
 
