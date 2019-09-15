@@ -56,6 +56,13 @@ JQF supports the **[*Zest algorithm*][ISSTA'19 paper], which uses code-coverage 
 * [Zest 101](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest): A basic tutorial for fuzzing a standalone toy program using command-line scripts. Walks through the process of writing a test driver and structured input generator for `Calendar` objects.
 * [Fuzzing a compiler with Zest](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler): A tutorial for fuzzing a non-trivial program -- the [Google Closure Compiler](https://github.com/google/closure-compiler) -- using a generator for JavaScript programs. This tutorial makes use of the [JQF Maven plugin](https://github.com/rohanpadhye/jqf/wiki/JQF-Maven-Plugin).
 * [Fuzzing with AFL](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-AFL): A tutorial for fuzzing a Java program that parses binary data, such as PNG image files, using the AFL binary fuzzing engine.
+* [Fuzzing with ZestCLI](https://github.com/fuzzitdev/example-java): A tutorial of fuzzing a Java program with ZestCLI 
+
+### Continuous Fuzzing
+Just like unit-tests fuzzing is advised to be run continuously with your CI as your code grows and developed.
+
+Currently there is 1 service that offer continuous fuzzing as a service based on JQF/Zest:
+* [fuzzit.dev](https://fuzzit.dev) ([tutorial](https://github.com/fuzzitdev/example-java))
 
 ### Additional Details
 
