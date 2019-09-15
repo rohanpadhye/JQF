@@ -155,6 +155,9 @@ public class ZestGuidance implements Guidance {
     /** The set of unique failures found so far. */
     protected Set<List<StackTraceElement>> uniqueFailures = new HashSet<>();
 
+    /** save crash to specific location (should be used with EXIT_ON_CRASH) **/
+    static final String EXACT_CRASH_PATH = System.getProperty("jqf.ei.EXACT_CRASH_PATH");
+
     // ---------- LOGGING / STATS OUTPUT ------------
 
     /** Whether to print log statements to stderr (debug option; manually edit). */
@@ -708,6 +711,11 @@ public class ZestGuidance implements Guidance {
                     String how = currentInput.desc;
                     String why = result == Result.FAILURE ? "+crash" : "+hang";
                     infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
+
+                    if (EXACT_CRASH_PATH != null && !EXACT_CRASH_PATH.equals("")) {
+                        File exactCrashFile = new File(EXACT_CRASH_PATH);
+                        writeCurrentInputToFile(exactCrashFile);
+                    }
 
                     // libFuzzerCompat stats are only displayed when they hit new coverage or crashes
                     if (console != null && LIBFUZZER_COMPAT_OUTPUT) {

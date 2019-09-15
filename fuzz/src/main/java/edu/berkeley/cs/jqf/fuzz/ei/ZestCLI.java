@@ -47,9 +47,19 @@ import java.util.ArrayList;
  */
 @CommandLine.Command(name = "ZestCLI", mixinStandardHelpOptions = true, version = "1.3")
 public class ZestCLI implements Runnable{
-    @Option(names = { "-e", "--exit-on-crash" },
-            description = "Exit fuzzer on first crash (default: false)")
-    private boolean exitOnCrash = false;
+
+    @CommandLine.ArgGroup(exclusive = false, multiplicity = "0..2")
+    Dependent dependent;
+
+    static class Dependent {
+        @Option(names = { "-e", "--exit-on-crash" },
+                description = "Exit fuzzer on first crash (default: false)")
+        boolean exitOnCrash = false;
+
+        @Option(names = { "--exact-crash-path" },
+                description = "exact path for the crash")
+        String exactCrashPath;
+    }
 
     @Option(names = { "-l", "--libfuzzer-compat-output" },
             description = "Use libFuzzer compat output instead of AFL like stats screen (default: false)")
@@ -63,7 +73,7 @@ public class ZestCLI implements Runnable{
             description = "Output Directory containing results (default: fuzz_results)")
     private File outputDirectory = new File("fuzz-results");
 
-    @Parameters(index="0", paramLabel = "PACKAGE", description = "package containing the fuzzer and all dependencies")
+    @Parameters(index = "0", paramLabel = "PACKAGE", description = "package containing the fuzz target and all dependencies")
     private String testPackageName;
 
     @Parameters(index="1", paramLabel = "TEST_CLASS", description = "full class name where the fuzz function is located")
@@ -80,6 +90,10 @@ public class ZestCLI implements Runnable{
 
         ArrayList<File> seedFilesArray = new ArrayList<>();
         File[] allFiles = this.inputDirectory.listFiles();
+        if (allFiles == null) {
+            // this means the directory doesn't exist
+            return new File[0];
+        }
         for (int i = 0; i < allFiles.length; i++) {
             if (allFiles[i].isFile()) {
                 seedFilesArray.add(allFiles[i]);
@@ -93,13 +107,20 @@ public class ZestCLI implements Runnable{
 
         File[] seedFiles = readSeedFiles();
 
-        if (this.exitOnCrash) {
-            System.setProperty("jqf.ei.EXIT_ON_CRASH", "true");
+        if (this.dependent != null) {
+            if (this.dependent.exitOnCrash) {
+                System.setProperty("jqf.ei.EXIT_ON_CRASH", "true");
+            }
+
+            if (this.dependent.exactCrashPath != null) {
+                System.setProperty("jqf.ei.EXACT_CRASH_PATH", this.dependent.exactCrashPath);
+            }
         }
 
         if (this.libFuzzerCompatOutput) {
             System.setProperty("jqf.ei.LIBFUZZER_COMPAT_OUTPUT", "true");
         }
+
 
         try {
             ClassLoader loader = new InstrumentingClassLoader(
