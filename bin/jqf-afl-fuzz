@@ -19,6 +19,7 @@ print_usage() {
   echo "  -m MEM_LIMIT       Set a memory limit in MB (default is 8192)"
   echo "  -t TIMEOUT         Set a single-run timeout in milliseconds (default is 10000)"
   echo "  -v                 Enable verbose logging (in file 'jqf.log')"
+  echo "  -a                 Enable AFL-proxy logging (in file 'proxy.log')"
 }
 
 # Ensure that afl-fuzz can be found
@@ -57,7 +58,7 @@ output_dir="fuzz-results"
 timeout="10000"
 slave_id=""
 
-while getopts ":c:i:o:x:m:dpN:vt:S:T:" opt; do
+while getopts ":c:i:o:x:m:dpN:vt:S:T:a" opt; do
   case $opt in
     /?)
       echo "Invalid option: -$OPTARG" >&2
@@ -101,6 +102,9 @@ while getopts ":c:i:o:x:m:dpN:vt:S:T:" opt; do
       ;;
     T)
       title="$OPTARG"
+      ;;
+    a)
+      target_options="$target_options -a"
       ;;
   esac
 done

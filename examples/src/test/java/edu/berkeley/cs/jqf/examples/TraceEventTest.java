@@ -28,42 +28,52 @@
  */
 package edu.berkeley.cs.jqf.examples;
 
-import com.pholser.junit.quickcheck.From;
-import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
 import edu.berkeley.cs.jqf.fuzz.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.JQF;
+import edu.berkeley.cs.jqf.instrument.tracing.TraceLogger;
+import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEventVisitor;
+import janala.logger.inst.METHOD_BEGIN;
+import janala.logger.inst.MemberRef;
 import org.junit.runner.RunWith;
-import static org.junit.Assert.*;
 
+/**
+ * @author Rohan Padhye
+ */
 @RunWith(JQF.class)
-public class RobustnessTest {
+public class TraceEventTest {
+
     @Fuzz
-    public void testTwo(@From(AsciiStringGenerator.class) String s1, @From(AsciiStringGenerator.class) String s2) {
-        if (s2.length() == 3) {
-            if (s2.charAt(0) == 'a') {
-                if (s2.charAt(1) == 'b') {
-                    if (s2.charAt(2) == 'c') {
-                        if (s1.length() == 3) {
-                            if (s1.charAt(0) == 'a') {
-                                if (s1.charAt(1) == 'b') {
-                                    if (s1.charAt(2) == 'c') {
-                                        assertTrue(false);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+    public void fakeBranchEvent(int iid, int arm) {
+        TraceEvent e = new BranchEvent(iid,
+                new METHOD_BEGIN("examples.A", "foo", "()V"), 0, arm);
+        TraceLogger.get().emit(e);
+    }
+
+    @Fuzz
+    public void customEvent(String data) {
+        int iid = TraceEventTest.class.hashCode(); // this should be a random value associated with a program location
+        MemberRef method = new METHOD_BEGIN("examples.A", "foo", "()V"); // containing method
+        int lineNumber = 0; // line number if it exists
+
+        // Generate a custom event!
+        TraceLogger.get().emit(new CustomEvent(iid, method, lineNumber, data));
+
+    }
+
+    private static class CustomEvent extends TraceEvent {
+
+        private String data;
+
+        public CustomEvent(int iid, MemberRef method, int lineNumber, String data) {
+            super(iid, method, lineNumber);
+            this.data = data;
+        }
+
+        @Override
+        public void applyVisitor(TraceEventVisitor v) {
+            throw new UnsupportedOperationException("No visitor method for custom event");
         }
     }
-
-    @Fuzz
-    public void debugTwo(@From(AsciiStringGenerator.class) String s1, @From(AsciiStringGenerator.class) String s2) {
-        System.out.print(s2.length() + ": ");
-        System.out.println(s2);
-        System.out.print(s1.length() + ": ");
-        System.out.println(s1);
-    }
-
 }

@@ -4,7 +4,7 @@
 
     <groupId>edu.berkeley.cs.jqf</groupId>
     <artifactId>jqf</artifactId>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>jqf</name>
@@ -29,6 +29,11 @@
             <email>clemieux@cs.berkeley.edu</email>
             <organization>University of California, Berkeley</organization>
             <url>http://www.carolemieux.com</url>
+        </developer>
+        <developer>
+            <name>Yevgeny Pats</name>
+            <email>yp@fuzzit.dev</email>
+            <url>https://fuzzit.dev</url>
         </developer>
     </developers>
 
@@ -97,12 +102,12 @@
             <dependency>
                 <groupId>edu.berkeley.cs.jqf</groupId>
                 <artifactId>jqf-fuzz</artifactId>
-                <version>1.2-SNAPSHOT</version>
+                <version>1.4-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>edu.berkeley.cs.jqf</groupId>
                 <artifactId>jqf-instrument</artifactId>
-                <version>1.2-SNAPSHOT</version>
+                <version>1.4-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -165,7 +170,7 @@
                 <plugin>
                     <groupId>edu.berkeley.cs.jqf</groupId>
                     <artifactId>jqf-maven-plugin</artifactId>
-                    <version>1.2-SNAPSHOT</version>
+                    <version>1.4-SNAPSHOT</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

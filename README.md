@@ -1,19 +1,33 @@
-# JQF: Coverage-guided structured fuzzing for Java
+# JQF + Zest: Semantic Fuzzing for Java
 
-JQF is a feedback-directed fuzz testing platform for Java. JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck), which itself lets you write [Quickcheck](http://www.cse.chalmers.se/~rjmh/QuickCheck/manual.html)-like **generators** and properties in a [Junit](http://junit.org)-style test class. JQF enables better input generation using **coverage-guided** fuzzing algorithms.
+[ISSTA'19 paper]: https://cs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf
+[ISSTA'18 paper]: https://people.eecs.berkeley.edu/~rohanpadhye/files/perffuzz-issta18.pdf
+[ISSTA'19 tool paper]: https://people.eecs.berkeley.edu/~rohanpadhye/files/jqf-issta19.pdf
 
-JQF has been successful in [discovering a number of bugs in widely used open-source software](https://github.com/rohanpadhye/jqf/wiki/Bug-trophy-case) such as OpenJDK, Apache Maven and the Google Closure Compiler.
+JQF is a feedback-directed fuzz testing platform for Java, which uses the abstraction of *property-based testing*. JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck): a tool for generating random arguments for parametric [Junit](http://junit.org) test methods. JQF enables better input generation using **coverage-guided** fuzzing algorithms such as **Zest**.
+
+[Zest][ISSTA'19 paper] is an algorithm that biases coverage-guided fuzzing towards producing *semantically valid* inputs; that is, inputs that satisfy structural and semantic properties while maximizing code coverage. Zest's goal is to find deep semantic bugs that cannot be found by conventional fuzzing tools, which mostly stress error-handling logic only. By default, JQF runs Zest via the simple command: `mvn jqf:fuzz`.
 
 JQF is a modular framework, supporting the following pluggable fuzzing front-ends called *guidances*:
 * Binary fuzzing with [AFL](http://lcamtuf.coredump.cx/afl) ([tutorial](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-AFL))
-* Semantic fuzzing with **[Zest](https://cs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf) [ISSTA'19]** ([tutorial 1](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest)) ([tutorial 2](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler))
-* Complexity fuzzing with **[PerfFuzz](https://people.eecs.berkeley.edu/~rohanpadhye/files/perffuzz-issta18.pdf) [ISSTA'18]**
+* Semantic fuzzing with **[Zest](http://arxiv.org/abs/1812.00078)** [[ISSTA'19 paper]] ([tutorial 1](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest)) ([tutorial 2](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler))
+* Complexity fuzzing with **[PerfFuzz](https://github.com/carolemieux/perffuzz)** [[ISSTA'18 paper]]
 
-### Tool paper
+JQF has been successful in [discovering a number of bugs in widely used open-source software](#trophies) such as OpenJDK, Apache Maven and the Google Closure Compiler.
 
-If you are using JQF in your research, we request you to cite our [ISSTA'19 tool paper](https://people.eecs.berkeley.edu/~rohanpadhye/files/jqf-issta19.pdf), as follows:
+### Zest Research Paper
 
-> Rohan Padhye, Caroline Lemieux, and Koushik Sen. 2019. JQF: CoverageGuided Property-Based Testing in Java. In Proceedings of the 28th ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA ’19), July 15–19, 2019, Beijing, China. ACM, New York, NY, USA, 4 pages. https://doi.org/10.1145/3293882.3339002
+To reference Zest in your research, we request you to cite our [ISSTA'19 paper]:
+
+> Rohan Padhye, Caroline Lemieux, Koushik Sen, Mike Papadakis, and Yves Le Traon. 2019. **Semantic Fuzzing with Zest**. In Proceedings of the 28th ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA’19), July 15–19, 2019, Beijing, China. ACM, New York, NY, USA, 12 pages. https://doi.org/10.1145/3293882.3330576
+
+
+#### JQF Tool Paper
+
+If you are using the JQF framework to build new fuzzers, we request you to cite our [ISSTA'19 tool paper] as follows:
+
+> Rohan Padhye, Caroline Lemieux, and Koushik Sen. 2019. **JQF: Coverage-Guided Property-Based Testing in Java**. In Proceedings of the 28th ACM SIGSOFT International Symposium on Software Testing and Analysis (ISSTA ’19), July 15–19, 2019, Beijing, China. ACM, New York, NY, USA, 4 pages. https://doi.org/10.1145/3293882.3339002
+
 
 ## Overview
 
@@ -32,7 +46,7 @@ A `Generator<T>` provides a method for producing random instances of type `T`. F
 
 ### What is *semantic fuzzing* (Zest)?
 
-JQF supports the **[*Zest algorithm*](https://cs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf), which uses code-coverage and input-validity feedback to bias a QuickCheck-style generator** towards generating structured inputs that can reveal deep semantic bugs. JQF extracts code coverage using bytecode instrumentation, and input validity using JUnit's [`Assume`](https://junit.org/junit4/javadoc/4.12/org/junit/Assume.html) API. An input is valid if no assumptions are violated.
+JQF supports the **[*Zest algorithm*][ISSTA'19 paper], which uses code-coverage and input-validity feedback to bias a QuickCheck-style generator** towards generating structured inputs that can reveal deep semantic bugs. JQF extracts code coverage using bytecode instrumentation, and input validity using JUnit's [`Assume`](https://junit.org/junit4/javadoc/4.12/org/junit/Assume.html) API. An input is valid if no assumptions are violated.
 
 
 ## Documentation
@@ -42,13 +56,19 @@ JQF supports the **[*Zest algorithm*](https://cs.berkeley.edu/~rohanpadhye/files
 * [Zest 101](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest): A basic tutorial for fuzzing a standalone toy program using command-line scripts. Walks through the process of writing a test driver and structured input generator for `Calendar` objects.
 * [Fuzzing a compiler with Zest](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler): A tutorial for fuzzing a non-trivial program -- the [Google Closure Compiler](https://github.com/google/closure-compiler) -- using a generator for JavaScript programs. This tutorial makes use of the [JQF Maven plugin](https://github.com/rohanpadhye/jqf/wiki/JQF-Maven-Plugin).
 * [Fuzzing with AFL](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-AFL): A tutorial for fuzzing a Java program that parses binary data, such as PNG image files, using the AFL binary fuzzing engine.
+* [Fuzzing with ZestCLI](https://github.com/fuzzitdev/example-java): A tutorial of fuzzing a Java program with ZestCLI 
+
+### Continuous Fuzzing
+Just like unit-tests fuzzing is advised to be run continuously with your CI as your code grows and developed.
+
+Currently there is 1 service that offer continuous fuzzing as a service based on JQF/Zest:
+* [fuzzit.dev](https://fuzzit.dev) ([tutorial](https://github.com/fuzzitdev/example-java))
 
 ### Additional Details
 
 The [JQF wiki](https://github.com/rohanpadhye/jqf/wiki) contains lots more documentation including:
 - [Using a custom fuzz guidance](https://github.com/rohanpadhye/jqf/wiki/The-Guidance-interface)
 - [Performance Benchmarks](https://github.com/rohanpadhye/jqf/wiki/Performance-benchmarks)
-- [Bug trophy case](https://github.com/rohanpadhye/jqf/wiki/Bug-trophy-case)
 
 JQF also publishes its [API docs](https://rohanpadhye.github.io/jqf/apidocs).
 
@@ -59,3 +79,51 @@ We want your feedback! (haha, get it? get it?)
 If you've found a bug in JQF or are having trouble getting JQF to work, please open an issue on the [issue tracker](https://github.com/rohanpadhye/jqf/issues). You can also use this platform to post feature requests.
 
 If it's some sort of fuzzing emergency you can always send an email to the main developer: [Rohan Padhye](https://people.eecs.berkeley.edu/~rohanpadhye).
+
+## Trophies
+
+If you find bugs with JQF and you comfortable with sharing, We would be happy to add them to this list. 
+Please send a PR for README.md with a link to the bug/cve you found.
+
+- [google/closure-compiler#2842](https://github.com/google/closure-compiler/issues/2842): IllegalStateException in VarCheck: Unexpected variable
+- [google/closure-compiler#2843](https://github.com/google/closure-compiler/issues/2843): NullPointerException when using Arrow Functions in dead code 
+- [google/closure-compiler#3173](https://github.com/google/closure-compiler/issues/3173): Algorithmic complexity / performance issue on fuzzed input
+- [google/closure-compiler#3220](https://github.com/google/closure-compiler/issues/3220): ExpressionDecomposer throws IllegalStateException: Object method calls can not be decomposed
+- [JDK-8190332](https://bugs.openjdk.java.net/browse/JDK-8190332): PngReader throws NegativeArraySizeException when width is too large
+- [JDK-8190511](https://bugs.openjdk.java.net/browse/JDK-8190511): PngReader throws OutOfMemoryError for very small malformed PNGs
+- [JDK-8190512](https://bugs.openjdk.java.net/browse/JDK-8190512): PngReader throws undocumented IllegalArgumentException: "Empty Region" instead of IOException for malformed images with negative dimensions
+- [JDK-8190997](https://bugs.openjdk.java.net/browse/JDK-8190997): PngReader throws NullPointerException when PLTE section is missing
+- [JDK-8191023](https://bugs.openjdk.java.net/browse/JDK-8191023): PngReader throws NegativeArraySizeException in parse_tEXt_chunk when keyword length exceeeds chunk size
+- [JDK-8191076](https://bugs.openjdk.java.net/browse/JDK-8191076): PngReader throws  NegativeArraySizeException in parse_zTXt_chunk when keyword length exceeds chunk size
+- [JDK-8191109](https://bugs.openjdk.java.net/browse/JDK-8191109): PngReader throws NegativeArraySizeException in parse_iCCP_chunk when keyword length exceeds chunk size
+- [JDK-8191174](https://bugs.openjdk.java.net/browse/JDK-8191174): PngReader throws undocumented llegalArgumentException with message "Pixel stride times width must be <= scanline stride"
+- [JDK-8191073](https://bugs.openjdk.java.net/browse/JDK-8191073): JpegImageReader throws IndexOutOfBoundsException when reading malformed header
+- [JDK-8193444](https://bugs.openjdk.java.net/browse/JDK-8193444): SimpleDateFormat throws ArrayIndexOutOfBoundsException when format contains long sequences of unicode characters
+- [JDK-8193877](https://bugs.openjdk.java.net/browse/JDK-8193877): DateTimeFormatterBuilder throws ClassCastException when using padding
+- [mozilla/rhino#405](https://github.com/mozilla/rhino/issues/405): FAILED ASSERTION due to malformed destructuring syntax
+- [mozilla/rhino#406](https://github.com/mozilla/rhino/issues/406): ClassCastException when compiling malformed destructuring expression
+- [mozilla/rhino#407](https://github.com/mozilla/rhino/issues/407): java.lang.VerifyError in bytecode produced by CodeGen
+- [mozilla/rhino#409](https://github.com/mozilla/rhino/issues/409): ArrayIndexOutOfBoundsException when parsing '<!-'
+- [mozilla/rhino#410](https://github.com/mozilla/rhino/issues/410): NullPointerException in BodyCodeGen
+- [COLLECTIONS-714](https://issues.apache.org/jira/browse/COLLECTIONS-714): PatriciaTrie ignores trailing null characters in keys
+- [COMPRESS-424](https://issues.apache.org/jira/browse/COMPRESS-424): BZip2CompressorInputStream throws ArrayIndexOutOfBoundsException(s) when decompressing malformed input
+- [LANG-1385](https://issues.apache.org/jira/browse/LANG-1385): StringIndexOutOfBoundsException in NumberUtils.createNumber
+- [**CVE-2018-11771**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-11771): Infinite Loop in Commons-Compress ZipArchiveInputStream ([found by Tobias Ospelt](https://modzero.ch/modlog/archives/2018/09/20/java_bugs_with_and_without_fuzzing/index.html))
+- [MNG-6375](https://issues.apache.org/jira/browse/MNG-6375) / [plexus-utils#34](https://github.com/codehaus-plexus/plexus-utils/issues/34): NullPointerException when pom.xml has incomplete XML tag
+- [MNG-6374](https://issues.apache.org/jira/browse/MNG-6374) / [plexus-utils#35](https://github.com/codehaus-plexus/plexus-utils/issues/35): ModelBuilder hangs with malformed pom.xml
+- [MNG-6577](https://issues.apache.org/jira/browse/MNG-6577) / [plexus-utils#57](https://github.com/codehaus-plexus/plexus-utils/issues/57): Uncaught IllegalArgumentException when parsing unicode entity ref
+- [Bug 62655](https://bz.apache.org/bugzilla/show_bug.cgi?id=62655): Augment task: IllegalStateException when "id" attribute is missing 
+- [BCEL-303](https://issues.apache.org/jira/browse/BCEL-303): AssertionViolatedException in Pass 3A Verification of invoke instructions
+- [BCEL-307](https://issues.apache.org/jira/browse/BCEL-307): ClassFormatException thrown in Pass 3A verification
+- [BCEL-308](https://issues.apache.org/jira/browse/BCEL-308): NullPointerException in Verifier Pass 3A
+- [BCEL-309](https://issues.apache.org/jira/browse/BCEL-309): NegativeArraySizeException when Code attribute length is negative
+- [BCEL-310](https://issues.apache.org/jira/browse/BCEL-310): ArrayIndexOutOfBounds in Verifier Pass 3A
+- [BCEL-311](https://issues.apache.org/jira/browse/BCEL-311): ClassCastException in Verifier Pass 2
+- [BCEL-312](https://issues.apache.org/jira/browse/BCEL-312): AssertionViolation: INTERNAL ERROR Please adapt StringRepresentation to deal with ConstantPackage in Verifier Pass 2
+- [BCEL-313](https://issues.apache.org/jira/browse/BCEL-313): ClassFormatException: Invalid signature: Ljava/lang/String)V in Verifier Pass 3A
+- [**CVE-2018-8036**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-8036): Infinite Loop leading to OOM in PDFBox's AFMParser ([found by Tobias Ospelt](https://modzero.ch/modlog/archives/2018/09/20/java_bugs_with_and_without_fuzzing/index.html))
+- [PDFBOX-4333](https://issues.apache.org/jira/browse/PDFBOX-4333): ClassCastException when loading PDF (found by Robin Schimpf)
+- [PDFBOX-4338](https://issues.apache.org/jira/browse/PDFBOX-4338): ArrayIndexOutOfBoundsException in COSParser (found by Robin Schimpf)
+- [PDFBOX-4339](https://issues.apache.org/jira/browse/PDFBOX-4339): NullPointerException in COSParser (found by Robin Schimpf)
+- [**CVE-2018-8017**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-8017): Infinite Loop in IptcAnpaParser 
+- [**CVE-2018-12418**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-12418): Infinite Loop in junrar ([found by Tobias Ospelt](https://modzero.ch/modlog/archives/2018/09/20/java_bugs_with_and_without_fuzzing/index.html))

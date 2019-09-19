@@ -67,7 +67,7 @@ public final class SingleSnoop {
     static Function<Thread, Consumer<TraceEvent>> callbackGenerator = (t) -> (e) -> {};
 
 
-    private static TraceLogger intp = new TraceLogger();
+    private static final TraceLogger intp = TraceLogger.get();
 
     private SingleSnoop() {}
 

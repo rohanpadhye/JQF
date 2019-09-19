@@ -29,18 +29,44 @@
 
 package edu.berkeley.cs.jqf.instrument.tracing;
 
+import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 import janala.logger.AbstractLogger;
 import janala.logger.inst.Instruction;
 
-/** @author Rohan Padhye */
-class TraceLogger extends AbstractLogger {
+/**
+ * A singleton class which manages per-thread tracers.
+ *
+ * This class is used both to log instrumented instructions
+ * via {@link SingleSnoop}, as well as to provide programmatic
+ * access to emit {@link TraceEvent}s.
+ *
+ * @author Rohan Padhye
+ */
+public class TraceLogger extends AbstractLogger {
+
+    private static final TraceLogger singleton = new TraceLogger();
 
     private final ThreadLocal<ThreadTracer> tracer
             = ThreadLocal.withInitial(() -> ThreadTracer.spawn(Thread.currentThread()));
 
+    private TraceLogger() {
+        // Singleton: Prevent outside construction
+    }
+
+    /** Returns a handle to the singleton instance. */
+    public static TraceLogger get() {
+        return singleton;
+    }
+
+    /** Logs an instrumented byteode instruction for the current thread. */
     @Override
     protected void log(Instruction instruction) {
         tracer.get().consume(instruction);
+    }
+
+    /** Emits a trace event for the current thread. */
+    public void emit(TraceEvent event) {
+        tracer.get().emit(event);
     }
 
 }
