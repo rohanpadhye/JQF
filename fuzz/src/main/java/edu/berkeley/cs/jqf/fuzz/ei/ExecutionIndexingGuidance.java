@@ -151,7 +151,12 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
      */
     @Override
     protected InputStream createParameterStream() {
+        if (currentInput instanceof LinearInput) {
+            return super.createParameterStream();
+        }
+
         // Return an input stream that uses the EI map
+        assert currentInput instanceof MappedInput : "Inputs should either be Linear or Mapped";
         return new InputStream() {
             @Override
             public int read() throws IOException {
@@ -160,8 +165,6 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                 if (lastEvent == null) {
                     throw new GuidanceException("Could not compute execution index; no instrumentation?");
                 }
-
-                assert currentInput instanceof MappedInput : "This guidance should only mutate MappedInput(s)";
 
                 MappedInput mappedInput = (MappedInput) currentInput;
 
@@ -210,7 +213,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                 coverageHashToSavedInputIdx.put(coverageHash, numSavedInputsBefore);
             } else {
                 // If the current input was not saved (maybe no new coverage),
-                // then see if it can replace an existing input with save coverage
+                // then see if it can replace an existing input with same coverage
                 if (coverageHashToSavedInputIdx.containsKey(coverageHash)) {
                     int otherIdx = coverageHashToSavedInputIdx.get(coverageHash);
                     Input<?> otherInput = savedInputs.get(otherIdx);
@@ -598,7 +601,13 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
          */
         @Override
         public Input fuzz(Random random) {
-            return fuzz(random, ExecutionIndexingGuidance.this.ecToInputLoc);
+            // Either mutate this input robustless (as a mapped input), or crazily (as a linear input)
+            if (true) {
+                return fuzz(random, ExecutionIndexingGuidance.this.ecToInputLoc);
+            } else {
+                LinearInput linear = new LinearInput(valuesMap.values(), this.id);
+                return linear.fuzz(random, linear);
+            }
         }
 
         /**
@@ -748,6 +757,12 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                 int numMutations = sampleGeometric(random, MEAN_MUTATION_COUNT);
                 newInput.desc += ",havoc:"+numMutations;
 
+                boolean setToZero = random.nextDouble() < 0.1; // one out of 10 times
+                if (setToZero) {
+                    newInput.desc += "=0";
+                }
+
+
                 for (int mutation = 1; mutation <= numMutations; mutation++) {
 
                     // Select a random offset and size
@@ -756,11 +771,6 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                     // infoLog("[%d] Mutating %d bytes at offset %d", mutation, mutationSize, offset);
 
                     newInput.desc += String.format("(%d@%d)", mutationSize, offset);
-
-                    boolean setToZero = random.nextDouble() < MUTATION_ZERO_PROBABILITY; // one out of 10 times
-                    if (setToZero) {
-                        newInput.desc += "=0";
-                    }
 
                     // Iterate over all entries in the value map
                     Iterator<Map.Entry<ExecutionIndex, Integer>> entryIterator

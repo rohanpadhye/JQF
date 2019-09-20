@@ -1013,6 +1013,7 @@ public class ZestGuidance implements Guidance {
         }
     }
 
+    /** An input that is represented as a sequence of byte-valued integers **/
     public class LinearInput extends Input<Integer> {
 
         /** A list of byte values (0-255) ordered by their index. */
@@ -1021,14 +1022,23 @@ public class ZestGuidance implements Guidance {
         /** The number of bytes requested so far */
         protected int requested = 0;
 
+        /** Create a fresh linear input */
         public LinearInput() {
             super();
             this.values = new ArrayList<>();
         }
 
+        /** Clone an existing linear input */
         public LinearInput(LinearInput other) {
             super(other);
             this.values = new ArrayList<>(other.values);
+        }
+
+        /** Create a linear input from a given list of values and source ID */
+        public LinearInput(Collection<Integer> values, int srcId) {
+            this.values = new ArrayList<>(values);
+            this.id = srcId;
+            this.desc = "linfrom:"+srcId;
         }
 
 
@@ -1089,6 +1099,10 @@ public class ZestGuidance implements Guidance {
         public Input fuzz(Random random) {
             // Clone this input to create initial version of new child
             LinearInput newInput = new LinearInput(this);
+            return fuzz(random, newInput);
+        }
+
+        Input fuzz(Random random, LinearInput newInput) {
 
             // Stack a bunch of mutations
             int numMutations = sampleGeometric(random, MEAN_MUTATION_COUNT);
