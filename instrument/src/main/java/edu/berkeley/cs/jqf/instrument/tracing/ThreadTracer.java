@@ -69,6 +69,12 @@ public class ThreadTracer {
     // Set this to TRUE if instrumenting JDK classes, in order to skip JVM classloading activity
     private static final boolean MATCH_CALLEE_NAMES = Boolean.getBoolean("jqf.tracing.MATCH_CALLEE_NAMES");
 
+    // Whether we are currently tracing the generator, the test driver, or something else
+    private enum BaseState {
+        GENERATOR, TEST, NONE
+    }
+    private BaseState baseState = BaseState.NONE;
+
 
     /**
      * Creates a new tracer that will process instructions executed by an application
@@ -118,6 +124,9 @@ public class ThreadTracer {
      * @param e the event to emit
      */
     protected final void emit(TraceEvent e) {
+        if (e instanceof BranchEvent && baseState == BaseState.GENERATOR) {
+            return;
+        }
         try {
             callback.accept(e);
         } catch (RuntimeException ex) {
@@ -187,12 +196,17 @@ public class ThreadTracer {
             // Try to match the top-level call with the entry point
             String clazz = begin.getOwner();
             String method = begin.getName();
-            if ((clazz.equals(entryPointClass) && method.equals(entryPointMethod)) ||
-                    (traceGenerators && clazz.endsWith("Generator") && method.equals("generate")) ) {
+            if (clazz.equals(entryPointClass) && method.equals(entryPointMethod)) {
+                baseState = BaseState.TEST;
+                emit(new CallEvent(0, null, 0, begin));
+                handlers.push(new TraceEventGeneratingHandler(begin, 0));
+            } else if (traceGenerators && clazz.endsWith("Generator") && method.equals("generate")) {
+                baseState = BaseState.GENERATOR;
                 emit(new CallEvent(0, null, 0, begin));
                 handlers.push(new TraceEventGeneratingHandler(begin, 0));
             } else {
                 // Ignore all top-level calls that are not the entry point
+                baseState = BaseState.NONE;
                 handlers.push(new MatchingNullHandler());
             }
         }
