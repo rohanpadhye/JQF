@@ -1142,19 +1142,22 @@ public class ZestGuidance implements Guidance {
 
     public class SeedInput extends LinearInput {
         final File seedFile;
-        final InputStream in;
+        InputStream in;
 
-        public SeedInput(File seedFile) throws IOException {
+        public SeedInput(File seedFile) {
             super();
             this.seedFile = seedFile;
-            this.in = new BufferedInputStream(new FileInputStream(seedFile));
             this.desc = "seed";
         }
 
         @Override
         public int getOrGenerateFresh(Integer key, Random random) {
+
             int value;
             try {
+                if (in == null) {
+                    in = new BufferedInputStream(new FileInputStream(seedFile));
+                }
                 value = in.read();
             } catch (IOException e) {
                 throw new GuidanceException("Error reading from seed file: " + seedFile.getName(), e);
