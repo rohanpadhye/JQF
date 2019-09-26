@@ -151,8 +151,8 @@ public class FuzzStatement extends Statement {
                         } else {
                             throw e;
                         }
-                    } catch (AssumptionViolatedException e) {
-                        // Propagate assumption violations out
+                    } catch (AssumptionViolatedException | TimeoutException e) {
+                        // Propagate early termination of tests from generator
                         throw e;
                     } catch (GuidanceException e) {
                         // Throw the guidance exception outside to stop fuzzing
