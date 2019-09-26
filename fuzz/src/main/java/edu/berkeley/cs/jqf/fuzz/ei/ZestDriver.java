@@ -43,7 +43,7 @@ public class ZestDriver {
 
     public static void main(String[] args) {
         if (args.length < 2){
-            System.err.println("Usage: java " + ZestDriver.class + " TEST_CLASS TEST_METHOD [OUTPUT_DIR [SEEDS...]]");
+            System.err.println("Usage: java " + ZestDriver.class + " TEST_CLASS TEST_METHOD [OUTPUT_DIR [SEED_DIR | SEED_FILES...]]");
             System.exit(1);
         }
 
@@ -62,9 +62,16 @@ public class ZestDriver {
         try {
             // Load the guidance
             String title = testClassName+"#"+testMethodName;
-            ZestGuidance guidance = seedFiles != null ?
-                    new ZestGuidance(title, null, outputDirectory, seedFiles) :
-                    new ZestGuidance(title, null, outputDirectory);
+            ZestGuidance guidance = null;
+
+            if (seedFiles == null) {
+                guidance = new ZestGuidance(title, null, outputDirectory);
+            } else if (seedFiles.length == 1 && seedFiles[0].isDirectory()) {
+                guidance = new ZestGuidance(title, null, outputDirectory, seedFiles[0]);
+            } else {
+                guidance = new ZestGuidance(title, null, outputDirectory, seedFiles);
+            }
+
 
             // Run the Junit test
             Result res = GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);

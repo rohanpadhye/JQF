@@ -143,6 +143,15 @@ public class FuzzGoal extends AbstractMojo {
     private boolean blind;
 
     /**
+     * The name of the input directory containing seed files.
+     *
+     * <p>If not provided, then fuzzing starts with randomly generated
+     * initial inputs.</p>
+     */
+    @Parameter(property="in")
+    private String inputDirectory;
+
+    /**
      * The name of the output directory where fuzzing results will
      * be stored.
      *
@@ -239,7 +248,12 @@ public class FuzzGoal extends AbstractMojo {
         try {
             File resultsDir = new File(target, outputDirectory);
             String targetName = testClassName + "#" + testMethod;
-            guidance = new ZestGuidance(targetName, duration, resultsDir);
+            if (inputDirectory != null) {
+                File seedsDir = new File(inputDirectory);
+                guidance = new ZestGuidance(targetName, duration, resultsDir, seedsDir);
+            } else {
+                guidance = new ZestGuidance(targetName, duration, resultsDir);
+            }
             guidance.setBlind(blind);
         } catch (IOException e) {
             throw new MojoExecutionException("Could not create output directory", e);

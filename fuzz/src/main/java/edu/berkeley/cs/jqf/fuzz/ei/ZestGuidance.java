@@ -272,12 +272,37 @@ public class ZestGuidance implements Guidance {
      * @param seedInputFiles one or more input files to be used as initial inputs
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, File outputDirectory, File... seedInputFiles) throws IOException {
+    public ZestGuidance(String testName, Duration duration, File outputDirectory, File[] seedInputFiles) throws IOException {
         this(testName, duration, outputDirectory);
         for (File seedInputFile : seedInputFiles) {
             seedInputs.add(new SeedInput(seedInputFile));
         }
     }
+
+
+    /**
+     * Creates a new guidance instance.
+     *
+     * @param testName the name of test to display on the status screen
+     * @param duration the amount of time to run fuzzing for, where
+     *                 {@code null} indicates unlimited time.
+     * @param outputDirectory the directory where fuzzing results will be written
+     * @param seedInputDir the directory containing one or more input files to be used as initial inputs
+     * @throws IOException if the output directory could not be prepared
+     */
+    public ZestGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir) throws IOException {
+        this(testName, duration, outputDirectory);
+
+        if (!seedInputDir.isDirectory()) {
+            throw new IllegalArgumentException(String.format("%s is not a directory", seedInputDir));
+        }
+
+        File[] seedInputFiles = seedInputDir.listFiles();
+        for (File seedInputFile : seedInputFiles) {
+            seedInputs.add(new SeedInput(seedInputFile));
+        }
+    }
+
 
     private void prepareOutputDirectory() throws IOException {
 
