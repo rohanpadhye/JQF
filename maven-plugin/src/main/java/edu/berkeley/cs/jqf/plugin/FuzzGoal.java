@@ -177,6 +177,15 @@ public class FuzzGoal extends AbstractMojo {
     private String exitOnCrash;
 
 
+    /**
+     * The timeout for each individual trial, in milliseconds.
+     *
+     * <p>If not provided, defaults to 0 (unlimited).</p>
+     */
+    @Parameter(property="runTimeout")
+    private int runTimeout;
+
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         ClassLoader loader;
@@ -199,6 +208,9 @@ public class FuzzGoal extends AbstractMojo {
         }
         if (exitOnCrash != null) {
             System.setProperty("jqf.ei.EXIT_ON_CRASH", exitOnCrash);
+        }
+        if (runTimeout > 0) {
+            System.setProperty("jqf.ei.TIMEOUT", String.valueOf(runTimeout));
         }
 
         Duration duration = null;
