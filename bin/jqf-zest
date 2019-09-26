@@ -11,7 +11,7 @@ print_usage() {
   echo "Usage: $0 [-c CLASSPATH] [-v] TEST_CLASS TEST_METHOD [OUT_DIR [SEED_FILES...]]"
 }
 
-while getopts ":c:v" opt; do
+while getopts ":c:vt:" opt; do
   case $opt in
     /?)
       echo "Invalid option: -$OPTARG" >&2
@@ -23,6 +23,9 @@ while getopts ":c:v" opt; do
       ;;
     v)
       export JVM_OPTS="$JVM_OPTS -Djqf.logCoverage=true"
+      ;;
+    t)
+      export JVM_OPTS="$JVM_OPTS -Djqf.ei.TIMEOUT=$OPTARG"
       ;;
   esac
 done
