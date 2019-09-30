@@ -33,6 +33,7 @@ import java.util.Collection;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 
@@ -189,5 +190,26 @@ public class CountersTest {
         assertThat(counter.getNonZeroSize(), is(0));
         assertThat(counter.getNonZeroIndices(), iterableWithSize(0));
         assertThat(counter.getNonZeroValues(), iterableWithSize(0));
+    }
+
+    @Test
+    public void testCounterHasNonZeros1() {
+        Counter counter = new Counter(COUNTER_SIZE);
+        counter.increment(1,5);
+        assertTrue(counter.hasNonZeros());
+    }
+
+    @Test
+    public void testCounterHasNonZeros2() {
+        Counter counter = new Counter(COUNTER_SIZE);
+        assertFalse(counter.hasNonZeros());
+    }
+
+    @Test
+    public void testCounterHasNonZeros3() {
+        Counter counter = new Counter(COUNTER_SIZE);
+        counter.increment(1,5);
+        counter.clear();
+        assertFalse(counter.hasNonZeros());
     }
 }

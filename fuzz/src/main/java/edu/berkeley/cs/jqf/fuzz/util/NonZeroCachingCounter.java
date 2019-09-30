@@ -79,6 +79,11 @@ public class NonZeroCachingCounter extends Counter {
     }
 
     @Override
+    public boolean hasNonZeros(){
+        return nonZeroCount > 0;
+    }
+
+    @Override
     public Collection<Integer> getNonZeroIndices() {
         return nonZeroIndices;
     }
