@@ -154,6 +154,24 @@ public class Counter {
         return size;
     }
 
+    /**
+     * Checks if all indices have zero counts
+     * and returns a boolean as result.
+     *
+     * @return {@code true} if some indices have non-zero counts, otherwise {@code false}.
+     */
+    public boolean hasNonZeros(){
+        if (counts.length> 0){
+            for (int i = 0; i < counts.length; i++) {
+                int count = counts[i];
+                if (count != 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 
     /**
      * Returns a set of indices at which the count is non-zero.
