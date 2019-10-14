@@ -22,7 +22,7 @@ public class SnoopInstructionClassAdapter extends ClassVisitor {
                     String signature,
                     String superName,
                     String[] interfaces) {
-    assert (name == this.className);
+    assert name.equals(this.className);
     this.superName = superName;
     cv.visit(version, access, name, signature, superName, interfaces);
   }
