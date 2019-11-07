@@ -77,7 +77,7 @@ public class FuzzGoal extends AbstractMojo {
      * <p>This class will be loaded using the Maven project's test
      * classpath. It must be annotated with {@code @RunWith(JQF.class)}</p>
      */
-    @Parameter(property="class", required=true)
+    @Parameter(property="testClassName", required=true)
     private String testClassName;
 
     /**
@@ -91,7 +91,7 @@ public class FuzzGoal extends AbstractMojo {
      * test class or if the method is not declared
      * {@code public void}, then the fuzzer will not launch.</p>
      */
-    @Parameter(property="method", required=true)
+    @Parameter(property="testMethod", required=true)
     private String testMethod;
 
     /**
