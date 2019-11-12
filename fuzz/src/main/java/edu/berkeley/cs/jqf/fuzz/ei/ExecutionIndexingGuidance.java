@@ -120,7 +120,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
      * @throws IOException if the output directory could not be prepared
      */
     public ExecutionIndexingGuidance(String testName, Duration duration, File outputDirectory, File... seedInputFiles) throws IOException {
-        super(testName, duration, outputDirectory);
+        super(testName, duration, outputDirectory, true);
         for (File seedInputFile : seedInputFiles) {
             seedInputs.add(new MappedSeedInput(seedInputFile));
         }

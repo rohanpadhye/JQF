@@ -233,6 +233,9 @@ public class ZestGuidance implements Guidance {
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
     static final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
 
+    /** Whether to print fuzzing statistics progress in the console or not. */
+    private final boolean statsOutput;
+
     /**
      * Creates a new guidance instance.
      *
@@ -240,12 +243,14 @@ public class ZestGuidance implements Guidance {
      * @param duration the amount of time to run fuzzing for, where
      *                 {@code null} indicates unlimited time.
      * @param outputDirectory the directory where fuzzing results will be written
+     * @param statsOutput whether to print fuzzing statistics progress in the console or not.
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, File outputDirectory) throws IOException {
+    public ZestGuidance(String testName, Duration duration, File outputDirectory, boolean statsOutput) throws IOException {
         this.testName = testName;
         this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
         this.outputDirectory = outputDirectory;
+        this.statsOutput = statsOutput;
         this.blind = Boolean.getBoolean("jqf.ei.TOTALLY_RANDOM");
         this.validityFuzzing = !Boolean.getBoolean("jqf.ei.DISABLE_VALIDITY_FUZZING");
         prepareOutputDirectory();
@@ -270,10 +275,11 @@ public class ZestGuidance implements Guidance {
      *                 {@code null} indicates unlimited time.
      * @param outputDirectory the directory where fuzzing results will be written
      * @param seedInputFiles one or more input files to be used as initial inputs
+     * @param statsOutput whether to print fuzzing statistics progress in the console or not.
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, File outputDirectory, File[] seedInputFiles) throws IOException {
-        this(testName, duration, outputDirectory);
+    public ZestGuidance(String testName, Duration duration, File outputDirectory, File[] seedInputFiles, boolean statsOutput) throws IOException {
+        this(testName, duration, outputDirectory, statsOutput);
         for (File seedInputFile : seedInputFiles) {
             seedInputs.add(new SeedInput(seedInputFile));
         }
@@ -288,10 +294,11 @@ public class ZestGuidance implements Guidance {
      *                 {@code null} indicates unlimited time.
      * @param outputDirectory the directory where fuzzing results will be written
      * @param seedInputDir the directory containing one or more input files to be used as initial inputs
+     * @param statsOutput whether to print fuzzing statistics progress in the console or not.
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir) throws IOException {
-        this(testName, duration, outputDirectory);
+    public ZestGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir, boolean statsOutput) throws IOException {
+        this(testName, duration, outputDirectory, statsOutput);
 
         if (!seedInputDir.isDirectory()) {
             throw new IllegalArgumentException(String.format("%s is not a directory", seedInputDir));
@@ -389,7 +396,7 @@ public class ZestGuidance implements Guidance {
 
     // Call only if console exists
     private void displayStats() {
-        assert (console != null);
+        assert (statsOutput && console != null);
 
         Date now = new Date();
         long intervalMilliseconds = now.getTime() - lastRefreshTime.getTime();
@@ -687,7 +694,7 @@ public class ZestGuidance implements Guidance {
                 assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
 
                 // libFuzzerCompat stats are only displayed when they hit new coverage
-                if (console != null && LIBFUZZER_COMPAT_OUTPUT) {
+                if (statsOutput && console != null && LIBFUZZER_COMPAT_OUTPUT) {
                     displayStats();
                 }
 
@@ -743,7 +750,7 @@ public class ZestGuidance implements Guidance {
                     }
 
                     // libFuzzerCompat stats are only displayed when they hit new coverage or crashes
-                    if (console != null && LIBFUZZER_COMPAT_OUTPUT) {
+                    if (statsOutput && console != null && LIBFUZZER_COMPAT_OUTPUT) {
                         displayStats();
                     }
 
@@ -755,7 +762,7 @@ public class ZestGuidance implements Guidance {
         }
 
         // displaying stats on every interval is only enabled for AFL-like stats screen
-        if (console != null && !LIBFUZZER_COMPAT_OUTPUT) {
+        if (statsOutput && console != null && !LIBFUZZER_COMPAT_OUTPUT) {
             displayStats();
         }
 

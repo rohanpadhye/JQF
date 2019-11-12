@@ -130,8 +130,8 @@ public class ZestCLI implements Runnable{
             // Load the guidance
             String title = this.testClassName+"#"+this.testMethodName;
             ZestGuidance guidance = seedFiles.length > 0 ?
-                    new ZestGuidance(title, null, this.outputDirectory, seedFiles) :
-                    new ZestGuidance(title, null, this.outputDirectory);
+                    new ZestGuidance(title, null, this.outputDirectory, seedFiles, true) :
+                    new ZestGuidance(title, null, this.outputDirectory, true);
 
             // Run the Junit test
             Result res = GuidedFuzzing.run(testClassName, testMethodName, loader, guidance, System.out);
