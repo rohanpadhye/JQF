@@ -190,6 +190,9 @@ public class ZestGuidance implements Guidance {
     /** Use libFuzzer like output instead of AFL like stats screen (https://llvm.org/docs/LibFuzzer.html#output) **/
     static final boolean LIBFUZZER_COMPAT_OUTPUT = Boolean.getBoolean("jqf.ei.LIBFUZZER_COMPAT_OUTPUT");
 
+    /** Whether to hide fuzzing statistics **/
+    static final boolean QUIET_MODE = Boolean.getBoolean("jqf.ei.QUIET_MODE");
+
     // ------------- TIMEOUT HANDLING ------------
 
     /** Timeout for an individual run. */
@@ -390,6 +393,10 @@ public class ZestGuidance implements Guidance {
     // Call only if console exists
     private void displayStats() {
         assert (console != null);
+
+        if (QUIET_MODE) {
+            return;
+        }
 
         Date now = new Date();
         long intervalMilliseconds = now.getTime() - lastRefreshTime.getTime();

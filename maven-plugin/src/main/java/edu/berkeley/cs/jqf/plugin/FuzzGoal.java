@@ -174,6 +174,14 @@ public class FuzzGoal extends AbstractMojo {
      */
     @Parameter(property="libFuzzerCompatOutput")
     private String libFuzzerCompatOutput;
+
+    /**
+     * Whether to avoid printing fuzzing statistics progress in the console.
+     *
+     * <p>If not provided, defaults to {@code false}.</p>
+     */
+    @Parameter(property="quiet")
+    private boolean quiet;
   
     /**
      * Whether to stop fuzzing once a crash is found.
@@ -214,6 +222,9 @@ public class FuzzGoal extends AbstractMojo {
         // Configure Zest Guidance
         if (libFuzzerCompatOutput != null) {
             System.setProperty("jqf.ei.LIBFUZZER_COMPAT_OUTPUT", libFuzzerCompatOutput);
+        }
+        if (quiet) {
+            System.setProperty("jqf.ei.QUIET_MODE", "true");
         }
         if (exitOnCrash != null) {
             System.setProperty("jqf.ei.EXIT_ON_CRASH", exitOnCrash);
