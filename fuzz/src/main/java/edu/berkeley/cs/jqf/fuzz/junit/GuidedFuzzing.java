@@ -168,10 +168,6 @@ public class GuidedFuzzing {
         // Instantiate a runner (may return an error)
         Runner testRunner = testRequest.getRunner();
 
-        if (testRunner instanceof ErrorReportingRunner) {
-            throw new IllegalArgumentException(String.format("Could not instantiate a Junit runner for method %s#%s.", testClass.getName(), testMethod));
-        }
-
         // Start tracing for the test method
         SingleSnoop.startSnooping(testClass.getName() + "#" + testMethod);
 
