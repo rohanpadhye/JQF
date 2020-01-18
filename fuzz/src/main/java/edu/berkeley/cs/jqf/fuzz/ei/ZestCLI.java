@@ -134,7 +134,7 @@ public class ZestCLI implements Runnable{
 
         try {
             ClassLoader loader = new InstrumentingClassLoader(
-                    new String[]{System.getProperty("java.class.path"), this.testPackageName},
+                    this.testPackageName.split(File.pathSeparator),
                     ZestCLI.class.getClassLoader());
 
             // Load the guidance
