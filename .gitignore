@@ -1,6 +1,11 @@
 .DS_Store
-build/
-target/
+/.gradle
+/build/
+/target/
+/out/
+/*/build/
+/*/target/
+/*/out/
 *.iml
 *.pyc
 .cache/
