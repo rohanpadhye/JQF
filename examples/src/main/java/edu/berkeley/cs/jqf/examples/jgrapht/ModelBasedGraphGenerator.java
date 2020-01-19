@@ -58,7 +58,7 @@ import org.jgrapht.graph.WeightedPseudograph;
 
 /**
  * Quick-check generator for JGraphT graphs using the
- * <tt>@GraphModel</tt> annotation.
+ * {@code @GraphModel} annotation.
  *
  * @author Rohan Padhye
  */

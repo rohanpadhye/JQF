@@ -140,8 +140,8 @@ public class ReproGuidance implements Guidance {
     }
 
     /**
-     * Returns <tt>true</tt> if there are more input files to replay.
-     * @return <tt>true</tt> if there are more input files to replay
+     * Returns {@code true} if there are more input files to replay.
+     * @return {@code true} if there are more input files to replay
      */
     @Override
     public boolean hasInput() {
@@ -170,7 +170,7 @@ public class ReproGuidance implements Guidance {
      * Logs the end of run in the log files, if any.
      *
      * @param result   the result of the fuzzing trial
-     * @param error    the error thrown during the trial, or <tt>null</tt>
+     * @param error    the error thrown during the trial, or {@code null}
      */
     @Override
     public void handleResult(Result result, Throwable error) {
@@ -227,12 +227,12 @@ public class ReproGuidance implements Guidance {
     /**
      * Returns a callback that can log trace events or code coverage info.
      *
-     * <p>If the system property <tt>jqf.repro.logUniqueBranches</tt> was
-     * set to <tt>true</tt>, then the callback collects coverage info into
+     * <p>If the system property {@code jqf.repro.logUniqueBranches} was
+     * set to {@code true}, then the callback collects coverage info into
      * the set {@link #branchesCoveredInCurrentRun}, which can be accessed using
      * {@link #getBranchesCovered()}.</p>
      *
-     * <p>Otherwise, if the <tt>traceDir</tt> was non-null during the construction of
+     * <p>Otherwise, if the {@code traceDir} was non-null during the construction of
      * this Guidance instance, then one log file per thread of
      * execution is created in this directory. The callbacks generated
      * by this method write trace event descriptions in sequence to
@@ -305,8 +305,8 @@ public class ReproGuidance implements Guidance {
      * Retyrns the set of branches covered by this repro.
      *
      * <p>This set will only be non-empty if the system
-     * property <tt>jqf.repro.logUniqueBranches</tt> was
-     * set to <tt>true</tt> before the guidance instance
+     * property {@code jqf.repro.logUniqueBranches} was
+     * set to {@code true} before the guidance instance
      * was constructed.</p>
      *
      * <p>The format of each element in this set is a

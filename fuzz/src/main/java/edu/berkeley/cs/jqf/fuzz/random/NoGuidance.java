@@ -84,8 +84,8 @@ public class NoGuidance implements Guidance {
     }
 
     /**
-     * Returns <tt>true</tt> as long as <tt>maxTrials</tt> has not been reached.
-     * @return <tt>true</tt> as long as <tt>maxTrials</tt> has not been reached
+     * Returns {@code true} as long as {@code maxTrials} has not been reached.
+     * @return {@code true} as long as {@code maxTrials} has not been reached
      */
     @Override
     public boolean hasInput() {
@@ -96,7 +96,7 @@ public class NoGuidance implements Guidance {
      * Handles the result of a fuzz run.
      *
      * @param result   the result of the fuzzing trial
-     * @param error    the error thrown during the trial, or <tt>null</tt>
+     * @param error    the error thrown during the trial, or {@code null}
      */
     @Override
     public void handleResult(Result result, Throwable error) {

@@ -42,7 +42,7 @@ import java.util.Random;
  * "random" values, which themselves are read from a static file.
  *
  * The file-backed random number generator can be used for tuning the
- * "random" choices made by various <tt>junit-quickcheck</tt>
+ * "random" choices made by various {@code junit-quickcheck}
  * generators using a mutation-based genetic algorithm, in order to
  * maximize some objective function that can be measured from the
  * execution of each trial, such as code coverage.
@@ -100,7 +100,7 @@ public class StreamBackedRandom extends Random {
      * an {@link IllegalStateException} is thrown.</p>
      *
      * @param bits   the number of random bits to retain (1 to 32 inclusive)
-     * @return the integer value whose lower <tt>bits</tt> bits contain the
+     * @return the integer value whose lower {@code bits} bits contain the
      *    next random data available in the backing source
      * @throws IllegalStateException  if EOF has already been reached
      */

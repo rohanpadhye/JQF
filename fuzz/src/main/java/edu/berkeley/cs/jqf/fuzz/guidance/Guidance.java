@@ -81,15 +81,15 @@ public interface Guidance {
      *
      * <p>This method is guaranteed to be invoked by JQF at most
      * once after each invocation of {@link #hasInput()} that
-     * has returned <tt>true</tt>.
+     * has returned {@code true}.
      *
-     * <p>If {@link #hasInput()} returns <tt>false</tt> or has not
+     * <p>If {@link #hasInput()} returns {@code false} or has not
      * been invoked since the last call to {@link #getInput()},
      * then invoking this method may throw an IllegalStateException.
      *
      * @return  a stream of bytes to be used by the input generator(s)
      * @throws IllegalStateException if the last {@link #hasInput()}
-     *                  returned <tt>false</tt>
+     *                  returned {@code false}
      * @throws GuidanceException if there was an I/O or other error
      *                  in generating the input stream
      */
@@ -101,7 +101,7 @@ public interface Guidance {
      *
      * <p>This method may block until a new
      * input stream is made ready. If this method returns
-     * <tt>false</tt>, then JQF stops fuzzing and this
+     * {@code false}, then JQF stops fuzzing and this
      * guidance will not be used further.
      *
      * @return whether a new trial should be executed
@@ -138,28 +138,28 @@ public interface Guidance {
      * in a call to {@link #getInput()} and only close them
      * inside this method.
      *
-     * <p>If <tt>result</tt> is <tt>SUCCESS</tt>, then
-     * <tt>error</tt> is either <tt>null</tt> or it is
+     * <p>If {@code result} is {@code SUCCESS}, then
+     * {@code error} is either {@code null} or it is
      * an instance of a throwable that is declared by the
-     * test method in its <tt>throws</tt> clause.
+     * test method in its {@code throws} clause.
      *
-     * <p>If <tt>result</tt> is <tt>INVALID</tt>,
-     * then <tt>error</tt> is either an
-     * <tt>AssumptionViolatedException</tt>, if the argument
-     * of an <tt>assume()</tt> statement was <tt>false</tt>,
-     * or it is a <tt>GuidanceException</tt>, indicating that
+     * <p>If {@code result} is {@code INVALID},
+     * then {@code error} is either an
+     * {@code AssumptionViolatedException}, if the argument
+     * of an {@code assume()} statement was {@code false},
+     * or it is a {@code GuidanceException}, indicating that
      * fuzzing was interrupted during the execution of this
      * trial (and will not continue further).
      *
-     * <p>If <tt>result</tt> is <tt>FAILURE</tt>, then
-     * <tt>error</tt> is some other throwable that was thrown by
-     * the test execution but was not listed in its <tt>throws</tt>
+     * <p>If {@code result} is {@code FAILURE}, then
+     * {@code error} is some other throwable that was thrown by
+     * the test execution but was not listed in its {@code throws}
      * clause. This is the only way to detect test errors. Assertion
      * errors will typically fall into this category. So will other
      * unlisted RuntimeExceptions such as NPE.
      *
      * @param result   the result of the fuzzing trial
-     * @param error    the error thrown during the trial, or <tt>null</tt>
+     * @param error    the error thrown during the trial, or {@code null}
      * @throws GuidanceException if there was an I/O or other error
      *                  in handling the result
      */

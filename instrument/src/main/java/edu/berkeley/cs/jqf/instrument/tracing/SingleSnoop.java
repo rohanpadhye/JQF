@@ -84,11 +84,11 @@ public final class SingleSnoop {
 
 
     /** Start snooping for this thread, with the top-level call being
-     * the <tt>entryPoint</tt>.
+     * the {@code entryPoint}.
      *
      * @param entryPoint the top-level method, formatted as
-     *                   <tt>CLASS#METHOD</tt> (e.g.
-     *                   <tt>FooBar#main</tt>).
+     *                   {@code CLASS#METHOD} (e.g.
+     *                   {@code FooBar#main}).
      */
     public static void startSnooping(String entryPoint) {
         // Mark entry point

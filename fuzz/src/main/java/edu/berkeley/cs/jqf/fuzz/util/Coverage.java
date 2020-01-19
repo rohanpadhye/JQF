@@ -172,8 +172,8 @@ public class Coverage implements TraceEventVisitor {
      *
      * @param that the run coverage whose bits to OR
      *
-     * @return <tt>true</tt> iff <tt>that</tt> is not a subset
-     *         of <tt>this</tt>, causing <tt>this</tt> to change.
+     * @return {@code true} iff {@code that} is not a subset
+     *         of {@code this}, causing {@code this} to change.
      */
     public boolean updateBits(Coverage that) {
         boolean changed = false;

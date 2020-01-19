@@ -59,7 +59,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
  * or allocation sizes.</p>
  *
  * <p>The type of performance metric used is configured by a system
- * property: <tt>jqf.afl.perfFeedbackType</tt>, which must have
+ * property: {@code jqf.afl.perfFeedbackType}, which must have
  * one of the values specified in the enum {@link PerfFeedbackType}.
  * This guidance must be used in accordance with the right run
  * scripts that configure the instrumentation to emit trace events

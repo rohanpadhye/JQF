@@ -119,7 +119,7 @@ public class ReproGoal extends AbstractMojo {
      *
      * <p>This property is only useful if {@link #logCoverage} is
      * set. The semantics are similar to the similarly named
-     * property in the goal <tt>jqf:fuzz</tt>.</p>
+     * property in the goal {@code jqf:fuzz}.</p>
      */
     @Parameter(property="excludes")
     private String excludes;
@@ -133,7 +133,7 @@ public class ReproGoal extends AbstractMojo {
      *
      * <p>This property is only useful if {@link #logCoverage} is
      * set. The semantics are similar to the similarly named
-     * property in the goal <tt>jqf:fuzz</tt>.</p>
+     * property in the goal {@code jqf:fuzz}.</p>
      */
     @Parameter(property="includes")
     private String includes;
