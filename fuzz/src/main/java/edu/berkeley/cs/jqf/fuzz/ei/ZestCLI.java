@@ -38,6 +38,8 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import java.io.File;
+import java.time.Duration;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 
 /**
@@ -72,6 +74,14 @@ public class ZestCLI implements Runnable{
     @Option(names = { "-o", "--output" },
             description = "Output Directory containing results (default: fuzz_results)")
     private File outputDirectory = new File("fuzz-results");
+
+    @Option(names = { "-d", "--duration" },
+            description = "Total fuzz duration (e.g. PT5s or 5s)")
+    private Duration duration;
+
+    @Option(names = { "-b", "--blind" },
+            description = "Blind fuzzing: do not use coverage feedback (default: false)")
+    private boolean blindFuzzing;
 
     @Parameters(index = "0", paramLabel = "PACKAGE", description = "package containing the fuzz target and all dependencies")
     private String testPackageName;
@@ -124,15 +134,15 @@ public class ZestCLI implements Runnable{
 
         try {
             ClassLoader loader = new InstrumentingClassLoader(
-                    new String[]{System.getProperty("java.class.path"), this.testPackageName},
+                    this.testPackageName.split(File.pathSeparator),
                     ZestCLI.class.getClassLoader());
 
             // Load the guidance
             String title = this.testClassName+"#"+this.testMethodName;
             ZestGuidance guidance = seedFiles.length > 0 ?
-                    new ZestGuidance(title, null, this.outputDirectory, seedFiles) :
-                    new ZestGuidance(title, null, this.outputDirectory);
-
+                    new ZestGuidance(title, duration, this.outputDirectory, seedFiles) :
+                    new ZestGuidance(title, duration, this.outputDirectory);
+            guidance.setBlind(blindFuzzing);
             // Run the Junit test
             Result res = GuidedFuzzing.run(testClassName, testMethodName, loader, guidance, System.out);
             if (Boolean.getBoolean("jqf.logCoverage")) {
@@ -150,7 +160,15 @@ public class ZestCLI implements Runnable{
 
     }
     public static void main(String[] args) {
-        int exitCode = new CommandLine(new ZestCLI()).execute(args);
+        int exitCode = new CommandLine(new ZestCLI())
+                .registerConverter(Duration.class, v -> {
+                    try {
+                        return Duration.parse(v);
+                    } catch (DateTimeParseException e) {
+                        return Duration.parse("PT" + v);
+                    }
+                })
+                .execute(args);
         System.exit(exitCode);
     }
 }
