@@ -12,6 +12,7 @@ JQF is a modular framework, supporting the following pluggable fuzzing front-end
 * Binary fuzzing with [AFL](http://lcamtuf.coredump.cx/afl) ([tutorial](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-AFL))
 * Semantic fuzzing with **[Zest](http://arxiv.org/abs/1812.00078)** [[ISSTA'19 paper]] ([tutorial 1](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest)) ([tutorial 2](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler))
 * Complexity fuzzing with **[PerfFuzz](https://github.com/carolemieux/perffuzz)** [[ISSTA'18 paper]]
+* **RLCheck** (external tool): Generating diverse valid inputs with reinforcement learning [[ICSE 2020 Preprint]](https://www.carolemieux.com/rlcheck_preprint.pdf)
 
 JQF has been successful in [discovering a number of bugs in widely used open-source software](#trophies) such as OpenJDK, Apache Maven and the Google Closure Compiler.
 
