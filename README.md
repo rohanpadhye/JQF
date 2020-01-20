@@ -48,6 +48,31 @@ A `Generator<T>` provides a method for producing random instances of type `T`. F
 
 JQF supports the **[*Zest algorithm*][ISSTA'19 paper], which uses code-coverage and input-validity feedback to bias a QuickCheck-style generator** towards generating structured inputs that can reveal deep semantic bugs. JQF extracts code coverage using bytecode instrumentation, and input validity using JUnit's [`Assume`](https://junit.org/junit4/javadoc/4.12/org/junit/Assume.html) API. An input is valid if no assumptions are violated.
 
+## Example
+
+Here is a JUnit-Quickcheck test for checking a property of the [PatriciaTrie](https://commons.apache.org/proper/commons-collections/apidocs/org/apache/commons/collections4/trie/PatriciaTrie.html) class from [Apache Commons Collections](https://commons.apache.org/proper/commons-collections/). The property tests that if a `PatriciaTrie` is initialized with an input JDK `Map`, and if the input map already contains a key, then that key should also exist in the newly constructed `PatriciaTrie`.
+
+```java
+@RunWith(JQF.class)
+public class PatriciaTrieTest {
+
+    @Fuzz  /* The args to this method will be generated automatically by JQF */
+    public void testMap2Trie(Map<String, Integer> map, String key) {
+        // Key should exist in map
+        assumeTrue(map.containsKey(key));   // the test is invalid if this predicate is not true
+
+        // Create new trie with input `map`
+        Trie trie = new PatriciaTrie(map);
+
+        // The key should exist in the trie as well
+        assertTrue(trie.containsKey(key));  // fails when map = {"x": 1, "x\0": 2} and key = "x"
+    }
+```
+
+Running `mvn jqf:fuzz` causes JQF to invoke the `testMap2Trie()` method repeatedly with automatically generated values for `map` and `key`. After about 5 seconds on average (~5,000 inputs), JQF will report an assertion violation. It finds [a bug in the implementation of `PatriciaTrie`](https://issues.apache.org/jira/browse/COLLECTIONS-714) that is unresolved as of v4.4. Random sampling of `map` and `key` values is unlikely to find the failing test case, which is a very special corner case (see the comments next to the assertion in the code above). JQF finds this violation easily using a coverage-guided called [**Zest**][ISSTA'19 paper].
+
+In the above example, the generators for `Map` and `String` were synthesized automatically by JUnitQuickCheck. It is also possible to specify generators for structured inputs manually. See the [tutorials](#tutorials) below.
+
 
 ## Documentation
 
