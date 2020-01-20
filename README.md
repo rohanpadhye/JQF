@@ -35,7 +35,7 @@ If you are using the JQF framework to build new fuzzers, we request you to cite 
 
 Binary fuzzing tools like [AFL](http://lcamtuf.coredump.cx/afl) and [libFuzzer](https://llvm.org/docs/LibFuzzer.html) treat the input as a sequence of bytes. If the test program expects highly structured inputs, such as XML documents or JavaScript programs, then mutating byte-arrays often results in syntactically invalid inputs; the core of the test program remains untested.
 
-**Structured fuzzing** tools leverage domain-specific knowledge of the input format to produce inputs that are *syntactically valid* by construction. Here is a nice article on [structure-aware fuzzing of C++ programs using libFuzzer](https://github.com/google/fuzzer-test-suite/blob/master/tutorial/structure-aware-fuzzing.md).
+**Structured fuzzing** tools leverage domain-specific knowledge of the input format to produce inputs that are *syntactically valid* by construction. Here is a nice article on [structure-aware fuzzing of C++ programs using libFuzzer](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md).
 
 ### What is *generator-based* fuzzing (QuickCheck)?
 
@@ -67,6 +67,7 @@ public class PatriciaTrieTest {
         // The key should exist in the trie as well
         assertTrue(trie.containsKey(key));  // fails when map = {"x": 1, "x\0": 2} and key = "x"
     }
+}
 ```
 
 Running `mvn jqf:fuzz` causes JQF to invoke the `testMap2Trie()` method repeatedly with automatically generated values for `map` and `key`. After about 5 seconds on average (~5,000 inputs), JQF will report an assertion violation. It finds [a bug in the implementation of `PatriciaTrie`](https://issues.apache.org/jira/browse/COLLECTIONS-714) that is unresolved as of v4.4. Random sampling of `map` and `key` values is unlikely to find the failing test case, which is a very special corner case (see the comments next to the assertion in the code above). JQF finds this violation easily using a coverage-guided called [**Zest**][ISSTA'19 paper].
