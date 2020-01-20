@@ -35,7 +35,7 @@ If you are using the JQF framework to build new fuzzers, we request you to cite 
 
 Binary fuzzing tools like [AFL](http://lcamtuf.coredump.cx/afl) and [libFuzzer](https://llvm.org/docs/LibFuzzer.html) treat the input as a sequence of bytes. If the test program expects highly structured inputs, such as XML documents or JavaScript programs, then mutating byte-arrays often results in syntactically invalid inputs; the core of the test program remains untested.
 
-**Structured fuzzing** tools leverage domain-specific knowledge of the input format to produce inputs that are *syntactically valid* by construction. Here is a nice article on [structure-aware fuzzing of C++ programs using libFuzzer](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md).
+**Structured fuzzing** tools leverage domain-specific knowledge of the input format to produce inputs that are *syntactically valid* by construction. There are some nice articles on structure-aware fuzzing of [C++](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md) and [Rust](https://rust-fuzz.github.io/book/cargo-fuzz/structure-aware-fuzzing.html) programs using libFuzzer.
 
 ### What is *generator-based* fuzzing (QuickCheck)?
 
