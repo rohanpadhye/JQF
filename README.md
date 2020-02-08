@@ -71,7 +71,7 @@ public class PatriciaTrieTest {
 }
 ```
 
-Running `mvn jqf:fuzz` causes JQF to invoke the `testMap2Trie()` method repeatedly with automatically generated values for `map` and `key`. After about 5 seconds on average (~5,000 inputs), JQF will report an assertion violation. It finds [a bug in the implementation of `PatriciaTrie`](https://issues.apache.org/jira/browse/COLLECTIONS-714) that is unresolved as of v4.4. Random sampling of `map` and `key` values is unlikely to find the failing test case, which is a very special corner case (see the comments next to the assertion in the code above). JQF finds this violation easily using a coverage-guided called [**Zest**][ISSTA'19 paper].
+Running `mvn jqf:fuzz` causes JQF to invoke the `testMap2Trie()` method repeatedly with automatically generated values for `map` and `key`. After about 5 seconds on average (~5,000 inputs), JQF will report an assertion violation. It finds [a bug in the implementation of `PatriciaTrie`](https://issues.apache.org/jira/browse/COLLECTIONS-714) that is unresolved as of v4.4. Random sampling of `map` and `key` values is unlikely to find the failing test case, which is a very special corner case (see the comments next to the assertion in the code above). JQF finds this violation easily using a coverage-guided called [**Zest**][ISSTA'19 paper]. To run this example as a standalone Maven project, check out the [jqf-zest-example repository](https://github.com/rohanpadhye/jqf-zest-example).
 
 In the above example, the generators for `Map` and `String` were synthesized automatically by JUnitQuickCheck. It is also possible to specify generators for structured inputs manually. See the [tutorials](#tutorials) below.
 
