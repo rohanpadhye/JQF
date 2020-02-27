@@ -16,7 +16,7 @@ popd > /dev/null
 ROOT_DIR=`dirname $SCRIPT_DIR`
 
 project="jqf"
-version="1.3-SNAPSHOT"
+version="1.5-SNAPSHOT"
 
 FUZZ_DIR="${ROOT_DIR}/fuzz/target/"
 INST_DIR="${ROOT_DIR}/instrument/target/"
