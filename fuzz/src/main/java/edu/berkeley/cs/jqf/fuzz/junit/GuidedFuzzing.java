@@ -30,11 +30,10 @@ package edu.berkeley.cs.jqf.fuzz.junit;
 
 import java.io.PrintStream;
 
-import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.JQF;
+import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import org.junit.internal.TextListener;
-import org.junit.internal.runners.ErrorReportingRunner;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Request;
 import org.junit.runner.Result;
@@ -111,6 +110,7 @@ public class GuidedFuzzing {
      *
      * @param testClassName the test class containing the test method
      * @param testMethod    the test method to execute in the fuzzing loop
+     * @param loader        the classloader to load the test class with
      * @param guidance      the fuzzing guidance
      * @param out           an output stream to log Junit messages
      * @throws ClassNotFoundException if testClassName cannot be loaded
