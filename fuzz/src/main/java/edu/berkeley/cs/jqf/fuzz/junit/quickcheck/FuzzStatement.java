@@ -115,7 +115,12 @@ public class FuzzStatement extends Statement {
             if (repro.isEmpty()) {
                 guidance = new NoGuidance(GuidedFuzzing.DEFAULT_MAX_TRIALS, System.err);
             } else {
-                guidance = new ReproGuidance(new File(repro), null);
+                File inputFile = new File(repro);
+                if (inputFile.isDirectory()) {
+                    guidance = new ReproGuidance(inputFile.listFiles(), null);
+                } else {
+                    guidance = new ReproGuidance(inputFile, null);
+                }
             }
         }
 
