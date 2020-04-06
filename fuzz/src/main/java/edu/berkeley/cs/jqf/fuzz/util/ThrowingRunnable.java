@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018 The Regents of the University of California
+ * Copyright (c) 2020, The Regents of the University of California
  *
  * All rights reserved.
  *
@@ -26,29 +26,17 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package edu.berkeley.cs.jqf.fuzz.guidance;
+package edu.berkeley.cs.jqf.fuzz.util;
 
-import edu.berkeley.cs.jqf.fuzz.util.ThrowingRunnable;
-
-public class GuidanceException extends RuntimeException {
-
-    public GuidanceException(String msg) {
-        super(msg);
-    }
-
-    public GuidanceException(Throwable e) {
-        super(e);
-    }
-
-    public GuidanceException(String msg, Throwable e) {
-        super(msg, e);
-    }
-
-    public static void wrap(ThrowingRunnable task) {
-        try {
-            task.run();
-        } catch (Exception e) {
-            throw new GuidanceException(e);
-        }
-    }
+/**
+ * A version of {@link Runnable} that throws arbitrary, possibly checked, exceptions.
+ *
+ * Useful for wrapping checked exceptions with unchecked exceptions, such as during
+ * guided fuzzing.
+ *
+ * @see {@link edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException#wrap(ThrowingRunnable)}
+ */
+@FunctionalInterface
+public interface ThrowingRunnable {
+    void run() throws Exception;
 }

@@ -708,11 +708,8 @@ public class ZestGuidance implements Guidance {
                         nonZeroAfter);
 
                 // Save input to queue and to disk
-                try {
-                    saveCurrentInput(responsibilities, why);
-                } catch (IOException e) {
-                    throw new GuidanceException(e);
-                }
+                final String reason = why;
+                GuidanceException.wrap(() -> saveCurrentInput(responsibilities, reason));
 
             }
         } else if (result == Result.FAILURE || result == Result.TIMEOUT) {
@@ -734,11 +731,10 @@ public class ZestGuidance implements Guidance {
                 assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
 
                 // Save crash to disk
-                try {
                     int crashIdx = uniqueFailures.size()-1;
                     String saveFileName = String.format("id_%06d", crashIdx);
                     File saveFile = new File(savedFailuresDirectory, saveFileName);
-                    writeCurrentInputToFile(saveFile);
+                    GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
                     infoLog("%s","Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
                     String how = currentInput.desc;
                     String why = result == Result.FAILURE ? "+crash" : "+hang";
@@ -746,17 +742,13 @@ public class ZestGuidance implements Guidance {
 
                     if (EXACT_CRASH_PATH != null && !EXACT_CRASH_PATH.equals("")) {
                         File exactCrashFile = new File(EXACT_CRASH_PATH);
-                        writeCurrentInputToFile(exactCrashFile);
+                        GuidanceException.wrap(() -> writeCurrentInputToFile(exactCrashFile));
                     }
 
                     // libFuzzerCompat stats are only displayed when they hit new coverage or crashes
                     if (console != null && LIBFUZZER_COMPAT_OUTPUT) {
                         displayStats();
                     }
-
-                } catch (IOException e) {
-                    throw new GuidanceException(e);
-                }
 
             }
         }
