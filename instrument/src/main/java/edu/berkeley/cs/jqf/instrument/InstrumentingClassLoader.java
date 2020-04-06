@@ -56,7 +56,7 @@ public class InstrumentingClassLoader extends URLClassLoader {
         this(stringsToUrls(paths), parent);
     }
 
-    private static URL[] stringsToUrls(String[] paths) throws MalformedURLException {
+    public static URL[] stringsToUrls(String[] paths) throws MalformedURLException {
         URL[] urls = new URL[paths.length];
         for (int i = 0; i < paths.length; i++) {
             urls[i] = new File(paths[i]).toURI().toURL();

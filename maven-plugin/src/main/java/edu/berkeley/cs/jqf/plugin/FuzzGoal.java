@@ -32,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
+import java.net.URLClassLoader;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -50,6 +51,8 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.junit.runner.Result;
+
+import static edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader.stringsToUrls;
 
 /**
  * Maven plugin for feedback-directed fuzzing using JQF.
@@ -141,6 +144,19 @@ public class FuzzGoal extends AbstractMojo {
      */
     @Parameter(property="blind")
     private boolean blind;
+
+    /**
+     * Whether to disable code-coverage instrumentation.
+     *
+     * <p>Disabling instrumentation speeds up test case execution, but
+     * provides no feedback about code coverage in the status screen and
+     * to the fuzzing guidance.</p>
+     *
+     * <p>This setting only makes sense when used with {@code -Dblind}.</p>
+     *
+     */
+    @Parameter(property="noCov")
+    private boolean disableCoverage;
 
     /**
      * The name of the input directory containing seed files.
@@ -263,9 +279,16 @@ public class FuzzGoal extends AbstractMojo {
         try {
             List<String> classpathElements = project.getTestClasspathElements();
 
-            loader = new InstrumentingClassLoader(
-                    classpathElements.toArray(new String[0]),
-                    getClass().getClassLoader());
+            if (disableCoverage) {
+                loader = new URLClassLoader(
+                        stringsToUrls(classpathElements.toArray(new String[0])),
+                        getClass().getClassLoader());
+
+            } else {
+                loader = new InstrumentingClassLoader(
+                        classpathElements.toArray(new String[0]),
+                        getClass().getClassLoader());
+            }
         } catch (DependencyResolutionRequiredException|MalformedURLException e) {
             throw new MojoExecutionException("Could not get project classpath", e);
         }
