@@ -94,13 +94,13 @@ public class ZestGuidance implements Guidance {
     /** The number of valid inputs. */
     protected long numValid = 0;
 
-    /** The directory where fuzzing results are written. */
+    /** The directory where fuzzing results are produced. */
     protected final File outputDirectory;
 
-    /** The directory where saved inputs are written. */
-    protected File savedInputsDirectory;
+    /** The directory where interesting inputs are saved. */
+    protected File savedCorpusDirectory;
 
-    /** The directory where saved inputs are written. */
+    /** The directory where saved inputs are saved. */
     protected File savedFailuresDirectory;
 
     /** Set of saved inputs to fuzz. */
@@ -324,8 +324,8 @@ public class ZestGuidance implements Guidance {
         }
 
         // Name files and directories after AFL
-        this.savedInputsDirectory = new File(outputDirectory, "corpus");
-        this.savedInputsDirectory.mkdirs();
+        this.savedCorpusDirectory = new File(outputDirectory, "corpus");
+        this.savedCorpusDirectory.mkdirs();
         this.savedFailuresDirectory = new File(outputDirectory, "failures");
         this.savedFailuresDirectory.mkdirs();
         this.statsFile = new File(outputDirectory, "plot_data");
@@ -339,7 +339,7 @@ public class ZestGuidance implements Guidance {
         // We also do not check if the deletes are actually successful.
         statsFile.delete();
         logFile.delete();
-        for (File file : savedInputsDirectory.listFiles()) {
+        for (File file : savedCorpusDirectory.listFiles()) {
             file.delete();
         }
         for (File file : savedFailuresDirectory.listFiles()) {
@@ -846,7 +846,7 @@ public class ZestGuidance implements Guidance {
         int newInputIdx = numSavedInputs++;
         String saveFileName = String.format("id_%06d", newInputIdx);
         String how = currentInput.desc;
-        File saveFile = new File(savedInputsDirectory, saveFileName);
+        File saveFile = new File(savedCorpusDirectory, saveFileName);
         if (SAVE_ONLY_VALID == false || currentInput.valid) {
             writeCurrentInputToFile(saveFile);
             infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
