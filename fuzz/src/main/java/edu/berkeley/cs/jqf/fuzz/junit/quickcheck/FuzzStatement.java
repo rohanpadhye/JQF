@@ -117,7 +117,9 @@ public class FuzzStatement extends Statement {
             } else {
                 File inputFile = new File(repro);
                 if (inputFile.isDirectory()) {
-                    guidance = new ReproGuidance(inputFile.listFiles(), null);
+                    File[] files = inputFile.listFiles();
+                    Arrays.sort(files);
+                    guidance = new ReproGuidance(files, null);
                 } else {
                     guidance = new ReproGuidance(inputFile, null);
                 }
