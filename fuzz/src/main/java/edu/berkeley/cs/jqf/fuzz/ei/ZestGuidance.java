@@ -103,6 +103,9 @@ public class ZestGuidance implements Guidance {
     /** The directory where saved inputs are saved. */
     protected File savedFailuresDirectory;
 
+    /** The directory where all inputs are saved (if enabled). */
+    protected File savedAllDirectory;
+
     /** Set of saved inputs to fuzz. */
     protected ArrayList<Input> savedInputs = new ArrayList<>();
 
@@ -328,6 +331,10 @@ public class ZestGuidance implements Guidance {
         this.savedCorpusDirectory.mkdirs();
         this.savedFailuresDirectory = new File(outputDirectory, "failures");
         this.savedFailuresDirectory.mkdirs();
+        if (Boolean.getBoolean("jqf.ei.SAVE_ALL_INPUTS")) {
+            this.savedAllDirectory = new File(outputDirectory, "all");
+            this.savedAllDirectory.mkdirs();
+        }
         this.statsFile = new File(outputDirectory, "plot_data");
         this.logFile = new File(outputDirectory, "fuzz.log");
         this.currentInputFile = new File(outputDirectory, ".cur_input");
@@ -756,6 +763,13 @@ public class ZestGuidance implements Guidance {
         // displaying stats on every interval is only enabled for AFL-like stats screen
         if (console != null && !LIBFUZZER_COMPAT_OUTPUT) {
             displayStats();
+        }
+
+        // Save input unconditionally if such a setting is enabled
+        if (savedAllDirectory != null) {
+            String saveFileName = String.format("id_%09d", numTrials);
+            File saveFile = new File(savedAllDirectory, saveFileName);
+            GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
         }
 
     }
