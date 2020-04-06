@@ -165,6 +165,17 @@ public class FuzzGoal extends AbstractMojo {
     private String outputDirectory;
 
     /**
+     * Whether to save ALL inputs generated during fuzzing, even
+     * the ones that do not have any unique code coverage.
+     *
+     * <p>This setting leads to a very large number of files being
+     * created in the output directory, and could potentially
+     * reduce the overall performance of fuzzing.</p>
+     */
+    @Parameter(property="saveAll")
+    private boolean saveAll;
+
+    /**
      * Weather to use libFuzzer like output instead of AFL like stats
      * screen
      *
@@ -220,6 +231,9 @@ public class FuzzGoal extends AbstractMojo {
         }
 
         // Configure Zest Guidance
+        if (saveAll) {
+            System.setProperty("jqf.ei.SAVE_ALL_INPUTS", "true");
+        }
         if (libFuzzerCompatOutput != null) {
             System.setProperty("jqf.ei.LIBFUZZER_COMPAT_OUTPUT", libFuzzerCompatOutput);
         }
