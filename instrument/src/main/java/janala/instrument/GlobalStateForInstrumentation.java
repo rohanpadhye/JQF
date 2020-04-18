@@ -1,5 +1,8 @@
 package janala.instrument;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /** An object to keep track of (classId, methodId, instructionId) tuples during
  instrumentation. */
 public class GlobalStateForInstrumentation {
@@ -7,6 +10,9 @@ public class GlobalStateForInstrumentation {
   private int iid = 0;
   private int mid = 0;
   private int cid = 0;
+
+  private static int nextCid = 0;
+  private static Map<Integer, Integer> classNameHashToCid = new HashMap<>();
 
   // When one gets the id, she gets the result of merging all three ids.
   // NOTE: Beaware of truncation errors.
@@ -39,8 +45,11 @@ public class GlobalStateForInstrumentation {
   }
 
   public void setCid(int cid) {
-    cid = Math.abs(cid) % CBITS;
-    validate(cid, CBITS);
+    if (!GlobalStateForInstrumentation.classNameHashToCid.containsKey(cid)) {
+        validate(GlobalStateForInstrumentation.nextCid, CBITS);
+        GlobalStateForInstrumentation.classNameHashToCid.put(cid, GlobalStateForInstrumentation.nextCid++);
+    }
+    cid = GlobalStateForInstrumentation.classNameHashToCid.get(cid);
     this.iid = 0;
     this.mid = 0;
     this.cid = cid;
