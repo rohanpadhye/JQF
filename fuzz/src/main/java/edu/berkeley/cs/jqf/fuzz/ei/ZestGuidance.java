@@ -401,10 +401,6 @@ public class ZestGuidance implements Guidance {
     private void displayStats() {
         assert (console != null);
 
-        if (QUIET_MODE) {
-            return;
-        }
-
         Date now = new Date();
         long intervalMilliseconds = now.getTime() - lastRefreshTime.getTime();
         if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD) {
@@ -436,7 +432,7 @@ public class ZestGuidance implements Guidance {
 
         if (LIBFUZZER_COMPAT_OUTPUT) {
             console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, intervalExecsPerSec, currentInput.size());
-        } else {
+        } else if (!QUIET_MODE) {
             console.printf("\033[2J");
             console.printf("\033[H");
             console.printf(this.getTitle() + "\n");
