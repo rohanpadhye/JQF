@@ -70,7 +70,7 @@ public class FuzzGoal extends AbstractMojo {
     @Parameter(defaultValue="${project}", required=true, readonly=true)
     MavenProject project;
 
-    @Parameter(defaultValue="${project.build.directory}", readonly=true)
+    @Parameter(property="target", defaultValue="${project.build.directory}", readonly=true)
     private File target;
 
     /**
