@@ -35,7 +35,7 @@ fi
 
 # Ensure that AFL proxy is built
 if [ ! -f "$ROOT_DIR/bin/afl-proxy" ]; then
-  echo "The JQF-AFL proxy has not been built! Make sure to run scripts/setup.sh or run 'make'" >&2
+  echo "The JQF-AFL proxy has not been built! Make sure to run ./setup.sh or run 'make'" >&2
   exit 3
 fi
 
