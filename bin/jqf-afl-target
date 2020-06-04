@@ -9,7 +9,7 @@ ROOT_DIR=`dirname $BIN_DIR`
 
 # Ensure that proxy is built
 if [ ! -f "$ROOT_DIR/bin/afl-proxy" ]; then
-  echo "The AFL proxy is not built! Make sure to run scripts/setup.sh or run 'make' in afl/" >&2
+  echo "The AFL proxy is not built! Make sure to run ./setup.sh or run 'make' in afl/" >&2
   exit 2
 fi
 
