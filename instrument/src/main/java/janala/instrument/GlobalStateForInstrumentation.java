@@ -39,8 +39,7 @@ public class GlobalStateForInstrumentation {
   }
 
   public void setCid(int cid) {
-    cid = Math.abs(cid) % CBITS;
-    validate(cid, CBITS);
+    cid = Math.abs(cid) % (1 << CBITS);
     this.iid = 0;
     this.mid = 0;
     this.cid = cid;
