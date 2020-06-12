@@ -37,6 +37,7 @@ import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
+import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
@@ -144,6 +145,14 @@ public class FuzzGoal extends AbstractMojo {
      */
     @Parameter(property="blind")
     private boolean blind;
+
+    /**
+     * The fuzzing engine.
+     *
+     * <p>One of 'zest' and 'zeal'. Default is 'zest'.</p>
+     */
+    @Parameter(property="engine", defaultValue="zest")
+    private String engine;
 
     /**
      * Whether to disable code-coverage instrumentation.
@@ -296,11 +305,17 @@ public class FuzzGoal extends AbstractMojo {
         try {
             File resultsDir = new File(target, outputDirectory);
             String targetName = testClassName + "#" + testMethod;
-            if (inputDirectory != null) {
-                File seedsDir = new File(inputDirectory);
-                guidance = new ZestGuidance(targetName, duration, resultsDir, seedsDir);
-            } else {
-                guidance = new ZestGuidance(targetName, duration, resultsDir);
+            File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
+            switch (engine) {
+                case "zest":
+                    guidance = new ZestGuidance(targetName, duration, resultsDir, seedsDir);
+                    break;
+                case "zeal":
+                    System.setProperty("jqf.traceGenerators", "true");
+                    guidance = new ExecutionIndexingGuidance(targetName, duration, resultsDir, seedsDir);
+                    break;
+                default:
+                    throw new MojoExecutionException("Unknown fuzzing engine: " + engine);
             }
             guidance.setBlind(blind);
         } catch (IOException e) {
