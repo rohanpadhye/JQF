@@ -280,11 +280,12 @@ public class ZestGuidance implements Guidance {
      */
     public ZestGuidance(String testName, Duration duration, File outputDirectory, File[] seedInputFiles) throws IOException {
         this(testName, duration, outputDirectory);
-        for (File seedInputFile : seedInputFiles) {
-            seedInputs.add(new SeedInput(seedInputFile));
+        if (seedInputFiles != null) {
+            for (File seedInputFile : seedInputFiles) {
+                seedInputs.add(new SeedInput(seedInputFile));
+            }
         }
     }
-
 
     /**
      * Creates a new guidance instance.
@@ -297,16 +298,7 @@ public class ZestGuidance implements Guidance {
      * @throws IOException if the output directory could not be prepared
      */
     public ZestGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir) throws IOException {
-        this(testName, duration, outputDirectory);
-
-        if (!seedInputDir.isDirectory()) {
-            throw new IllegalArgumentException(String.format("%s is not a directory", seedInputDir));
-        }
-
-        File[] seedInputFiles = seedInputDir.listFiles();
-        for (File seedInputFile : seedInputFiles) {
-            seedInputs.add(new SeedInput(seedInputFile));
-        }
+        this(testName, duration, outputDirectory, seedInputDir != null ? seedInputDir.listFiles() : null);
     }
 
 

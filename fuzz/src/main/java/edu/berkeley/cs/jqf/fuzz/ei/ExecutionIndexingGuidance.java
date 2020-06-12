@@ -121,13 +121,28 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
      */
     public ExecutionIndexingGuidance(String testName, Duration duration, File outputDirectory, File... seedInputFiles) throws IOException {
         super(testName, duration, outputDirectory);
-        for (File seedInputFile : seedInputFiles) {
-            seedInputs.add(new MappedSeedInput(seedInputFile));
+        if (seedInputFiles != null) {
+            for (File seedInputFile : seedInputFiles) {
+                seedInputs.add(new MappedSeedInput(seedInputFile));
+            }
         }
     }
 
+    /**
+     * Creates a new guidance instance.
+     *
+     * @param testName the name of test to display on the status screen
+     * @param duration the amount of time to run fuzzing for, where
+     *                 {@code null} indicates unlimited time.
+     * @param outputDirectory the directory where fuzzing results will be written
+     * @param seedInputDir the directory containing one or more input files to be used as initial inputs
+     * @throws IOException if the output directory could not be prepared
+     */
+    public ExecutionIndexingGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir) throws IOException {
+        this(testName, duration, outputDirectory, seedInputDir != null ? seedInputDir.listFiles() : null);
+    }
 
-    /** Returns the banner to be displayed on the status screen */
+        /** Returns the banner to be displayed on the status screen */
     protected String getTitle() {
         if (blind) {
             return super.getTitle();
