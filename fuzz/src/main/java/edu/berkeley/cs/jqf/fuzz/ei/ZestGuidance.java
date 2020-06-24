@@ -60,6 +60,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
+import edu.berkeley.cs.jqf.fuzz.util.IOUtils;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 import static java.lang.Math.ceil;
@@ -298,8 +299,10 @@ public class ZestGuidance implements Guidance {
      * @throws IOException if the output directory could not be prepared
      */
     public ZestGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir) throws IOException {
-        this(testName, duration, outputDirectory, seedInputDir != null ? seedInputDir.listFiles() : null);
+        this(testName, duration, outputDirectory, IOUtils.resolveInputFileOrDirectory(seedInputDir));
     }
+
+
 
 
     private void prepareOutputDirectory() throws IOException {

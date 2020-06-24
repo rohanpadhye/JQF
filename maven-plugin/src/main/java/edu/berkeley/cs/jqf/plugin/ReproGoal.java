@@ -29,6 +29,7 @@
 package edu.berkeley.cs.jqf.plugin;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -195,18 +196,16 @@ public class ReproGoal extends AbstractMojo {
             throw new MojoExecutionException("Cannot find or open file " + input);
         }
 
-        if (inputFile.isDirectory()) {
-            guidance = new ReproGuidance(inputFile.listFiles(), null);
-        } else {
-            guidance = new ReproGuidance(inputFile, null);
-        }
 
         try {
+            guidance = new ReproGuidance(inputFile, null);
             result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
         } catch (ClassNotFoundException e) {
             throw new MojoExecutionException("Could not load test class", e);
         } catch (IllegalArgumentException e) {
             throw new MojoExecutionException("Bad request", e);
+        } catch (FileNotFoundException e) {
+            throw new MojoExecutionException("File not found", e);
         } catch (RuntimeException e) {
             throw new MojoExecutionException("Internal error", e);
         }

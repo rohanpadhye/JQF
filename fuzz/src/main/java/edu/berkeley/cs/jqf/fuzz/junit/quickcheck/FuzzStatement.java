@@ -116,13 +116,7 @@ public class FuzzStatement extends Statement {
                 guidance = new NoGuidance(GuidedFuzzing.DEFAULT_MAX_TRIALS, System.err);
             } else {
                 File inputFile = new File(repro);
-                if (inputFile.isDirectory()) {
-                    File[] files = inputFile.listFiles();
-                    Arrays.sort(files);
-                    guidance = new ReproGuidance(files, null);
-                } else {
-                    guidance = new ReproGuidance(inputFile, null);
-                }
+                guidance = new ReproGuidance(inputFile, null);
             }
         }
 

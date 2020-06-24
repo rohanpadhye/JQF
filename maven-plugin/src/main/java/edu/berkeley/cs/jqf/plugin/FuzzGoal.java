@@ -29,6 +29,7 @@
 package edu.berkeley.cs.jqf.plugin;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
@@ -318,8 +319,10 @@ public class FuzzGoal extends AbstractMojo {
                     throw new MojoExecutionException("Unknown fuzzing engine: " + engine);
             }
             guidance.setBlind(blind);
+        } catch (FileNotFoundException e) {
+            throw new MojoExecutionException("File not found", e);
         } catch (IOException e) {
-            throw new MojoExecutionException("Could not create output directory", e);
+            throw new MojoExecutionException("I/O error", e);
         }
 
         try {

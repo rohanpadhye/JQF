@@ -49,6 +49,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
+import edu.berkeley.cs.jqf.fuzz.util.IOUtils;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
@@ -106,16 +107,18 @@ public class ReproGuidance implements Guidance {
 
     /**
      * Constructs an instance of ReproGuidance with a single
-     * input file to replay and a directory where the trace
+     * input file or with a directory of input files
+     * to replay, and a directory where the trace
      * events may be logged.
      *
-     * @param inputFile an input file
+     * @param inputFile an input file or directory of input files
      * @param traceDir an optional directory, which if non-null will
      *                 be the destination for log files containing event
      *                 traces
+     * @throws FileNotFoundException if `inputFile` is not a valid file or directory
      */
-    public ReproGuidance(File inputFile, File traceDir) {
-        this(new File[]{inputFile}, traceDir);
+    public ReproGuidance(File inputFile, File traceDir) throws FileNotFoundException {
+        this(IOUtils.resolveInputFileOrDirectory(inputFile), traceDir);
     }
 
     /**
