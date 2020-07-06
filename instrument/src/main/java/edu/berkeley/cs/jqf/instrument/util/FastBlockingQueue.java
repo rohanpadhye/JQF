@@ -33,7 +33,7 @@ package edu.berkeley.cs.jqf.instrument.util;
  * consumer never change and are distinct threads.
  *
  * This allows reading and writing from the queue without using system
- * locks. The only synchronization is via <tt>volatile</tt> pointers for the producer
+ * locks. The only synchronization is via {@code volatile} pointers for the producer
  * and consumer in a fixed-size circular buffer.
  *
  * Reading from an empty queue and writing to a full queue results in a spinning wait,

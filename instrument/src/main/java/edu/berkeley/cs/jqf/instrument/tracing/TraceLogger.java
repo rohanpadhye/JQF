@@ -53,7 +53,11 @@ public class TraceLogger extends AbstractLogger {
         // Singleton: Prevent outside construction
     }
 
-    /** Returns a handle to the singleton instance. */
+    /**
+     * Returns a handle to the singleton instance.
+     *
+     * @return a handle to the singleton instance
+     */
     public static TraceLogger get() {
         return singleton;
     }
@@ -64,7 +68,11 @@ public class TraceLogger extends AbstractLogger {
         tracer.get().consume(instruction);
     }
 
-    /** Emits a trace event for the current thread. */
+    /**
+     * Emits a trace event for the current thread.
+     *
+     * @param event the event to be emitted
+     */
     public void emit(TraceEvent event) {
         tracer.get().emit(event);
     }
