@@ -354,7 +354,7 @@ public class ZestGuidance implements Guidance {
 
     }
 
-    /** Writes a line of text to a given log file. */
+    /* Writes a line of text to a given log file. */
     protected void appendLineToFile(File file, String line) throws GuidanceException {
         try (PrintWriter out = new PrintWriter(new FileWriter(file, true))) {
             out.println(line);
@@ -364,7 +364,7 @@ public class ZestGuidance implements Guidance {
 
     }
 
-    /** Writes a line of text to the log file. */
+    /* Writes a line of text to the log file. */
     protected void infoLog(String str, Object... args) {
         if (verbose) {
             String line = String.format(str, args);
@@ -456,7 +456,7 @@ public class ZestGuidance implements Guidance {
 
     }
 
-    /** Returns the banner to be displayed on the status screen */
+    /* Returns the banner to be displayed on the status screen */
     protected String getTitle() {
         if (blind) {
             return  "Generator-based random fuzzing (no guidance)\n" +
@@ -516,7 +516,11 @@ public class ZestGuidance implements Guidance {
         infoLog("\n\n\n");
     }
 
-    /** Spawns a new input from thin air (i.e., actually random) */
+    /**
+     * Spawns a new input from thin air (i.e., actually random)
+     *
+     * @return a fresh input
+     */
     protected Input<?> createFreshInput() {
         return new LinearInput();
     }
@@ -526,6 +530,8 @@ public class ZestGuidance implements Guidance {
      *
      * Note: The variable `currentInput` has been set to point to the input
      * to mutate.
+     *
+     * @return an InputStream that delivers parameters to the generators
      */
     protected InputStream createParameterStream() {
         // Return an input stream that reads bytes from a linear array
@@ -895,7 +901,11 @@ public class ZestGuidance implements Guidance {
         return this::handleEvent;
     }
 
-    /** Handles a trace event generated during test execution */
+    /**
+     * Handles a trace event generated during test execution.
+     *
+     * @param e the trace event to be handled
+     */
     protected void handleEvent(TraceEvent e) {
         // Collect totalCoverage
         runCoverage.handleEvent(e);
@@ -1019,7 +1029,7 @@ public class ZestGuidance implements Guidance {
          * <p>An input is favored if it is responsible for covering
          * at least one branch.</p>
          *
-         * @return
+         * @return whether or not this input is favored
          */
         public boolean isFavored() {
             return responsibilities.size() > 0;

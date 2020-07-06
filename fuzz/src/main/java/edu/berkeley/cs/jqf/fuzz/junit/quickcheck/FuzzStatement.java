@@ -217,8 +217,8 @@ public class FuzzStatement extends Statement {
      * Returns whether an exception is expected to be thrown by a trial method
      *
      * @param e the class of an exception that is thrown
-     * @return <tt>true</tt> if e is a subclass of any exception specified
-     * in the <tt>throws</tt> clause of the trial method.
+     * @return <code>true</code> if e is a subclass of any exception specified
+     * in the <code>throws</code> clause of the trial method.
      */
     private boolean isExceptionExpected(Class<? extends Throwable> e) {
         for (Class<?> expectedException : expectedExceptions) {

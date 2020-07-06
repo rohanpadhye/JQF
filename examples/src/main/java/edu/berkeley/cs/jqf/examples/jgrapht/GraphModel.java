@@ -59,7 +59,7 @@ public @interface GraphModel {
      * The number of edges to generate.
      *
      * If provided, a GNM model is used for generation,
-     * and the <tt>p</tt> value is ignored.
+     * and the <code>p</code> value is ignored.
      *
      * @return a value greater than or equal to zero.
      * @see <a href="https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FErd%C5%91s%E2%80%93R%C3%A9nyi_model">
@@ -71,7 +71,7 @@ public @interface GraphModel {
      * The probability of generating an edge
      * between a pair of nodes.
      *
-     * This value is ignored if <tt>edges</tt> is provided.
+     * This value is ignored if <code>edges</code> is provided.
      *
      * If this value is considered, a GNP model is used
      * for generation.
@@ -86,7 +86,7 @@ public @interface GraphModel {
     /**
      * Whether to generate random weights for the graph's edges.
      *
-     * If <tt>false</tt>, all edges will have a default edge-weight
+     * If <code>false</code>, all edges will have a default edge-weight
      * of 1.0.
      *
      * @return whether random edge weights should be generated

@@ -35,7 +35,7 @@ import org.jgrapht.DirectedGraph;
 
 /**
  * Quick-check generator for JGraphT graphs using the
- * <tt>@GraphModel</tt> annotation.
+ * <code>@GraphModel</code> annotation.
  *
  * @author Rohan Padhye
  */

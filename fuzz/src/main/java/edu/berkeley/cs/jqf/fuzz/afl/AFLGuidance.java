@@ -173,7 +173,7 @@ public class AFLGuidance implements Guidance {
      *
      * @return  a stream of bytes to be used by the input generator(s)
      * @throws IllegalStateException if the last {@link #hasInput()}
-     *                  returned <tt>false</tt>
+     *                  returned <code>false</code>
      * @throws GuidanceException if there was an I/O error when opening the file
      */
     @Override
@@ -197,7 +197,7 @@ public class AFLGuidance implements Guidance {
     /**
      * Waits for the AFL proxy to send a ready signal.
      *
-     * @return Returns <tt>true</tt> in the absence of I/O errors
+     * @return Returns <code>true</code> in the absence of I/O errors
      */
     @Override
     public boolean hasInput() {
@@ -237,7 +237,7 @@ public class AFLGuidance implements Guidance {
      * keep in its queue.
      *
      * @param result    the result of the fuzzing trial
-     * @param error     the exception thrown by the test, or <tt>null</tt>
+     * @param error     the exception thrown by the test, or <code>null</code>
      */
     @Override
     public void handleResult(Result result, Throwable error) {
