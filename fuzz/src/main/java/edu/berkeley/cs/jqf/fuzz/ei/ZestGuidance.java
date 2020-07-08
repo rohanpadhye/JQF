@@ -394,8 +394,6 @@ public class ZestGuidance implements Guidance {
 
     // Call only if console exists
     private void displayStats() {
-        assert (console != null);
-
         Date now = new Date();
         long intervalMilliseconds = now.getTime() - lastRefreshTime.getTime();
         if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD) {
