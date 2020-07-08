@@ -25,7 +25,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
   public SnoopInstructionMethodAdapter(MethodVisitor mv, String className,
       String methodName, String descriptor, String superName,
       GlobalStateForInstrumentation instrumentationState) {
-    super(ASM5, mv);
+    super(ASM7, mv);
     this.isInit = methodName.equals("<init>");
     this.isSuperInitCalled = false;
     this.className = className;
@@ -43,7 +43,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     mv.visitLdcInsn(className);
     mv.visitLdcInsn(methodName);
     mv.visitLdcInsn(descriptor);
-    mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "METHOD_BEGIN", 
+    mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "METHOD_BEGIN",
         "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
     if (isInit == false) {
       // For non-constructor methods, the outer try-catch blocks wraps around the entire code
@@ -923,7 +923,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
       mv.visitMethodInsn(
           INVOKESTATIC, Config.instance.analysisClass, "LDC", "(IILjava/lang/String;)V", false);
     } else {
-      mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, 
+      mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass,
           "LDC", "(IILjava/lang/Object;)V", false);
     }
     mv.visitLdcInsn(cst);
