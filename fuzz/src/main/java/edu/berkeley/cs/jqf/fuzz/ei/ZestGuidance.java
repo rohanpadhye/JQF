@@ -425,27 +425,29 @@ public class ZestGuidance implements Guidance {
         int nonZeroValidCount = validCoverage.getNonZeroCount();
         double nonZeroValidFraction = nonZeroValidCount * 100.0 / validCoverage.size();
 
-        if (LIBFUZZER_COMPAT_OUTPUT) {
-            console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, intervalExecsPerSec, currentInput.size());
-        } else if (!QUIET_MODE) {
-            console.printf("\033[2J");
-            console.printf("\033[H");
-            console.printf(this.getTitle() + "\n");
-            if (this.testName != null) {
-                console.printf("Test name:            %s\n", this.testName);
-            }
-            console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
-            console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
-                    maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
-            console.printf("Number of executions: %,d\n", numTrials);
-            console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
-            console.printf("Cycles completed:     %d\n", cyclesCompleted);
-            console.printf("Unique failures:      %,d\n", uniqueFailures.size());
-            console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
-            console.printf("Current parent input: %s\n", currentParentInputDesc);
-            console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
-            console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
-            console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
+        if (console != null) {
+          if (LIBFUZZER_COMPAT_OUTPUT) {
+              console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, intervalExecsPerSec, currentInput.size());
+          } else if (!QUIET_MODE) {
+              console.printf("\033[2J");
+              console.printf("\033[H");
+              console.printf(this.getTitle() + "\n");
+              if (this.testName != null) {
+                  console.printf("Test name:            %s\n", this.testName);
+              }
+              console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
+              console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
+                      maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
+              console.printf("Number of executions: %,d\n", numTrials);
+              console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
+              console.printf("Cycles completed:     %d\n", cyclesCompleted);
+              console.printf("Unique failures:      %,d\n", uniqueFailures.size());
+              console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
+              console.printf("Current parent input: %s\n", currentParentInputDesc);
+              console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
+              console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
+              console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
+          }
         }
 
         String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%",
@@ -698,7 +700,7 @@ public class ZestGuidance implements Guidance {
                 assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
 
                 // libFuzzerCompat stats are only displayed when they hit new coverage
-                if (console != null && LIBFUZZER_COMPAT_OUTPUT) {
+                if (LIBFUZZER_COMPAT_OUTPUT) {
                     displayStats();
                 }
 
@@ -750,7 +752,7 @@ public class ZestGuidance implements Guidance {
                     }
 
                     // libFuzzerCompat stats are only displayed when they hit new coverage or crashes
-                    if (console != null && LIBFUZZER_COMPAT_OUTPUT) {
+                    if (LIBFUZZER_COMPAT_OUTPUT) {
                         displayStats();
                     }
 
@@ -758,7 +760,7 @@ public class ZestGuidance implements Guidance {
         }
 
         // displaying stats on every interval is only enabled for AFL-like stats screen
-        if (console != null && !LIBFUZZER_COMPAT_OUTPUT) {
+        if (!LIBFUZZER_COMPAT_OUTPUT) {
             displayStats();
         }
 
