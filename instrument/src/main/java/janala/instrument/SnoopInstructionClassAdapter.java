@@ -11,7 +11,7 @@ public class SnoopInstructionClassAdapter extends ClassVisitor {
   private String superName;
 
   public SnoopInstructionClassAdapter(ClassVisitor cv, String className) {
-    super(Opcodes.ASM8, cv);
+    super(Opcodes.ASM5, cv);
     this.className = className;
   }
 
@@ -28,7 +28,7 @@ public class SnoopInstructionClassAdapter extends ClassVisitor {
   }
 
   @Override
-  public MethodVisitor visitMethod(int access, String name, String desc,
+  public MethodVisitor visitMethod(int access, String name, String desc, 
       String signature, String[] exceptions) {
     MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
     if (mv != null) {
