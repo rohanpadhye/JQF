@@ -508,9 +508,7 @@ public class ZestGuidance implements Guidance {
         }
         int totalCoverageCount = totalCoverage.getNonZeroCount();
         infoLog("Total %d branches covered", totalCoverageCount);
-        if (SAVE_ONLY_VALID == true && sumResponsibilities > totalCoverageCount) {
-            throw new AssertionError("Responsibilty mistmatch");
-        } else if (SAVE_ONLY_VALID == false && sumResponsibilities != totalCoverageCount) {
+        if (sumResponsibilities != totalCoverageCount) {
             throw new AssertionError("Responsibilty mistmatch");
         }
 
@@ -639,7 +637,7 @@ public class ZestGuidance implements Guidance {
             numValid++;
         }
 
-        if (result == Result.SUCCESS || result == Result.INVALID) {
+        if (result == Result.SUCCESS || (result == Result.INVALID && SAVE_ONLY_VALID == false)) {
 
             // Coverage before
             int nonZeroBefore = totalCoverage.getNonZeroCount();
@@ -691,7 +689,7 @@ public class ZestGuidance implements Guidance {
                 why = why + "+valid";
             }
 
-            if (toSave && (SAVE_ONLY_VALID == false || currentInput.valid)) {
+            if (toSave) {
 
                 // Trim input (remove unused keys)
                 currentInput.gc();
