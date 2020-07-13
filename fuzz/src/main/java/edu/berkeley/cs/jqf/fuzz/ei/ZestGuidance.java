@@ -637,7 +637,7 @@ public class ZestGuidance implements Guidance {
             numValid++;
         }
 
-        if (result == Result.SUCCESS || result == Result.INVALID) {
+        if (result == Result.SUCCESS || (result == Result.INVALID && SAVE_ONLY_VALID == false)) {
 
             // Coverage before
             int nonZeroBefore = totalCoverage.getNonZeroCount();
@@ -763,7 +763,7 @@ public class ZestGuidance implements Guidance {
         }
 
         // Save input unconditionally if such a setting is enabled
-        if (savedAllDirectory != null) {
+        if (savedAllDirectory != null && (SAVE_ONLY_VALID == false || currentInput.valid)) {
             String saveFileName = String.format("id_%09d", numTrials);
             File saveFile = new File(savedAllDirectory, saveFileName);
             GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
@@ -850,10 +850,8 @@ public class ZestGuidance implements Guidance {
         String saveFileName = String.format("id_%06d", newInputIdx);
         String how = currentInput.desc;
         File saveFile = new File(savedCorpusDirectory, saveFileName);
-        if (SAVE_ONLY_VALID == false || currentInput.valid) {
-            writeCurrentInputToFile(saveFile);
-            infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
-        }
+        writeCurrentInputToFile(saveFile);
+        infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
 
         // If not using guidance, do nothing else
         if (blind) {
