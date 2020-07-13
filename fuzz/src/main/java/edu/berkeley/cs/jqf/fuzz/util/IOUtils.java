@@ -50,6 +50,7 @@ public class IOUtils {
      * @return a listing of files, if `file` is a directory;
      *         a list containing only `file`, if it is a regular file;
      *         `null` if `file` is also `null`
+     * @throws FileNotFoundException if {@code file} does not exist
      */
     public static File[] resolveInputFileOrDirectory(File file) throws FileNotFoundException {
         if (file == null) {

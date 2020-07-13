@@ -32,9 +32,8 @@ package edu.berkeley.cs.jqf.fuzz.util;
  * A version of {@link Runnable} that throws arbitrary, possibly checked, exceptions.
  *
  * Useful for wrapping checked exceptions with unchecked exceptions, such as during
- * guided fuzzing.
- *
- * @see {@link edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException#wrap(ThrowingRunnable)}
+ * guided fuzzing
+ * (see: {@link edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException#wrap(ThrowingRunnable)})
  */
 @FunctionalInterface
 public interface ThrowingRunnable {

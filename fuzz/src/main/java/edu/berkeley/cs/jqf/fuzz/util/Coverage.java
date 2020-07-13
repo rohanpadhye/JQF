@@ -115,7 +115,12 @@ public class Coverage implements TraceEventVisitor {
         return counter.getNonZeroIndices();
     }
 
-    /** Returns a set of edges in this coverage that don't exist in baseline */
+    /**
+     * Returns a set of edges in this coverage that don't exist in baseline
+     *
+     * @param baseline the baseline coverage
+     * @return the set of edges that do not exist in {@code baseline}
+     */
     public Collection<?> computeNewCoverage(Coverage baseline) {
         Collection<Integer> newCoverage = new ArrayList<>();
         for (int idx : this.counter.getNonZeroIndices()) {
@@ -136,7 +141,7 @@ public class Coverage implements TraceEventVisitor {
 
     private static int[] HOB_CACHE = new int[1024];
 
-    /** Computes the highest order bit */
+    /* Computes the highest order bit */
     private static int computeHob(int num)
     {
         if (num == 0)
@@ -172,8 +177,8 @@ public class Coverage implements TraceEventVisitor {
      *
      * @param that the run coverage whose bits to OR
      *
-     * @return <tt>true</tt> iff <tt>that</tt> is not a subset
-     *         of <tt>this</tt>, causing <tt>this</tt> to change.
+     * @return <code>true</code> iff <code>that</code> is not a subset
+     *         of <code>this</code>, causing <code>this</code> to change.
      */
     public boolean updateBits(Coverage that) {
         boolean changed = false;
@@ -196,7 +201,11 @@ public class Coverage implements TraceEventVisitor {
         return Arrays.hashCode(counter.counts);
     }
 
-    /** Returns a hash code of the list of edges that have been covered at least once. */
+    /**
+     * Returns a hash code of the list of edges that have been covered at least once.
+     *
+     * @return a hash of non-zero entries
+     */
     public int nonZeroHashCode() {
         return counter.getNonZeroIndices().hashCode();
     }

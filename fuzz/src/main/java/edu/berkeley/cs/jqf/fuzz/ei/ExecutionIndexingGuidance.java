@@ -611,6 +611,8 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
          *
          * Pass-through to {@link #fuzz(Random, Map)}
          *
+         * @param random a pseudo-random source
+         * @return a mutated input
          */
         @Override
         public Input fuzz(Random random) {
@@ -638,6 +640,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
          * {@link #MAX_SPLICE_SIZE}.</p>
          *
          * @param random the PRNG
+         * @param ecToInputLoc map of execution contexts to input-location pairs
          * @return a newly fuzzed input
          */
         protected MappedInput fuzz(Random random, Map<ExecutionContext, ArrayList<InputLocation>> ecToInputLoc) {

@@ -354,7 +354,7 @@ public class ZestGuidance implements Guidance {
 
     }
 
-    /** Writes a line of text to a given log file. */
+    /* Writes a line of text to a given log file. */
     protected void appendLineToFile(File file, String line) throws GuidanceException {
         try (PrintWriter out = new PrintWriter(new FileWriter(file, true))) {
             out.println(line);
@@ -364,7 +364,7 @@ public class ZestGuidance implements Guidance {
 
     }
 
-    /** Writes a line of text to the log file. */
+    /* Writes a line of text to the log file. */
     protected void infoLog(String str, Object... args) {
         if (verbose) {
             String line = String.format(str, args);
@@ -394,8 +394,6 @@ public class ZestGuidance implements Guidance {
 
     // Call only if console exists
     private void displayStats() {
-        assert (console != null);
-
         Date now = new Date();
         long intervalMilliseconds = now.getTime() - lastRefreshTime.getTime();
         if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD) {
@@ -425,27 +423,29 @@ public class ZestGuidance implements Guidance {
         int nonZeroValidCount = validCoverage.getNonZeroCount();
         double nonZeroValidFraction = nonZeroValidCount * 100.0 / validCoverage.size();
 
-        if (LIBFUZZER_COMPAT_OUTPUT) {
-            console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, intervalExecsPerSec, currentInput.size());
-        } else if (!QUIET_MODE) {
-            console.printf("\033[2J");
-            console.printf("\033[H");
-            console.printf(this.getTitle() + "\n");
-            if (this.testName != null) {
-                console.printf("Test name:            %s\n", this.testName);
-            }
-            console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
-            console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
-                    maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
-            console.printf("Number of executions: %,d\n", numTrials);
-            console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
-            console.printf("Cycles completed:     %d\n", cyclesCompleted);
-            console.printf("Unique failures:      %,d\n", uniqueFailures.size());
-            console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
-            console.printf("Current parent input: %s\n", currentParentInputDesc);
-            console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
-            console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
-            console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
+        if (console != null) {
+          if (LIBFUZZER_COMPAT_OUTPUT) {
+              console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, intervalExecsPerSec, currentInput.size());
+          } else if (!QUIET_MODE) {
+              console.printf("\033[2J");
+              console.printf("\033[H");
+              console.printf(this.getTitle() + "\n");
+              if (this.testName != null) {
+                  console.printf("Test name:            %s\n", this.testName);
+              }
+              console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
+              console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
+                      maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
+              console.printf("Number of executions: %,d\n", numTrials);
+              console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
+              console.printf("Cycles completed:     %d\n", cyclesCompleted);
+              console.printf("Unique failures:      %,d\n", uniqueFailures.size());
+              console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
+              console.printf("Current parent input: %s\n", currentParentInputDesc);
+              console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
+              console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
+              console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
+          }
         }
 
         String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%",
@@ -456,7 +456,7 @@ public class ZestGuidance implements Guidance {
 
     }
 
-    /** Returns the banner to be displayed on the status screen */
+    /* Returns the banner to be displayed on the status screen */
     protected String getTitle() {
         if (blind) {
             return  "Generator-based random fuzzing (no guidance)\n" +
@@ -508,7 +508,9 @@ public class ZestGuidance implements Guidance {
         }
         int totalCoverageCount = totalCoverage.getNonZeroCount();
         infoLog("Total %d branches covered", totalCoverageCount);
-        if (sumResponsibilities > totalCoverageCount) {
+        if (SAVE_ONLY_VALID == true && sumResponsibilities > totalCoverageCount) {
+            throw new AssertionError("Responsibilty mistmatch");
+        } else if (SAVE_ONLY_VALID == false && sumResponsibilities != totalCoverageCount) {
             throw new AssertionError("Responsibilty mistmatch");
         }
 
@@ -516,7 +518,11 @@ public class ZestGuidance implements Guidance {
         infoLog("\n\n\n");
     }
 
-    /** Spawns a new input from thin air (i.e., actually random) */
+    /**
+     * Spawns a new input from thin air (i.e., actually random)
+     *
+     * @return a fresh input
+     */
     protected Input<?> createFreshInput() {
         return new LinearInput();
     }
@@ -526,6 +532,8 @@ public class ZestGuidance implements Guidance {
      *
      * Note: The variable `currentInput` has been set to point to the input
      * to mutate.
+     *
+     * @return an InputStream that delivers parameters to the generators
      */
     protected InputStream createParameterStream() {
         // Return an input stream that reads bytes from a linear array
@@ -692,7 +700,7 @@ public class ZestGuidance implements Guidance {
                 assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
 
                 // libFuzzerCompat stats are only displayed when they hit new coverage
-                if (console != null && LIBFUZZER_COMPAT_OUTPUT) {
+                if (LIBFUZZER_COMPAT_OUTPUT) {
                     displayStats();
                 }
 
@@ -744,7 +752,7 @@ public class ZestGuidance implements Guidance {
                     }
 
                     // libFuzzerCompat stats are only displayed when they hit new coverage or crashes
-                    if (console != null && LIBFUZZER_COMPAT_OUTPUT) {
+                    if (LIBFUZZER_COMPAT_OUTPUT) {
                         displayStats();
                     }
 
@@ -752,7 +760,7 @@ public class ZestGuidance implements Guidance {
         }
 
         // displaying stats on every interval is only enabled for AFL-like stats screen
-        if (console != null && !LIBFUZZER_COMPAT_OUTPUT) {
+        if (!LIBFUZZER_COMPAT_OUTPUT) {
             displayStats();
         }
 
@@ -893,7 +901,11 @@ public class ZestGuidance implements Guidance {
         return this::handleEvent;
     }
 
-    /** Handles a trace event generated during test execution */
+    /**
+     * Handles a trace event generated during test execution.
+     *
+     * @param e the trace event to be handled
+     */
     protected void handleEvent(TraceEvent e) {
         // Collect totalCoverage
         runCoverage.handleEvent(e);
@@ -1017,7 +1029,7 @@ public class ZestGuidance implements Guidance {
          * <p>An input is favored if it is responsible for covering
          * at least one branch.</p>
          *
-         * @return
+         * @return whether or not this input is favored
          */
         public boolean isFavored() {
             return responsibilities.size() > 0;
