@@ -104,8 +104,8 @@ public class ZestGuidance implements Guidance {
     /** The directory where saved inputs are saved. */
     protected File savedFailuresDirectory;
 
-    /** The directory where all inputs are saved (if enabled). */
-    protected File savedAllDirectory;
+    /** The directory where all generated inputs are logged in sub-directories (if enabled). */
+    protected File allInputsDirectory;
 
     /** Set of saved inputs to fuzz. */
     protected ArrayList<Input> savedInputs = new ArrayList<>();
@@ -196,6 +196,9 @@ public class ZestGuidance implements Guidance {
 
     /** Whether to hide fuzzing statistics **/
     static final boolean QUIET_MODE = Boolean.getBoolean("jqf.ei.QUIET_MODE");
+
+    /** Whether to store all generated inputs to disk (can get slowww!) */
+    protected final boolean LOG_ALL_INPUTS = Boolean.getBoolean("jqf.ei.LOG_ALL_INPUTS");
 
     // ------------- TIMEOUT HANDLING ------------
 
@@ -306,34 +309,21 @@ public class ZestGuidance implements Guidance {
 
 
     private void prepareOutputDirectory() throws IOException {
-
         // Create the output directory if it does not exist
-        if (!outputDirectory.exists()) {
-            if (!outputDirectory.mkdirs()) {
-                throw new IOException("Could not create output directory" +
-                        outputDirectory.getAbsolutePath());
-            }
-        }
-
-        // Make sure we can write to output directory
-        if (!outputDirectory.isDirectory() || !outputDirectory.canWrite()) {
-            throw new IOException("Output directory is not a writable directory: " +
-                    outputDirectory.getAbsolutePath());
-        }
+        IOUtils.createDirectory(outputDirectory);
 
         // Name files and directories after AFL
-        this.savedCorpusDirectory = new File(outputDirectory, "corpus");
-        this.savedCorpusDirectory.mkdirs();
-        this.savedFailuresDirectory = new File(outputDirectory, "failures");
-        this.savedFailuresDirectory.mkdirs();
-        if (Boolean.getBoolean("jqf.ei.SAVE_ALL_INPUTS")) {
-            this.savedAllDirectory = new File(outputDirectory, "all");
-            this.savedAllDirectory.mkdirs();
+        this.savedCorpusDirectory = IOUtils.createDirectory(outputDirectory, "corpus");
+        this.savedFailuresDirectory = IOUtils.createDirectory(outputDirectory, "failures");
+        if (LOG_ALL_INPUTS) {
+            this.allInputsDirectory = IOUtils.createDirectory(outputDirectory, "all");
+            IOUtils.createDirectory(allInputsDirectory, "success");
+            IOUtils.createDirectory(allInputsDirectory, "invalid");
+            IOUtils.createDirectory(allInputsDirectory, "failure");
         }
         this.statsFile = new File(outputDirectory, "plot_data");
         this.logFile = new File(outputDirectory, "fuzz.log");
         this.currentInputFile = new File(outputDirectory, ".cur_input");
-
 
         // Delete everything that we may have created in a previous run.
         // Trying to stay away from recursive delete of parent output directory in case there was a
@@ -763,12 +753,12 @@ public class ZestGuidance implements Guidance {
         }
 
         // Save input unconditionally if such a setting is enabled
-        if (savedAllDirectory != null && (SAVE_ONLY_VALID == false || currentInput.valid)) {
+        if (LOG_ALL_INPUTS) {
+            File logDirectory = new File(allInputsDirectory, result.toString().toLowerCase());
             String saveFileName = String.format("id_%09d", numTrials);
-            File saveFile = new File(savedAllDirectory, saveFileName);
+            File saveFile = new File(logDirectory, saveFileName);
             GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
         }
-
     }
 
 

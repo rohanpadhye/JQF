@@ -30,6 +30,7 @@ package edu.berkeley.cs.jqf.fuzz.util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -63,6 +64,36 @@ public class IOUtils {
             return new File[]{file};
         } else {
             throw new FileNotFoundException("Could not find file: " + file);
+        }
+    }
+
+    /**
+     * Creates a new writable directory in a given parent directory.
+     *
+     * @param parent the parent directory
+     * @param name   the name of the new directory to create
+     * @return the newly created directory
+     * @throws IOException if a writable directory was not created
+     */
+    public static File createDirectory(File parent, String name) throws IOException {
+        File newDir = new File(parent, name);
+        return createDirectory(newDir);
+    }
+
+    /**
+     * Creates a new writable directory.
+     *
+     * @param newDir the new directory to create
+     * @return the newly created directory (same as `newDir`)
+     * @throws IOException if a writable directory was not created
+     */
+    public static File createDirectory(File newDir) throws IOException {
+        newDir.mkdirs();
+
+        if (!newDir.isDirectory() || !newDir.canWrite()) {
+            throw new IOException("Could not create directory: " + newDir.getAbsolutePath());
+        } else {
+            return newDir;
         }
     }
 }
