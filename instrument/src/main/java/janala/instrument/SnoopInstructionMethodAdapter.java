@@ -25,7 +25,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
   public SnoopInstructionMethodAdapter(MethodVisitor mv, String className,
       String methodName, String descriptor, String superName,
       GlobalStateForInstrumentation instrumentationState) {
-    super(ASM5, mv);
+    super(ASM8, mv);
     this.isInit = methodName.equals("<init>");
     this.isSuperInitCalled = false;
     this.className = className;

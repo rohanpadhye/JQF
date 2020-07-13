@@ -11,7 +11,7 @@ public class SnoopInstructionClassAdapter extends ClassVisitor {
   private String superName;
 
   public SnoopInstructionClassAdapter(ClassVisitor cv, String className) {
-    super(Opcodes.ASM5, cv);
+    super(Opcodes.ASM8, cv);
     this.className = className;
   }
 
