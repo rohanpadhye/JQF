@@ -90,25 +90,25 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
     protected Map<Integer, Integer> coverageHashToSavedInputIdx = new HashMap<>();
 
     /** Mean number of mutations to perform in each round. */
-    static final double MEAN_MUTATION_COUNT = 2.0;
+    protected final double MEAN_MUTATION_COUNT = 2.0;
 
     /** Mean number of contiguous bytes to mutate in each mutation. */
-    static final double MEAN_MUTATION_SIZE = 4.0; // Bytes
+    protected final double MEAN_MUTATION_SIZE = 4.0; // Bytes
 
     /** Probability that a standard mutation sets the byte to just zero instead of a random value. */
-    static final double MUTATION_ZERO_PROBABILITY = 0.05;
+    protected final double MUTATION_ZERO_PROBABILITY = 0.05;
 
     /** Max number of contiguous bytes to splice in from another input during the splicing stage. */
-    static final int MAX_SPLICE_SIZE = 64; // Bytes
+    protected final int MAX_SPLICE_SIZE = 64; // Bytes
 
     /** Whether to splice only in the same sub-tree */
-    static final boolean SPLICE_SUBTREE = Boolean.getBoolean("jqf.ei.SPLICE_SUBTREE");
+    protected final boolean SPLICE_SUBTREE = Boolean.getBoolean("jqf.ei.SPLICE_SUBTREE");
 
     /** Probability of splicing in {@link MappedInput#fuzz(Random, Map)} */
-    static final double STANDARD_SPLICING_PROBABILITY = 0.0;
+    protected final double STANDARD_SPLICING_PROBABILITY = 0.0;
 
     /** Probability of splicing in {@link MappedInput#getOrGenerateFresh(ExecutionIndex, Random)}  */
-    static final double DEMAND_DRIVEN_SPLICING_PROBABILITY = 0.0;
+    protected final double DEMAND_DRIVEN_SPLICING_PROBABILITY = 0.0;
 
     /**
      * Constructs a new guidance instance.
