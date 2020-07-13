@@ -77,4 +77,11 @@ public class TraceLogger extends AbstractLogger {
         tracer.get().emit(event);
     }
 
+    /**
+     * Removes the trace logger for the current thread
+     */
+    public void remove() {
+        tracer.remove();
+    }
+
 }

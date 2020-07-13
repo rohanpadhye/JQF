@@ -33,6 +33,7 @@ import java.io.PrintStream;
 import edu.berkeley.cs.jqf.fuzz.JQF;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
+import edu.berkeley.cs.jqf.instrument.tracing.TraceLogger;
 import org.junit.internal.TextListener;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Request;
@@ -46,6 +47,21 @@ public class GuidedFuzzing {
 
     public static long DEFAULT_MAX_TRIALS = 100;
 
+    /**
+     * Sets the current global fuzzing guidance.
+     *
+     * Note: There can only be one guidance in any given JVM,
+     * because the instrumented test classes make static method
+     * calls to generate callback events.
+     *
+     * The fuzzing entry point (i.e., the target method being fuzzed)
+     * should be invoked in the same thread as the thread that sets
+     * the global guidance. This property is ensured by all variants
+     * of {@link GuidedFuzzing#run(Class, String, Guidance, PrintStream)}.
+     *
+     * @param g the guidance instance
+     * @throws IllegalStateException if a guidance has already been set
+     */
     private static void setGuidance(Guidance g) {
         if (guidance != null) {
             throw new IllegalStateException("Can only set guided once.");
@@ -62,8 +78,20 @@ public class GuidedFuzzing {
         return guidance;
     }
 
+    /**
+     * Unsets the current global fuzzing guidance.
+     *
+     * This allows running multiple fuzzing sessions in the same
+     * JVM instance sequentially. This method should be invoked
+     * from the same thread that last invoked {@link #setGuidance(Guidance)}.
+     * This method removes any tracers associated with the
+     * current thread, so that the entry point can be detected again.
+     * This property is ensured by {@link GuidedFuzzing#run(Class, String, Guidance, PrintStream)}.
+     *
+     */
     private static void unsetGuidance() {
         guidance = null;
+        TraceLogger.get().remove();
     }
 
 
@@ -155,30 +183,32 @@ public class GuidedFuzzing {
             throw new IllegalArgumentException(testClass.getName() + " is not annotated with @RunWith(JQF.class)");
         }
 
-
-        // Set the static guided instance
-        setGuidance(guidance);
-
-        // Register callback
-        SingleSnoop.setCallbackGenerator(guidance::generateCallBack);
-
-        // Create a JUnit Request
-        Request testRequest = Request.method(testClass, testMethod);
-
-        // Instantiate a runner (may return an error)
-        Runner testRunner = testRequest.getRunner();
-
-        // Start tracing for the test method
-        SingleSnoop.startSnooping(testClass.getName() + "#" + testMethod);
-
-        // Run the test and make sure to de-register the guidance before returning
         try {
+            // Set the static guidance instance
+            setGuidance(guidance);
+
+            // Register callback
+            SingleSnoop.setCallbackGenerator(guidance::generateCallBack);
+
+            // Create a JUnit Request
+            Request testRequest = Request.method(testClass, testMethod);
+
+            // Instantiate a runner (may return an error)
+            Runner testRunner = testRequest.getRunner();
+
+            // Start tracing for the test method
+            SingleSnoop.startSnooping(testClass.getName() + "#" + testMethod);
+
+            // Run the test
             JUnitCore junit = new JUnitCore();
             if (out != null) {
                 junit.addListener(new TextListener(out));
             }
+
             return junit.run(testRunner);
+
         } finally {
+            // Make sure to de-register the guidance before returning
             unsetGuidance();
         }
 
