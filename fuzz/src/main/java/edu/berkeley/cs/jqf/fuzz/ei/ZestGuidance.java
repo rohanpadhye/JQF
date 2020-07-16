@@ -238,7 +238,7 @@ public class ZestGuidance implements Guidance {
     static final double MEAN_MUTATION_SIZE = 4.0; // Bytes
 
     /** Whether to save inputs that only add new coverage bits (but no new responsibilities). */
-    static final boolean SAVE_NEW_COUNTS = true;
+    static final boolean SAVE_NEW_COUNTS = Boolean.getBoolean("jqf.ei.SAVE_NEW_COUNTS");
 
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
     static final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
