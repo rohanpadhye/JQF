@@ -160,7 +160,7 @@ public class ZestGuidance implements Guidance {
     protected Set<List<StackTraceElement>> uniqueFailures = new HashSet<>();
 
     /** save crash to specific location (should be used with EXIT_ON_CRASH) **/
-    static final String EXACT_CRASH_PATH = System.getProperty("jqf.ei.EXACT_CRASH_PATH");
+    protected final String EXACT_CRASH_PATH = System.getProperty("jqf.ei.EXACT_CRASH_PATH");
 
     // ---------- LOGGING / STATS OUTPUT ------------
 
@@ -180,7 +180,7 @@ public class ZestGuidance implements Guidance {
     protected long lastNumTrials = 0;
 
     /** Minimum amount of time (in millis) between two stats refreshes. */
-    protected static final long STATS_REFRESH_TIME_PERIOD = 300;
+    protected final long STATS_REFRESH_TIME_PERIOD = 300;
 
     /** The file where log data is written. */
     protected File logFile;
@@ -192,10 +192,10 @@ public class ZestGuidance implements Guidance {
     protected File currentInputFile;
 
     /** Use libFuzzer like output instead of AFL like stats screen (https://llvm.org/docs/LibFuzzer.html#output) **/
-    static final boolean LIBFUZZER_COMPAT_OUTPUT = Boolean.getBoolean("jqf.ei.LIBFUZZER_COMPAT_OUTPUT");
+    protected final boolean LIBFUZZER_COMPAT_OUTPUT = Boolean.getBoolean("jqf.ei.LIBFUZZER_COMPAT_OUTPUT");
 
     /** Whether to hide fuzzing statistics **/
-    static final boolean QUIET_MODE = Boolean.getBoolean("jqf.ei.QUIET_MODE");
+    protected final boolean QUIET_MODE = Boolean.getBoolean("jqf.ei.QUIET_MODE");
 
     /** Whether to store all generated inputs to disk (can get slowww!) */
     protected final boolean LOG_ALL_INPUTS = Boolean.getBoolean("jqf.ei.LOG_ALL_INPUTS");
@@ -212,36 +212,36 @@ public class ZestGuidance implements Guidance {
     protected long branchCount;
 
     /** Whether to stop/exit once a crash is found. **/
-    static final boolean EXIT_ON_CRASH = Boolean.getBoolean("jqf.ei.EXIT_ON_CRASH");
+    protected final boolean EXIT_ON_CRASH = Boolean.getBoolean("jqf.ei.EXIT_ON_CRASH");
 
     // ------------- FUZZING HEURISTICS ------------
 
     /** Whether to save only valid inputs **/
-    static final boolean SAVE_ONLY_VALID = Boolean.getBoolean("jqf.ei.SAVE_ONLY_VALID");
+    protected final boolean SAVE_ONLY_VALID = Boolean.getBoolean("jqf.ei.SAVE_ONLY_VALID");
 
     /** Max input size to generate. */
-    static final int MAX_INPUT_SIZE = Integer.getInteger("jqf.ei.MAX_INPUT_SIZE", 10240);
+    protected final int MAX_INPUT_SIZE = Integer.getInteger("jqf.ei.MAX_INPUT_SIZE", 10240);
 
     /** Whether to generate EOFs when we run out of bytes in the input, instead of randomly generating new bytes. **/
-    static final boolean GENERATE_EOF_WHEN_OUT = Boolean.getBoolean("jqf.ei.GENERATE_EOF_WHEN_OUT");
+    protected final boolean GENERATE_EOF_WHEN_OUT = Boolean.getBoolean("jqf.ei.GENERATE_EOF_WHEN_OUT");
 
     /** Baseline number of mutated children to produce from a given parent input. */
-    static final int NUM_CHILDREN_BASELINE = 50;
+    protected final int NUM_CHILDREN_BASELINE = 50;
 
     /** Multiplication factor for number of children to produce for favored inputs. */
-    static final int NUM_CHILDREN_MULTIPLIER_FAVORED = 20;
+    protected final int NUM_CHILDREN_MULTIPLIER_FAVORED = 20;
 
     /** Mean number of mutations to perform in each round. */
-    static final double MEAN_MUTATION_COUNT = 8.0;
+    protected final double MEAN_MUTATION_COUNT = 8.0;
 
     /** Mean number of contiguous bytes to mutate in each mutation. */
-    static final double MEAN_MUTATION_SIZE = 4.0; // Bytes
+    protected final double MEAN_MUTATION_SIZE = 4.0; // Bytes
 
     /** Whether to save inputs that only add new coverage bits (but no new responsibilities). */
-    static final boolean DISABLE_SAVE_NEW_COUNTS = Boolean.getBoolean("jqf.ei.DISABLE_SAVE_NEW_COUNTS");
+    protected final boolean DISABLE_SAVE_NEW_COUNTS = Boolean.getBoolean("jqf.ei.DISABLE_SAVE_NEW_COUNTS");
 
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
-    static final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
+    protected final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
 
     /**
      * Creates a new guidance instance.
