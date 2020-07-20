@@ -29,14 +29,13 @@
 package edu.berkeley.cs.jqf.examples.rhino;
 
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
 import edu.berkeley.cs.jqf.examples.js.JavaScriptCodeGenerator;
+import edu.berkeley.cs.jqf.examples.js.JavaScriptIterativeCodeGenerator;
 import edu.berkeley.cs.jqf.fuzz.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.JQF;
 import org.apache.commons.io.IOUtils;
@@ -104,6 +103,28 @@ public class CompilerTest {
 
     @Fuzz
     public void testWithGenerator(@From(JavaScriptCodeGenerator.class) String code) {
+        testWithString(code);
+    }
+
+    @Fuzz
+    public void testWithIterativeGenerator(@From(JavaScriptIterativeCodeGenerator.class) String code) {
+
+        boolean writePrograms = false;
+        String fileName = "333";
+        if (writePrograms) {
+            try {
+
+                // Open given file in append mode.
+                BufferedWriter out = new BufferedWriter(
+                        new FileWriter(fileName + ".js", true));
+                out.write(code + "\n------------------------------\n");
+                out.close();
+            }
+            catch (IOException e) {
+                System.out.println("exception occoured" + e);
+            }
+
+        }
         testWithString(code);
     }
 
