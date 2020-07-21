@@ -54,6 +54,7 @@ public class JavaScriptIterativeCodeGenerator extends Generator<String> {
         maxIdentifiers = Integer.getInteger(identifierProp, 0);
         maxItems = Integer.getInteger(itemsProp, 0);
         maxDepth = Integer.getInteger(depthProp, 0);
+        maxBound = 4;
         assert(maxIdentifiers > 0);
         assert(maxItems > 0);
         assert(maxDepth > 0);
@@ -93,7 +94,6 @@ public class JavaScriptIterativeCodeGenerator extends Generator<String> {
         this.status = status;
         this.statementDepth = 0;
         this.expressionDepth = 0;
-        this.maxBound = 4;
         generateIdentifiers(maxBound);
 
         SourceOfRandomness r = new FastSourceOfRandomness((StreamBackedRandom) random.toJDKRandom()) {
