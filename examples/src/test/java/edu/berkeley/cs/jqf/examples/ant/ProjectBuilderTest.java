@@ -40,6 +40,7 @@ import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.examples.xml.XMLDocumentUtils;
 import edu.berkeley.cs.jqf.examples.xml.XmlDocumentGenerator;
 import edu.berkeley.cs.jqf.examples.common.Dictionary;
+import edu.berkeley.cs.jqf.examples.xml.XmlDocumentIterativeGenerator;
 import edu.berkeley.cs.jqf.fuzz.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.JQF;
 import org.apache.tools.ant.BuildException;
@@ -84,7 +85,13 @@ public class ProjectBuilderTest {
 
     @Fuzz
     public void testWithGenerator(@From(XmlDocumentGenerator.class)
-                                      @Dictionary("dictionaries/ant-project.dict") Document dom) {
+                                      @Dictionary("/home/vasu/Work/jqf/examples/src/test/resources/dictionaries/maven-model.dict") Document dom) {
+        testWithInputStream(XMLDocumentUtils.documentToInputStream(dom));
+    }
+
+    @Fuzz
+    public void testWithIterativeGenerator(@From(XmlDocumentIterativeGenerator.class)
+                                  @Dictionary("/home/vasu/Work/jqf/examples/src/test/resources/dictionaries/maven-model.dict") Document dom) {
         testWithInputStream(XMLDocumentUtils.documentToInputStream(dom));
     }
 
