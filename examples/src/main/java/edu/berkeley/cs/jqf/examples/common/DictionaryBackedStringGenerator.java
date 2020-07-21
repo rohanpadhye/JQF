@@ -28,11 +28,7 @@
  */
 package edu.berkeley.cs.jqf.examples.common;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,12 +47,19 @@ public class DictionaryBackedStringGenerator extends Generator<String> {
         this.fallback = fallback;
 
         // Read dictionary words
-        try (InputStream in = ClassLoader.getSystemClassLoader().getResourceAsStream(source)) {
-            if (in == null) {
+        try (
+                InputStream in = ClassLoader.getSystemClassLoader().getResourceAsStream(source);
+                InputStream absoluteIn = new FileInputStream(source)
+        ) {
+            BufferedReader br;
+            if (in != null) {
+                br = new BufferedReader(new InputStreamReader(in));
+            } else if (absoluteIn != null) {
+                br = new BufferedReader(new InputStreamReader(absoluteIn));
+            } else {
                 throw new FileNotFoundException("Dictionary file not found: " + source);
             }
 
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
             String item;
             while ((item = br.readLine()) != null) {
                 dictionary.add(item);
