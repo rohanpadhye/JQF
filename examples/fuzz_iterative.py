@@ -10,7 +10,7 @@ MVN_COMMAND = "mvn jqf:fuzz -Dclass={} -Dmethod={} -Dtarget={} -Dout={} -Dtime={
 def add_parent(parent, graph, bound, visited, depth, depth_map):
     if tuple(parent) in visited:
         return
-    for i in range(3):
+    for i in range(len(parent)):
         child = parent[:]
         if child[i] == bound:
             continue
@@ -20,11 +20,11 @@ def add_parent(parent, graph, bound, visited, depth, depth_map):
     depth_map[depth].append(parent)
     visited.add(tuple(parent))
 
-def create_graph(bound):
+def create_graph(bound, num_params):
     graph = defaultdict(list)
     depth_map = defaultdict(list)
     visited = set()
-    root = [1, 1, 1]
+    root = [1] * num_params
     add_parent(root, graph, bound, visited, 0, depth_map)
     return graph, depth_map
 
@@ -49,7 +49,12 @@ def join_seed_dirs(target_dir, seed_dirs):
 
 
 def run_experiment(class_name, method_name, param_list, runtime, target_dir, seed_dirs, save_only_valid):
-    experiment_dir = "{}{}{}".format(*param_list)
+    if len(param_list) == 2:
+        experiment_dir = "{}{}".format(*param_list)
+        # Dummy for identifier param
+        param_list = [0] + param_list
+    else:
+        experiment_dir = "{}{}{}".format(*param_list)
     command = MVN_COMMAND.format(class_name, method_name, target_dir, experiment_dir, runtime, *param_list)
     if save_only_valid:
         command += " -Djqf.ei.SAVE_ONLY_VALID=true"
@@ -70,6 +75,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     save_only_valid = False
+    num_params = 3
     class_name, method_name = "", "testWithIterativeGenerator"
     if args.target == "closure":
         class_name = "edu.berkeley.cs.jqf.examples.closure.CompilerTest"
@@ -77,12 +83,14 @@ if __name__ == "__main__":
         class_name = "edu.berkeley.cs.jqf.examples.rhino.CompilerTest"
     elif args.target == "ant":
         class_name = "edu.berkeley.cs.jqf.examples.ant.ProjectBuilderTest"
+        num_params = 2
     elif args.target == "maven":
         class_name = "edu.berkeley.cs.jqf.examples.maven.ModelReaderTest"
+        num_params = 2
 
     assert class_name != "", "Target must be one of 'analysis_valid', 'analysis_err', 'interpreter'"
 
-    graph, depth_map = create_graph(args.max_bound)
+    graph, depth_map = create_graph(args.max_bound, num_params)
     for i in range(len(depth_map)):
         params = depth_map[i]
         print(params)
