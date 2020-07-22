@@ -753,7 +753,7 @@ public class ZestGuidance implements Guidance {
         }
 
         // Save input unconditionally if such a setting is enabled
-        if (LOG_ALL_INPUTS) {
+        if (LOG_ALL_INPUTS && (currentInput.valid || SAVE_ONLY_VALID == false)) {
             File logDirectory = new File(allInputsDirectory, result.toString().toLowerCase());
             String saveFileName = String.format("id_%09d", numTrials);
             File saveFile = new File(logDirectory, saveFileName);
