@@ -28,11 +28,7 @@
  */
 package edu.berkeley.cs.jqf.examples.ant;
 
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -98,7 +94,19 @@ public class ProjectBuilderTest {
     @Fuzz
     public void debugWithGenerator(@From(XmlDocumentGenerator.class)
                                        @Dictionary("dictionaries/ant-project.dict") Document dom) {
-        System.out.println(XMLDocumentUtils.documentToString(dom));
+        String xml = XMLDocumentUtils.documentToString(dom);
+        String fileName = System.getProperty("xmlCorpusOut");
+        try {
+
+            // Open given file in append mode.
+            BufferedWriter out = new BufferedWriter(
+                    new FileWriter(fileName + ".txt", true));
+            out.write(xml + "\n------------------------------\n");
+            out.close();
+        }
+        catch (IOException e) {
+            System.out.println("exception occoured" + e);
+        }
         testWithGenerator(dom);
     }
 

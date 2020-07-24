@@ -115,13 +115,13 @@ public class CompilerTest {
     public void testWithIterativeGenerator(@From(JavaScriptIterativeCodeGenerator.class) String code) {
 
         boolean writePrograms = false;
-        String fileName = "333";
+        String fileName = System.getProperty("jsCorpusOut");
         if (writePrograms) {
             try {
 
                 // Open given file in append mode.
                 BufferedWriter out = new BufferedWriter(
-                        new FileWriter(fileName + ".js", true));
+                        new FileWriter(fileName + ".txt", true));
                 out.write(code + "\n------------------------------\n");
                 out.close();
             }
