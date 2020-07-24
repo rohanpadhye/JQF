@@ -115,7 +115,29 @@ public class FuzzStatement extends Statement {
             if (repro.isEmpty()) {
                 guidance = new NoGuidance(GuidedFuzzing.DEFAULT_MAX_TRIALS, System.err);
             } else {
-                File inputFile = new File(repro);
+                String reproPath;
+                // Check if repro path is variable (e.g. `${foo}`)
+                if (repro.matches("\\$\\{[a-zA-Z.\\d_$]*\\}")) {
+                    // Get a system property with that name (e.g. `foo`)
+                    String key = repro.substring(2, repro.length()-1);
+                    String val = System.getProperty(key);
+
+                    // Check if such a property is set
+                    if (val == null) {
+                        throw new IllegalArgumentException(String.format("Test method has " +
+                                "@Fuzz annotation with repro=%s, but such a system " +
+                                "property is not set. Use `-D%s=<path>` when running.",
+                                repro, key));
+                    }
+
+                    reproPath = val;
+                } else {
+                    // If it is not a variable, then treat it literally
+                    reproPath = repro;
+                }
+
+                // Create a ReproGuidance with the given path
+                File inputFile = new File(reproPath);
                 guidance = new ReproGuidance(inputFile, null);
             }
         }
