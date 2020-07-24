@@ -91,10 +91,11 @@ public class ProjectBuilderTest {
         testWithInputStream(XMLDocumentUtils.documentToInputStream(dom));
     }
 
-    @Fuzz
+    @Fuzz(repro="${xmlCorpusIn}")
     public void debugWithGenerator(@From(XmlDocumentGenerator.class)
                                        @Dictionary("/home/ubuntu/jqf/examples/src/test/resources/dictionaries/ant-project.dict") Document dom) {
         String xml = XMLDocumentUtils.documentToString(dom);
+        System.out.println(xml);
         String fileName = System.getProperty("xmlCorpusOut");
         try {
 
