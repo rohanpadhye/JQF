@@ -81,19 +81,19 @@ public class ProjectBuilderTest {
 
     @Fuzz
     public void testWithGenerator(@From(XmlDocumentGenerator.class)
-                                      @Dictionary("/home/vasu/Work/jqf/examples/src/test/resources/dictionaries/maven-model.dict") Document dom) {
+                                      @Dictionary("/home/ubuntu/jqf/examples/src/test/resources/dictionaries/ant-project.dict") Document dom) {
         testWithInputStream(XMLDocumentUtils.documentToInputStream(dom));
     }
 
     @Fuzz
     public void testWithIterativeGenerator(@From(XmlDocumentIterativeGenerator.class)
-                                  @Dictionary("/home/vasu/Work/jqf/examples/src/test/resources/dictionaries/maven-model.dict") Document dom) {
+                                  @Dictionary("/home/ubuntu/jqf/examples/src/test/resources/dictionaries/ant-project.dict") Document dom) {
         testWithInputStream(XMLDocumentUtils.documentToInputStream(dom));
     }
 
     @Fuzz
     public void debugWithGenerator(@From(XmlDocumentGenerator.class)
-                                       @Dictionary("dictionaries/ant-project.dict") Document dom) {
+                                       @Dictionary("/home/ubuntu/jqf/examples/src/test/resources/dictionaries/ant-project.dict") Document dom) {
         String xml = XMLDocumentUtils.documentToString(dom);
         String fileName = System.getProperty("xmlCorpusOut");
         try {
