@@ -28,13 +28,14 @@ while getopts ":c:ivr" opt; do
       results=1
       ;;
     v)
+      verbose=1
       export JVM_OPTS="$JVM_OPTS -Djqf.logCoverage=true -Djanala.verbose=true"
       ;;
   esac
 done
 shift $((OPTIND-1))
 
-if [ -n "$instrument" -o -n "$results" ]; then
+if [ -n "$verbose" -o -n "$results" ]; then
   export JVM_OPTS="-Djqf.repro.traceDir=. $JVM_OPTS"
 fi
 
