@@ -7,26 +7,29 @@ from shutil import copy2
 
 MVN_COMMAND = "mvn jqf:fuzz -Dclass={} -Dmethod={} -Dtarget={} -Dout={} -Dtime={} -DmaxIdentifiers={} -DmaxItems={} -DmaxDepth={} -Djqf.ei.DISABLE_SAVE_NEW_COUNTS=true"
 
+def create_graph(bound, num_params):
+    graph = defaultdict(list)
+    depth_map = defaultdict(list)
+    visited = set()
+    root = [1] * num_params + [0]
+    add_parent(root, graph, bound, visited, 0, depth_map)
+    return graph, depth_map
+
 def add_parent(parent, graph, bound, visited, depth, depth_map):
     if tuple(parent) in visited:
         return
+    num_params = len(parent)
     for i in range(len(parent)):
         child = parent[:]
         if child[i] == bound:
+            continue
+        if i == num_params - 1 and child[i] == 1:
             continue
         child[i] += 1
         graph[tuple(child)].append(parent)
         add_parent(child, graph, bound, visited, depth + 1, depth_map)
     depth_map[depth].append(parent)
     visited.add(tuple(parent))
-
-def create_graph(bound, num_params):
-    graph = defaultdict(list)
-    depth_map = defaultdict(list)
-    visited = set()
-    root = [1] * num_params
-    add_parent(root, graph, bound, visited, 0, depth_map)
-    return graph, depth_map
 
 def join_seed_dirs(target_dir, seed_dirs):
     seed_dir_names = [''.join([str(p) for p in d]) for d in seed_dirs]
@@ -49,14 +52,11 @@ def join_seed_dirs(target_dir, seed_dirs):
 
 
 def run_experiment(class_name, method_name, param_list, runtime, target_dir, seed_dirs, save_only_valid):
-    if len(param_list) == 2:
-        experiment_dir = "{}{}".format(*param_list)
-        # Dummy for identifier param
+    param_dir = "".join(str(d) for d in param_list)
+    if len(param_list) == 3:
         param_list = [0] + param_list
-    else:
-        experiment_dir = "{}{}{}".format(*param_list)
-    command = MVN_COMMAND.format(class_name, method_name, target_dir, experiment_dir, runtime, *param_list)
-    if save_only_valid:
+    command = MVN_COMMAND.format(class_name, method_name, target_dir, param_dir, runtime, *param_list)
+    if save_only_valid or (param_list[-1] == 0):
         command += " -Djqf.ei.SAVE_ONLY_VALID=true"
     if len(seed_dirs) > 0:
         full_seed_dir = join_seed_dirs(target_dir, seed_dirs)
