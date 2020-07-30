@@ -59,7 +59,11 @@ public class ArbitraryLengthStringGenerator extends Generator<String> {
         byte[] bytes = new byte[maxSize];
         try {
             int len = in.read(bytes);
-            return new String(bytes, 0, len);
+            if (len <= 0) {
+                return "";
+            } else {
+                return new String(bytes, 0, len);
+            }
         } catch (IOException e) {
             throw new RuntimeException("Should not get I/O exception when using generated InputStream", e);
         }
