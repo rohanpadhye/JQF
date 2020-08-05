@@ -148,12 +148,28 @@ public class ReproGoal extends AbstractMojo {
      * contains just one arg of type InputStream, the input file itself
      * does not directly correspond to the args sent to the test method.</p>
      *
-     * <p>If this file is set, then the args decoded from a repro'd input
+     * <p>If this flag is set, then the args decoded from a repro'd input
      * file are first printed to standard output before invoking the test
      * method.</p>
      */
     @Parameter(property="printArgs")
     private boolean printArgs;
+
+    /**
+     * Whether to dump the args to each test case to file(s).
+     *
+     * <p>The input file being repro'd is usually a sequence of bytes
+     * that is decoded by the junit-quickcheck generators corresponding
+     * to the parameters declared in the test method. Unless the test method
+     * contains just one arg of type InputStream, the input file itself
+     * does not directly correspond to the args sent to the test method.</p>
+     *
+     * <p>If provided, then the args decoded from a repro'd input
+     * file are dumped to corresponding files
+     * in this directory before invoking the test method.</p>
+     */
+    @Parameter(property="dumpArgsDir")
+    private String dumpArgsDir;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -191,11 +207,15 @@ public class ReproGoal extends AbstractMojo {
             System.setProperty("jqf.repro.printArgs", "true");
         }
 
+        // If args should be dumped, set system property
+        if (dumpArgsDir != null) {
+            System.setProperty("jqf.repro.dumpArgsDir", dumpArgsDir);
+        }
+
         File inputFile = new File(input);
         if (!inputFile.exists() || !inputFile.canRead()) {
             throw new MojoExecutionException("Cannot find or open file " + input);
         }
-
 
         try {
             guidance = new ReproGuidance(inputFile, null);
@@ -206,6 +226,8 @@ public class ReproGoal extends AbstractMojo {
             throw new MojoExecutionException("Bad request", e);
         } catch (FileNotFoundException e) {
             throw new MojoExecutionException("File not found", e);
+        } catch (IOException e) {
+            throw new MojoExecutionException("I/O error", e);
         } catch (RuntimeException e) {
             throw new MojoExecutionException("Internal error", e);
         }
