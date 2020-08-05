@@ -51,7 +51,8 @@ def join_seed_dirs(target_dir, seed_dirs):
     return full_new_seed_dir
 
 
-def run_experiment(class_name, method_name, param_list, runtime, target_dir, seed_dirs, save_only_valid):
+def run_experiment(class_name, method_name, param_list, runtime, target_dir, seed_dirs, experiment_num, save_only_valid):
+    target_dir = os.path.join(target_dir, "exp%d" % experiment_num)
     param_dir = "".join(str(d) for d in param_list)
     if len(param_list) == 3:
         param_list = [0] + param_list
@@ -91,21 +92,23 @@ if __name__ == "__main__":
     assert class_name != "", "Target must be one of 'analysis_valid', 'analysis_err', 'interpreter'"
 
     graph, depth_map = create_graph(args.max_bound, num_params)
-    for i in range(len(depth_map)):
-        params = depth_map[i]
-        print(params)
-        procs = []
-        for param_list in params:
-            p = Process(target=run_experiment, args=(class_name,
-                                                     method_name,
-                                                     param_list,
-                                                     args.runtime,
-                                                     args.target_dir,
-                                                     graph[tuple(param_list)],
-                                                     save_only_valid))
-            p.start()
-            procs.append(p)
-        for p in procs:
-            p.join()
+    for n in range(args.num_experiments):
+        for i in range(len(depth_map)):
+            params = depth_map[i]
+            print(params)
+            procs = []
+            for param_list in params:
+                p = Process(target=run_experiment, args=(class_name,
+                                                        method_name,
+                                                        param_list,
+                                                        args.runtime,
+                                                        args.target_dir,
+                                                        graph[tuple(param_list)],
+                                                        n,
+                                                        save_only_valid))
+                p.start()
+                procs.append(p)
+            for p in procs:
+                p.join()
 
 
