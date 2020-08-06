@@ -33,12 +33,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.pholser.junit.quickcheck.From;
+import edu.berkeley.cs.jqf.examples.common.ArbitraryLengthStringGenerator;
 import edu.berkeley.cs.jqf.examples.xml.XMLDocumentUtils;
 import edu.berkeley.cs.jqf.examples.xml.XmlDocumentGenerator;
 import edu.berkeley.cs.jqf.examples.common.Dictionary;
 import edu.berkeley.cs.jqf.examples.xml.XmlDocumentIterativeGenerator;
+import edu.berkeley.cs.jqf.examples.xml.XmlStringIterativeGenerator;
 import edu.berkeley.cs.jqf.fuzz.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.JQF;
+import org.apache.commons.io.IOUtils;
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.helper.ProjectHelperImpl;
@@ -86,9 +89,9 @@ public class ProjectBuilderTest {
     }
 
     @Fuzz
-    public void testWithIterativeGenerator(@From(XmlDocumentIterativeGenerator.class)
-                                  @Dictionary("/home/ubuntu/jqf/examples/src/test/resources/dictionaries/ant-project.dict") Document dom) {
-        testWithInputStream(XMLDocumentUtils.documentToInputStream(dom));
+    public void testWithIterativeGenerator(@From(XmlStringIterativeGenerator.class)
+                                  @Dictionary("/home/vasu/Work/jqf/examples/src/test/resources/dictionaries/ant-project.dict") String dom) {
+        testWithInputStream(IOUtils.toInputStream(dom));
     }
 
     @Fuzz(repro="${xmlCorpusIn}")
