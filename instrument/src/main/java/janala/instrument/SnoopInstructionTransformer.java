@@ -22,7 +22,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
   private static final boolean verbose = Config.instance.verbose;
   
   private static String[] banned = {"[", "java/lang", "janala", "org/objectweb/asm", "sun", "jdk", "java/util/function"};
-  private static String[] excludes = Config.instance.excludeInst;;
+  private static String[] excludes = Config.instance.excludeInst;
   private static String[] includes = Config.instance.includeInst;
   
   public static void premain(String agentArgs, Instrumentation inst) throws ClassNotFoundException {
@@ -62,7 +62,7 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
     Class.forName("java.util.jar.JarFile");
   }
 
-  /** packages that should be exluded from the instrumentation */
+  /** packages that should be excluded from the instrumentation */
   private static boolean shouldExclude(String cname) {
     for (String e : banned) {
       if (cname.startsWith(e)) {
@@ -89,6 +89,10 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
       ProtectionDomain d, byte[] cbuf)
     throws IllegalClassFormatException {
 
+    if(cname == null) {
+      // Do not instrument lambdas
+      return null;
+    }
     boolean toInstrument = !shouldExclude(cname);
 
     if (toInstrument) {

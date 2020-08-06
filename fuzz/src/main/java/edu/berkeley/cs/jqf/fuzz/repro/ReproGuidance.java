@@ -37,6 +37,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -80,6 +81,7 @@ public class ReproGuidance implements Guidance {
     private Set<String> allBranchesCovered;
     private boolean ignoreInvalidCoverage;
     private boolean printArgs;
+    private String dumpArgsDir;
 
     HashMap<Integer, String> branchDescCache = new HashMap<>();
 
@@ -94,7 +96,7 @@ public class ReproGuidance implements Guidance {
      *                 be the destination for log files containing event
      *                 traces
      */
-    public ReproGuidance(File[] inputFiles, File traceDir) {
+    public ReproGuidance(File[] inputFiles, File traceDir) throws IOException {
         this.inputFiles = inputFiles;
         this.traceDir = traceDir;
         if (Boolean.getBoolean("jqf.repro.logUniqueBranches")) {
@@ -103,6 +105,10 @@ public class ReproGuidance implements Guidance {
             ignoreInvalidCoverage = Boolean.getBoolean("jqf.repro.ignoreInvalidCoverage");
         }
         printArgs = Boolean.getBoolean("jqf.repro.printArgs");
+        dumpArgsDir = System.getProperty("jqf.repro.dumpArgsDir");
+        if (dumpArgsDir != null) {
+            IOUtils.createDirectory(new File(dumpArgsDir));
+        }
     }
 
     /**
@@ -117,7 +123,7 @@ public class ReproGuidance implements Guidance {
      *                 traces
      * @throws FileNotFoundException if `inputFile` is not a valid file or directory
      */
-    public ReproGuidance(File inputFile, File traceDir) throws FileNotFoundException {
+    public ReproGuidance(File inputFile, File traceDir) throws IOException {
         this(IOUtils.resolveInputFileOrDirectory(inputFile), traceDir);
     }
 
@@ -159,7 +165,32 @@ public class ReproGuidance implements Guidance {
                 System.out.printf("%s[%d]: %s\n", inputFileName, i, String.valueOf(args[i]));
             }
         }
+
+        // Save generated args to file (e.g. id_000000.1 for second arg of id_000000)
+        if (dumpArgsDir != null) {
+            for (int i = 0; i < args.length; i++) {
+                String dumpFileName = String.format("%s.%d",
+                        getCurrentInputFile().getName(), i);
+                File dumpFile = new File(dumpArgsDir, dumpFileName);
+                Object arg = args[i];
+                GuidanceException.wrap(() -> writeObjectToFile(dumpFile, arg));
+            }
+        }
     }
+
+    /**
+     * Writes an object to a file
+     *
+     * @param file  the file to write to
+     * @param obj   the object to serialize
+     * @throws IOException if the object cannot be written to file
+     */
+    private void writeObjectToFile(File file, Object obj) throws IOException {
+        try (PrintWriter out = new PrintWriter(file)) {
+            out.print(obj);
+        }
+    }
+
 
     /**
      * Returns the input file which is currently being repro'd.
