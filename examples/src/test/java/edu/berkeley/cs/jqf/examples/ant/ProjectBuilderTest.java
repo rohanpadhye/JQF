@@ -90,7 +90,7 @@ public class ProjectBuilderTest {
 
     @Fuzz
     public void testWithIterativeGenerator(@From(XmlStringIterativeGenerator.class)
-                                  @Dictionary("/home/vasu/Work/jqf/examples/src/test/resources/dictionaries/ant-project.dict") String dom) {
+                                  @Dictionary("/home/ubuntu/jqf/examples/src/test/resources/dictionaries/ant-project.dict") String dom) {
         testWithInputStream(IOUtils.toInputStream(dom));
     }
 
