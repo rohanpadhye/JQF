@@ -89,6 +89,10 @@ public class JavaScriptIterativeCodeGenerator extends Generator<String> {
             "in", "instanceof"
     };
 
+    private static final String[] IDENTIFIERS = {
+            "a", "b", "c", "d", "e"
+    };
+
     @Override
     public String generate(SourceOfRandomness random, GenerationStatus status) {
         this.status = status;
@@ -265,7 +269,7 @@ public class JavaScriptIterativeCodeGenerator extends Generator<String> {
         this.identifiers = new ArrayList<>();
         String ident;
         for (int i = 0; i < numIdentifiers; i++) {
-            ident = "a" + i;
+            ident = IDENTIFIERS[i];
             identifiers.add(ident);
         }
     }
