@@ -82,10 +82,10 @@ public class ReproServerGuidance extends AFLGuidance {
         try (PrintWriter out = new PrintWriter(coverageFile)) {
             for (int i = 0; i < traceBits.length; i++) {
                 if (traceBits[i] != 0) {
-                    out.println(i);
+                    out.println(String.format("%05d", i));
                 }
             }
-            out.println(traceBits.length); // EOF marker for tools to realize that repro is done
+            out.println(String.format("%05d", traceBits.length)); // EOF marker for tools to realize that repro is done
         } catch (IOException e) {
             throw new GuidanceException(e);
         }
