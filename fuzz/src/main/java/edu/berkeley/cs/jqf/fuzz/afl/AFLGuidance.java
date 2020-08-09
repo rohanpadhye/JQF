@@ -67,7 +67,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 public class AFLGuidance implements Guidance {
 
     /** The file in which AFL will write its input. */
-    protected final File inputFile;
+    protected File inputFile;
 
     /** The communication channel from AFL proxy to us. */
     protected final InputStream proxyInput;
