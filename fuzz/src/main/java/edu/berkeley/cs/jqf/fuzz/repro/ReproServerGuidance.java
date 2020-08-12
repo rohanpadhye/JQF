@@ -28,68 +28,94 @@
  */
 package edu.berkeley.cs.jqf.fuzz.repro;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.util.function.Consumer;
 
-import edu.berkeley.cs.jqf.fuzz.afl.AFLGuidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
+import edu.berkeley.cs.jqf.fuzz.util.Coverage;
+import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 
 /**
  * @author Rohan Padhye
  */
-public class ReproServerGuidance extends AFLGuidance {
+public class ReproServerGuidance implements Guidance {
 
     protected File coverageFile;
-    protected BufferedReader inputFileReader;
+    protected BufferedReader inputFileNameReader;
+    protected File inputFile;
+    protected InputStream inputFileStream;
+    protected Coverage coverage = new Coverage();
 
 
     public ReproServerGuidance(String inPipe, String coverageFile) throws IOException {
-        super("/dev/null", inPipe, "/dev/null");
         this.coverageFile = new File(coverageFile);
-        this.inputFileReader = new BufferedReader(new InputStreamReader(this.proxyInput));
+        this.inputFileNameReader = new BufferedReader(new InputStreamReader(new FileInputStream(inPipe)));
     }
 
     @Override
     public boolean hasInput() {
-        if (everything_ok) {
-            try {
-                String inputFileName = inputFileReader.readLine();
-                if (inputFileName == null) {
-                    throw new IOException("End of input stream");
-                }
-                this.inputFile = new File(inputFileName);
-
-                // Reset trace-bits
-                traceBits = new byte[COVERAGE_MAP_SIZE];
-
-            } catch (IOException e) {
-                everything_ok = false;
+        // Read an input file to repro from the command pipe
+        try {
+            String inputFileName = inputFileNameReader.readLine();
+            if (inputFileName == null) {
+                throw new IOException("End of input stream");
             }
+            this.inputFile = new File(inputFileName);
+
+        } catch (IOException e) {
+            return false;
         }
 
         // Continue unless stopped (which would cause I/O errors)
-        return everything_ok;
+        return true;
     }
 
     @Override
-    public void handleResult(Result result, Throwable error){
-        super.handleResult(result, error);
+    public InputStream getInput() throws IllegalStateException, GuidanceException {
+        // Clear coverage stats for this run
+        coverage.clear();
 
-        try (PrintWriter out = new PrintWriter(coverageFile)) {
-            for (int i = 0; i < traceBits.length; i++) {
-                if (traceBits[i] != 0) {
-                    out.println(String.format("%05d", i));
-                }
-            }
-            out.println(String.format("%05d", traceBits.length)); // EOF marker for tools to realize that repro is done
+        // Read input bytes from the specified file
+        try {
+            return (this.inputFileStream = new BufferedInputStream(new FileInputStream(this.inputFile)));
         } catch (IOException e) {
             throw new GuidanceException(e);
         }
     }
 
+    @Override
+    public void handleResult(Result result, Throwable error){
+        // Close the open input file
+        try {
+            if (inputFileStream != null) {
+                inputFileStream.close();
+            }
+        } catch (IOException e) {
+            throw new GuidanceException(e);
+        }
 
+        // Print coverage
+        try (PrintWriter out = new PrintWriter(coverageFile)) {
+            coverage.getCovered().stream().sorted().forEach((i) ->
+                out.println(String.format("%05d", i))
+            );
+            out.println(String.format("%05d", coverage.size())); // EOF marker for tools to realize that repro is done
+        } catch (IOException e) {
+            throw new GuidanceException(e);
+        }
+    }
+
+    @Override
+    public Consumer<TraceEvent> generateCallBack(Thread thread) {
+        return coverage::handleEvent;
+    }
 }
