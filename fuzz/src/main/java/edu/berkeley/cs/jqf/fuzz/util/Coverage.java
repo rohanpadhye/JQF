@@ -111,7 +111,7 @@ public class Coverage implements TraceEventVisitor {
      *
      * @return a collection of keys that are covered
      */
-    public Collection<?> getCovered() {
+    public Collection<Integer> getCovered() {
         return counter.getNonZeroIndices();
     }
 
