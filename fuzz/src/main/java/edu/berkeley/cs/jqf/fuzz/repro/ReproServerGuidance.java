@@ -108,7 +108,7 @@ public class ReproServerGuidance implements Guidance {
             coverage.getCovered().stream().sorted().forEach((i) ->
                 out.println(String.format("%05d", i))
             );
-            out.println(String.format("%05d", coverage.size())); // EOF marker for tools to realize that repro is done
+            out.println(result.toString()); // EOF marker for tools to realize that repro is done
         } catch (IOException e) {
             throw new GuidanceException(e);
         }
