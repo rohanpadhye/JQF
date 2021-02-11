@@ -1,8 +1,10 @@
 # JQF + Zest: Semantic Fuzzing for Java
 
-[ISSTA'19 paper]: https://cs.berkeley.edu/~rohanpadhye/files/zest-issta19.pdf
-[ISSTA'18 paper]: https://people.eecs.berkeley.edu/~rohanpadhye/files/perffuzz-issta18.pdf
-[ISSTA'19 tool paper]: https://people.eecs.berkeley.edu/~rohanpadhye/files/jqf-issta19.pdf
+[ISSTA'19 paper]: https://rohan.padhye.org/files/zest-issta19.pdf
+[ISSTA'18 paper]: https://rohan.padhye.org/files/perffuzz-issta18.pdf
+[ISSTA'19 tool paper]: https://rohan.padhye.org/files/jqf-issta19.pdf
+[ICSE'20 paper]: https://rohan.padhye.org/files/rlcheck-icse20.pdf
+[ASE'20 paper]: https://rohan.padhye.org/files/bigfuzz-ase20.pdf
 
 JQF is a feedback-directed fuzz testing platform for Java, which uses the abstraction of *property-based testing*. JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck): a tool for generating random arguments for parametric [Junit](http://junit.org) test methods. JQF enables better input generation using **coverage-guided** fuzzing algorithms such as **Zest**.
 
@@ -12,8 +14,8 @@ JQF is a modular framework, supporting the following pluggable fuzzing front-end
 * Binary fuzzing with [AFL](http://lcamtuf.coredump.cx/afl) ([tutorial](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-AFL))
 * Semantic fuzzing with **[Zest](http://arxiv.org/abs/1812.00078)** [[ISSTA'19 paper]] ([tutorial 1](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest)) ([tutorial 2](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler))
 * Complexity fuzzing with **[PerfFuzz](https://github.com/carolemieux/perffuzz)** [[ISSTA'18 paper]]
-* Reinforcement learning with **[RLCheck](https://github.com/sameerreddy13/rlcheck)** (based on a fork of JQF) [[ICSE'20 Preprint]](https://www.carolemieux.com/rlcheck_preprint.pdf)
-* Apache Spark fuzzing with **[BigFuzz](https://github.com/qianzhanghk/BigFuzz)** [[ASE'20](https://conf.researchr.org/details/ase-2020/ase-2020-papers/86/BigFuzz-Efficient-Fuzz-Testing-for-Data-Analytics-using-Framework-Abstraction)]
+* Reinforcement learning with **[RLCheck](https://github.com/sameerreddy13/rlcheck)** (based on a fork of JQF) [[ICSE'20 paper]]
+* Apache Spark fuzzing with **[BigFuzz](https://github.com/qianzhanghk/BigFuzz)** [[ASE'20 paper]]
 
 JQF has been successful in [discovering a number of bugs in widely used open-source software](#trophies) such as OpenJDK, Apache Maven and the Google Closure Compiler.
 
@@ -33,15 +35,15 @@ If you are using the JQF framework to build new fuzzers, we request you to cite 
 
 ## Overview
 
-### What is *structured fuzzing*?
+### What is *structure-aware fuzzing*?
 
 Binary fuzzing tools like [AFL](http://lcamtuf.coredump.cx/afl) and [libFuzzer](https://llvm.org/docs/LibFuzzer.html) treat the input as a sequence of bytes. If the test program expects highly structured inputs, such as XML documents or JavaScript programs, then mutating byte-arrays often results in syntactically invalid inputs; the core of the test program remains untested.
 
-**Structured fuzzing** tools leverage domain-specific knowledge of the input format to produce inputs that are *syntactically valid* by construction. There are some nice articles on structure-aware fuzzing of [C++](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md) and [Rust](https://rust-fuzz.github.io/book/cargo-fuzz/structure-aware-fuzzing.html) programs using libFuzzer.
+**Structure-aware fuzzing** tools leverage domain-specific knowledge of the input format to produce inputs that are *syntactically valid* by construction. There are some nice articles on structure-aware fuzzing of [C++](https://github.com/google/fuzzing/blob/master/docs/structure-aware-fuzzing.md) and [Rust](https://rust-fuzz.github.io/book/cargo-fuzz/structure-aware-fuzzing.html) programs using libFuzzer.
 
 ### What is *generator-based* fuzzing (QuickCheck)?
 
-Structured fuzzing tools need a way to understand the input structure. Some other tools use declarative specifications of the input format such as [context-free grammars](https://embed.cs.utah.edu/csmith/) or [protocol buffers](https://github.com/google/libprotobuf-mutator). **JQF** uses QuickCheck's imperative approach for specifying the space of inputs: arbitrary ***generator*** programs whose job is to generate a single random input. 
+Structure-aware fuzzing tools need a way to understand the input structure. Some other tools use declarative specifications of the input format such as [context-free grammars](https://embed.cs.utah.edu/csmith/) or [protocol buffers](https://github.com/google/libprotobuf-mutator). **JQF** uses QuickCheck's imperative approach for specifying the space of inputs: arbitrary ***generator*** programs whose job is to generate a single random input. 
 
 A `Generator<T>` provides a method for producing random instances of type `T`. For example, a generator for type `Calendar` returns randomly-generated `Calendar` objects. One can easily write generators for more complex types, such as [XML documents](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/xml/XmlDocumentGenerator.java), [JavaScript programs](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/js/JavaScriptCodeGenerator.java), [JVM class files](https://github.com/rohanpadhye/jqf/blob/master/examples/src/main/java/edu/berkeley/cs/jqf/examples/bcel/JavaClassGenerator.java), SQL queries, HTTP requests, and [many more](https://github.com/pholser/junit-quickcheck/tree/master/examples/src/test/java/com/pholser/junit/quickcheck/examples) -- this is **generator-based fuzzing**. However, simply sampling random inputs of type `T` is not usually very effective, since the generator does not know if the inputs that it produces are any good.
 
@@ -87,10 +89,8 @@ In the above example, the generators for `Map` and `String` were synthesized aut
 * [Fuzzing with ZestCLI](https://gitlab.com/gitlab-org/security-products/demos/coverage-fuzzing/java-fuzzing-example): A tutorial of fuzzing a Java program with ZestCLI 
 
 ### Continuous Fuzzing
-Just like unit-tests fuzzing is advised to be run continuously with your CI as your code grows and developed.
 
-Currently there is 1 service that offer continuous fuzzing as a service based on JQF/Zest:
-* [GitLab](https://docs.gitlab.com/ee/user/application_security/coverage_fuzzing/#supported-fuzzing-engines-and-languages) ([tutorial](https://gitlab.com/gitlab-org/security-products/demos/coverage-fuzzing/java-fuzzing-example))
+[GitLab](https://docs.gitlab.com/13.6/ee/user/application_security/coverage_fuzzing/index.html) supports running JQF in CI/CD ([tutorial](https://gitlab.com/gitlab-org/security-products/demos/coverage-fuzzing/java-fuzzing-example)).
 
 ### Additional Details
 
@@ -100,13 +100,18 @@ The [JQF wiki](https://github.com/rohanpadhye/jqf/wiki) contains lots more docum
 
 JQF also publishes its [API docs](https://rohanpadhye.github.io/jqf/apidocs).
 
-## Contact the developers
+### Applications based on JQF
 
-We want your feedback! (haha, get it? get it?) 
+* **[Bonsai Fuzzing](https://github.com/vasumv/bonsai-fuzzing)** [[ICSE'21](https://rohan.padhye.org/files/bonsai-icse21.pdf)]
+* **[BigFuzz](https://github.com/qianzhanghk/BigFuzz)** [[ASE'20 paper]]
+* **[MoFuzz](https://github.com/hub-se/MoFuzz)** [[ASE'20 paper](https://doi.org/10.1145/3324884.3416668)]
+* **[RLCheck](https://github.com/sameerreddy13/rlcheck)** [[ICSE'20 paper]]
+
+## Contact the developers
 
 If you've found a bug in JQF or are having trouble getting JQF to work, please open an issue on the [issue tracker](https://github.com/rohanpadhye/jqf/issues). You can also use this platform to post feature requests.
 
-If it's some sort of fuzzing emergency you can always send an email to the main developer: [Rohan Padhye](https://people.eecs.berkeley.edu/~rohanpadhye).
+If it's some sort of fuzzing emergency you can always send an email to the main developer: [Rohan Padhye](https://rohan.padhye.org).
 
 ## Trophies
 
