@@ -6,7 +6,7 @@
 [ICSE'20 paper]: https://rohan.padhye.org/files/rlcheck-icse20.pdf
 [ASE'20 paper]: https://rohan.padhye.org/files/bigfuzz-ase20.pdf
 
-JQF is a feedback-directed fuzz testing platform for Java, which uses the abstraction of *property-based testing*. JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck): a tool for generating random arguments for parametric [Junit](http://junit.org) test methods. JQF enables better input generation using **coverage-guided** fuzzing algorithms such as **Zest**.
+JQF is a feedback-directed fuzz testing platform for Java (think: AFL/LibFuzzer but for JVM bytecode). JQF uses the abstraction of *property-based testing*, which makes it nice to write fuzz drivers as parameteric JUnit test methods. JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck). JQF enables running junit-quickcheck style parameterized unit tests with the power of **coverage-guided** fuzzing algorithms such as **Zest**.
 
 [Zest][ISSTA'19 paper] is an algorithm that biases coverage-guided fuzzing towards producing *semantically valid* inputs; that is, inputs that satisfy structural and semantic properties while maximizing code coverage. Zest's goal is to find deep semantic bugs that cannot be found by conventional fuzzing tools, which mostly stress error-handling logic only. By default, JQF runs Zest via the simple command: `mvn jqf:fuzz`.
 
