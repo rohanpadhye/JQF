@@ -100,7 +100,7 @@ The [JQF wiki](https://github.com/rohanpadhye/jqf/wiki) contains lots more docum
 
 JQF also publishes its [API docs](https://rohanpadhye.github.io/jqf/apidocs).
 
-### Applications based on JQF
+## Applications based on JQF
 
 * **[Bonsai Fuzzing](https://github.com/vasumv/bonsai-fuzzing)** [[ICSE'21](https://rohan.padhye.org/files/bonsai-icse21.pdf)]
 * **[BigFuzz](https://github.com/qianzhanghk/BigFuzz)** [[ASE'20 paper]]
