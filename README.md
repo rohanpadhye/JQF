@@ -141,7 +141,7 @@ Please send a PR for README.md with a link to the bug/cve you found.
 - [COLLECTIONS-714](https://issues.apache.org/jira/browse/COLLECTIONS-714): PatriciaTrie ignores trailing null characters in keys
 - [COMPRESS-424](https://issues.apache.org/jira/browse/COMPRESS-424): BZip2CompressorInputStream throws ArrayIndexOutOfBoundsException(s) when decompressing malformed input
 - [LANG-1385](https://issues.apache.org/jira/browse/LANG-1385): StringIndexOutOfBoundsException in NumberUtils.createNumber
-- [**CVE-2018-11771**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-11771): Infinite Loop in Commons-Compress ZipArchiveInputStream ([found by Tobias Ospelt](https://modzero.ch/modlog/archives/2018/09/20/java_bugs_with_and_without_fuzzing/index.html))
+- [**CVE-2018-11771**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-11771): Infinite Loop in Commons-Compress ZipArchiveInputStream ([found by Tobias Ospelt](https://www.floyd.ch/?p=1090))
 - [MNG-6375](https://issues.apache.org/jira/browse/MNG-6375) / [plexus-utils#34](https://github.com/codehaus-plexus/plexus-utils/issues/34): NullPointerException when pom.xml has incomplete XML tag
 - [MNG-6374](https://issues.apache.org/jira/browse/MNG-6374) / [plexus-utils#35](https://github.com/codehaus-plexus/plexus-utils/issues/35): ModelBuilder hangs with malformed pom.xml
 - [MNG-6577](https://issues.apache.org/jira/browse/MNG-6577) / [plexus-utils#57](https://github.com/codehaus-plexus/plexus-utils/issues/57): Uncaught IllegalArgumentException when parsing unicode entity ref
@@ -154,9 +154,10 @@ Please send a PR for README.md with a link to the bug/cve you found.
 - [BCEL-311](https://issues.apache.org/jira/browse/BCEL-311): ClassCastException in Verifier Pass 2
 - [BCEL-312](https://issues.apache.org/jira/browse/BCEL-312): AssertionViolation: INTERNAL ERROR Please adapt StringRepresentation to deal with ConstantPackage in Verifier Pass 2
 - [BCEL-313](https://issues.apache.org/jira/browse/BCEL-313): ClassFormatException: Invalid signature: Ljava/lang/String)V in Verifier Pass 3A
-- [**CVE-2018-8036**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-8036): Infinite Loop leading to OOM in PDFBox's AFMParser ([found by Tobias Ospelt](https://modzero.ch/modlog/archives/2018/09/20/java_bugs_with_and_without_fuzzing/index.html))
+- [**CVE-2018-8036**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-8036): Infinite Loop leading to OOM in PDFBox's AFMParser ([found by Tobias Ospelt](https://www.floyd.ch/?p=1090))
 - [PDFBOX-4333](https://issues.apache.org/jira/browse/PDFBOX-4333): ClassCastException when loading PDF (found by Robin Schimpf)
 - [PDFBOX-4338](https://issues.apache.org/jira/browse/PDFBOX-4338): ArrayIndexOutOfBoundsException in COSParser (found by Robin Schimpf)
 - [PDFBOX-4339](https://issues.apache.org/jira/browse/PDFBOX-4339): NullPointerException in COSParser (found by Robin Schimpf)
 - [**CVE-2018-8017**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-8017): Infinite Loop in IptcAnpaParser 
-- [**CVE-2018-12418**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-12418): Infinite Loop in junrar ([found by Tobias Ospelt](https://modzero.ch/modlog/archives/2018/09/20/java_bugs_with_and_without_fuzzing/index.html))
+- [**CVE-2018-12418**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2018-12418): Infinite Loop in junrar ([found by Tobias Ospelt](https://www.floyd.ch/?p=1090))
+- [**CVE-2019-17359**](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2019-17359): Attempt to trigger a large allocation leads to OOM in Bouncycastle ASN.1 parser ([found by Tobias Ospelt](https://www.youtube.com/watch?v=RaBGEgQiE-4))
