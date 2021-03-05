@@ -245,7 +245,7 @@ public class FuzzGoal extends AbstractMojo {
         ClassLoader loader;
         ZestGuidance guidance;
         Log log = getLog();
-        PrintStream out = System.out; // TODO: Re-route to logger from super.getLog()
+        PrintStream out = log.isDebugEnabled() ? System.out : null;
         Result result;
 
         // Configure classes to instrument
