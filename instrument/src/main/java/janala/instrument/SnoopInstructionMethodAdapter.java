@@ -676,6 +676,16 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
   }
 
   private void addMethodWithTryCatch(int opcode, String owner, String name, String desc, boolean itf) {
+    // We add a try-catch around the invocation to signal normal  INVOKEMETHOD_END or exceptional
+    // INVOKEMETHOD_EXCEPTION which is then rethrown. Maybe this method has its own try-catch handler,
+    // so we don't know whether execution will stay in this method or not. In most methods, we have inserted
+    // an outer try-catch so that we can intercept exceptions that bubble up with a METHOD_THROW.
+    // However, in <init> methods, this outer try-catch doesn't exist before the call to super() or init().
+    // (see: this.methodBeginLabel and where it is set for <init> methods)
+    // For this special case, we can guarantee that the source code does not have
+    // a catch block around this invocation either, since it would break the verification. In such cases,
+    // we add a METHOD_THROW immediately after INVOKEMETHOD_EXCEPTION so that the tracer correctly pops
+    // off its call stack.
     addBipushInsn(mv, instrumentationState.incAndGetId());
     addBipushInsn(mv, lastLineNumber);
 
@@ -701,6 +711,9 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     mv.visitLabel(handler);
     mv.visitMethodInsn(
      INVOKESTATIC, Config.instance.analysisClass, "INVOKEMETHOD_EXCEPTION", "()V", false);
+    if (isInit && !isSuperInitCalled) { // See above for explanation
+      mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "METHOD_THROW", "()V", false);
+    }
     mv.visitInsn(ATHROW);
 
     mv.visitLabel(end);

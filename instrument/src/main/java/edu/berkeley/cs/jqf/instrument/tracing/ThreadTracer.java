@@ -33,6 +33,7 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.function.Consumer;
 
+import edu.berkeley.cs.jqf.instrument.InstrumentationException;
 import edu.berkeley.cs.jqf.instrument.tracing.events.AllocEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
@@ -238,7 +239,7 @@ public class ThreadTracer {
         @Override
         public void visitINVOKEMETHOD_EXCEPTION(INVOKEMETHOD_EXCEPTION ins) {
             if (this.invokeTarget == null) {
-                throw new RuntimeException("Unexpected INVOKEMETHOD_EXCEPTION");
+                throw new InstrumentationException("Unexpected INVOKEMETHOD_EXCEPTION");
             } else {
                 // Unset the invocation target for the rest of the instruction stream
                 this.invokeTarget = null;
@@ -272,7 +273,7 @@ public class ThreadTracer {
         @Override
         public void visitINVOKEMETHOD_END(INVOKEMETHOD_END ins) {
             if (this.invokeTarget == null) {
-                throw new RuntimeException("Unexpected INVOKEMETHOD_END");
+                throw new InstrumentationException("Unexpected INVOKEMETHOD_END");
             } else {
                 // Unset the invocation target for the rest of the instruction stream
                 this.invokeTarget = null;

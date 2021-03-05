@@ -54,6 +54,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.StreamBackedRandom;
 import edu.berkeley.cs.jqf.fuzz.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
+import edu.berkeley.cs.jqf.instrument.InstrumentationException;
 import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.MultipleFailureException;
@@ -192,6 +193,9 @@ public class FuzzStatement extends Statement {
 
                     // If we reached here, then the trial must be a success
                     result = SUCCESS;
+                } catch(InstrumentationException e) {
+                    // Throw a guidance exception outside to stop fuzzing
+                    throw new GuidanceException(e);
                 } catch (GuidanceException e) {
                     // Throw the guidance exception outside to stop fuzzing
                     throw e;
