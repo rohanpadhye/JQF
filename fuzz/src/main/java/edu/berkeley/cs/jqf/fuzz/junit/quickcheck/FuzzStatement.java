@@ -78,9 +78,10 @@ public class FuzzStatement extends Statement {
     private final GeneratorRepository generatorRepository;
     private final List<Class<?>> expectedExceptions;
     private final List<Throwable> failures = new ArrayList<>();
+    private final Guidance guidance;
 
     public FuzzStatement(FrameworkMethod method, TestClass testClass,
-                         GeneratorRepository generatorRepository) {
+                         GeneratorRepository generatorRepository, Guidance fuzzGuidance) {
         this.method = method;
         this.testClass = testClass;
         this.typeVariables =
@@ -89,7 +90,7 @@ public class FuzzStatement extends Statement {
                         .genericsMap();
         this.generatorRepository = generatorRepository;
         this.expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
-
+        this.guidance = fuzzGuidance;
     }
 
 
@@ -105,43 +106,6 @@ public class FuzzStatement extends Statement {
                 .map(this::createParameterTypeContext)
                 .map(this::produceGenerator)
                 .collect(Collectors.toList());
-
-        // Get the currently registered fuzz guidance
-        Guidance guidance = GuidedFuzzing.getCurrentGuidance();
-
-        // If nothing is set, default to random or repro
-        if (guidance == null) {
-            // Check for @Fuzz(repro=)
-            String repro = method.getAnnotation(Fuzz.class).repro();
-            if (repro.isEmpty()) {
-                guidance = new NoGuidance(GuidedFuzzing.DEFAULT_MAX_TRIALS, System.err);
-            } else {
-                String reproPath;
-                // Check if repro path is variable (e.g. `${foo}`)
-                if (repro.matches("\\$\\{[a-zA-Z.\\d_$]*\\}")) {
-                    // Get a system property with that name (e.g. `foo`)
-                    String key = repro.substring(2, repro.length()-1);
-                    String val = System.getProperty(key);
-
-                    // Check if such a property is set
-                    if (val == null) {
-                        throw new IllegalArgumentException(String.format("Test method has " +
-                                "@Fuzz annotation with repro=%s, but such a system " +
-                                "property is not set. Use `-D%s=<path>` when running.",
-                                repro, key));
-                    }
-
-                    reproPath = val;
-                } else {
-                    // If it is not a variable, then treat it literally
-                    reproPath = repro;
-                }
-
-                // Create a ReproGuidance with the given path
-                File inputFile = new File(reproPath);
-                guidance = new ReproGuidance(inputFile, null);
-            }
-        }
 
         // Keep fuzzing until no more input or I/O error with guidance
         try {
