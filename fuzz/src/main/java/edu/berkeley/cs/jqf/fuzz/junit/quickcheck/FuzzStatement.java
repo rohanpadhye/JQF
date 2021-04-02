@@ -61,6 +61,7 @@ import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
 import ru.vyarus.java.generics.resolver.GenericsResolver;
+import ru.vyarus.java.generics.resolver.context.MethodGenericsContext;
 
 import static edu.berkeley.cs.jqf.fuzz.guidance.Result.*;
 
@@ -74,7 +75,7 @@ import static edu.berkeley.cs.jqf.fuzz.guidance.Result.*;
 public class FuzzStatement extends Statement {
     private final FrameworkMethod method;
     private final TestClass testClass;
-    private final Map<String, Type> typeVariables;
+    private final MethodGenericsContext generics;
     private final GeneratorRepository generatorRepository;
     private final List<Class<?>> expectedExceptions;
     private final List<Throwable> failures = new ArrayList<>();
@@ -84,10 +85,8 @@ public class FuzzStatement extends Statement {
                          GeneratorRepository generatorRepository, Guidance fuzzGuidance) {
         this.method = method;
         this.testClass = testClass;
-        this.typeVariables =
-                GenericsResolver.resolve(testClass.getJavaClass())
-                        .method(method.getMethod())
-                        .genericsMap();
+        this.generics = GenericsResolver.resolve(testClass.getJavaClass())
+                .method(method.getMethod());
         this.generatorRepository = generatorRepository;
         this.expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         this.guidance = fuzzGuidance;
@@ -220,20 +219,15 @@ public class FuzzStatement extends Statement {
     }
 
     private ParameterTypeContext createParameterTypeContext(Parameter parameter) {
-        Executable exec = parameter.getDeclaringExecutable();
-        String declarerName = exec.getDeclaringClass().getName() + '.' + exec.getName();
-        return new ParameterTypeContext(
-                        parameter.getName(),
-                        parameter.getAnnotatedType(),
-                        declarerName,
-                        typeVariables)
-                        .allowMixedTypes(true).annotate(parameter);
+        return ParameterTypeContext.forParameter(parameter, generics).annotate(parameter);
     }
 
     private Generator<?> produceGenerator(ParameterTypeContext parameter) {
         Generator<?> generator = generatorRepository.generatorFor(parameter);
         generator.provide(generatorRepository);
         generator.configure(parameter.annotatedType());
+        if (parameter.topLevel())
+            generator.configure(parameter.annotatedElement());
         return generator;
     }
 }
