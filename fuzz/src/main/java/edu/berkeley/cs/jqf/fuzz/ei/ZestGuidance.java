@@ -1175,7 +1175,7 @@ public class ZestGuidance implements Guidance {
             }
 
             // assert (key == values.size())
-            if (key != values.size()) {
+            if (key != values.size() && value != -1) {
                 throw new IllegalStateException(String.format("Bytes from seed out of order. " +
                         "Size = %d, Key = %d", values.size(), key));
             }

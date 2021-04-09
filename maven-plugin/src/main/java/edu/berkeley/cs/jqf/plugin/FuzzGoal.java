@@ -230,7 +230,6 @@ public class FuzzGoal extends AbstractMojo {
     @Parameter(property="exitOnCrash")
     private String exitOnCrash;
 
-
     /**
      * The timeout for each individual trial, in milliseconds.
      *
@@ -238,6 +237,21 @@ public class FuzzGoal extends AbstractMojo {
      */
     @Parameter(property="runTimeout")
     private int runTimeout;
+
+    /**
+     * Whether to bound size of inputs being mutated by the fuzzer.
+     *
+     * <p>If this property is set to true, then the fuzzing engine
+     * will treat inputs as fixed-size arrays of bytes
+     * rather than as an infinite stream of pseudo-random choices. This option
+     * is appropriate when fuzzing test methods that take a single
+     * argument of type {@link java.io.InputStream} and that also provide a
+     * set of seed inputs via the `in' property.</p>
+     *
+     * <p>If not provided, defaults to {@code false}.</p>
+     */
+    @Parameter(property="fixedSize")
+    private boolean fixedSizeInputs;
 
 
     @Override
@@ -271,6 +285,9 @@ public class FuzzGoal extends AbstractMojo {
         }
         if (runTimeout > 0) {
             System.setProperty("jqf.ei.TIMEOUT", String.valueOf(runTimeout));
+        }
+        if (fixedSizeInputs) {
+            System.setProperty("jqf.ei.GENERATE_EOF_WHEN_OUT", String.valueOf(true));
         }
 
         Duration duration = null;
