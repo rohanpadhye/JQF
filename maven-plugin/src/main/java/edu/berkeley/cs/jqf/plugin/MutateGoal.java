@@ -2,12 +2,9 @@ package edu.berkeley.cs.jqf.plugin;
 
 import edu.berkeley.cs.jqf.fuzz.util.IOUtils;
 import mutation.CartographyClassLoader;
-import mutation.MutationClassLoader;
-import mutation.Mutator;
+import mutation.MutationInstance;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
@@ -88,32 +85,29 @@ public class MutateGoal extends AbstractMojo {
             File resultsDir = new File(target, outputDirectory);
             IOUtils.createDirectory(resultsDir);
             BufferedWriter writer = new BufferedWriter(new FileWriter(new File(resultsDir.getPath() + File.separator + testMethod + ".txt")));
-            List<String> otherClasspaths =  project.getTestClasspathElements();
-            CartographyClassLoader ccl = new CartographyClassLoader(otherClasspaths.toArray(new String[0]), includeArray, excludeArray, getClass().getClassLoader());
-            Result cclResult = test(ccl);
+            List<String> classpaths =  project.getTestClasspathElements();
+            CartographyClassLoader ccl = new CartographyClassLoader(classpaths.toArray(new String[0]), includeArray, excludeArray, getClass().getClassLoader());
+            Result cclResult = runTest(ccl);
             writer.write("Tested CartographyClassLoader (original): " + cclResult.getFailures() + "\n");
-            Map<String, Map<String, Map<Mutator, Long>>> instanceMap = ccl.getCartograph();
+            List<MutationInstance> instanceMap = ccl.getCartograph();
             System.out.println(instanceMap);
-            for(String s : instanceMap.keySet()) { //TODO this giant for is parallelizable
-                for(String i : instanceMap.get(s).keySet()) {
-                    for(Mutator m : instanceMap.get(s).get(i).keySet()) {
-                        for(int c = 0; c < instanceMap.get(s).get(i).get(m); c++) {
-                            MutationClassLoader mcl = new MutationClassLoader(otherClasspaths.toArray(new String[0]), getClass().getClassLoader(), m, c, s);
-                            Result mclResult = test(mcl);
-                            writer.write("Failures from instance " + c + " of mutator " + m + " in file " + s + ":\n" + mclResult.getFailures() + "\n  --> Failed: " + mclResult.getFailureCount() + ", Ignored: " + mclResult.getIgnoreCount() + ", Run: " + mclResult.getRunCount() + "\n");
-                            //extensions: might realize there are other classes; dynamically growing instancemap?
-                            //think about how to guidance - wrap tests? (by overriding TrialRunner?)
-                        }
-                    }
-                }
+            long totalRun = 0, totalFail = 0, totalIgnore = 0;
+            for(MutationInstance mcl : instanceMap) {
+                Result mclResult = runTest(mcl);
+                writer.write("Failures from MutationClassLoader " + mcl + ":\n" + mclResult.getFailures() + "\n  --> Failed: " + mclResult.getFailureCount() + ", Ignored: " + mclResult.getIgnoreCount() + ", Run: " + mclResult.getRunCount() + "\n");
+                totalRun += mclResult.getRunCount();
+                totalFail += mclResult.getFailureCount();
+                totalIgnore += mclResult.getIgnoreCount();
             }
+            writer.write("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
+            System.out.println("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
             writer.close();
         } catch (ClassNotFoundException | DependencyResolutionRequiredException | IOException e) {
             e.printStackTrace();
         }
     }
 
-    public Result test(ClassLoader cl) throws ClassNotFoundException {
+    public Result runTest(ClassLoader cl) throws ClassNotFoundException {
         Request testRequest = Request.method(Class.forName(testClassName, true, cl), testMethod);
         Runner testRunner = testRequest.getRunner();
         JUnitCore junit = new JUnitCore();
