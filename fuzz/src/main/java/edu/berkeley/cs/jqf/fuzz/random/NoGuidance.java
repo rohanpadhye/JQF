@@ -28,8 +28,12 @@
  */
 package edu.berkeley.cs.jqf.fuzz.random;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.Random;
 import java.util.function.Consumer;
 
@@ -150,5 +154,18 @@ public class NoGuidance implements Guidance {
             coverage = new Coverage();
         }
         return coverage;
+    }
+
+    @Override
+    public ClassLoader getClassLoader(String[] classPath, ClassLoader parent) throws MalformedURLException {
+        return new URLClassLoader(stringsToUrls(classPath), parent);
+    }
+
+    private static URL[] stringsToUrls(String[] paths) throws MalformedURLException {
+        URL[] urls = new URL[paths.length];
+        for (int i = 0; i < paths.length; i++) {
+            urls[i] = new File(paths[i]).toURI().toURL();
+        }
+        return urls;
     }
 }

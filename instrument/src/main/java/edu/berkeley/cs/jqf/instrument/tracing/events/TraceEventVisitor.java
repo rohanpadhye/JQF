@@ -44,4 +44,6 @@ public interface TraceEventVisitor {
     default void visitReadEvent(ReadEvent e) {}
 
     default void visitReturnEvent(ReturnEvent e) {}
+
+    default void visitKillEvent(KillEvent e) {}
 }

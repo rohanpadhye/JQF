@@ -19,10 +19,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Mutation goal
@@ -115,3 +112,8 @@ public class MutateGoal extends AbstractMojo {
         return junit.run(testRunner);
     }
 }
+
+// guidance + method: getClassLoader()
+// + method 2: runTest() or getTrialRunner()
+// fuzzstatement 191 -> guidance.run(class, method, args)
+// - default would be the current 191

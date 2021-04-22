@@ -30,11 +30,17 @@ package edu.berkeley.cs.jqf.fuzz.guidance;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.FuzzStatement;
+import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.InitializationError;
+import org.junit.runners.model.TestClass;
 
 /**
  * A front-end for guided fuzzing.
@@ -173,7 +179,7 @@ public interface Guidance {
      * that may be handled by a separate callback method
      * (though it may also be the same callback).
      *
-     * <p>The callback provided by this method will typlically be used
+     * <p>The callback provided by this method will typically be used
      * for collection execution information such as branch coverage,
      * which in turn is used for constructing the next input stream.
      *
@@ -200,6 +206,12 @@ public interface Guidance {
         };
     }
 
+    default ClassLoader getClassLoader(String[] classPath, ClassLoader parent) throws MalformedURLException {
+        return new InstrumentingClassLoader(classPath, parent);
+    }
 
+    default void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
+        new TrialRunner(testClass.getJavaClass(), method, args).run();
+    }
 
 }

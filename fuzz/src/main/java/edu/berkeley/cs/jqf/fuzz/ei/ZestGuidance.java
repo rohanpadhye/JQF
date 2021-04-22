@@ -405,7 +405,7 @@ public class ZestGuidance implements Guidance {
     }
 
     // Call only if console exists
-    private void displayStats() {
+    protected void displayStats() {
         Date now = new Date();
         long intervalMilliseconds = now.getTime() - lastRefreshTime.getTime();
         if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD) {
@@ -813,7 +813,7 @@ public class ZestGuidance implements Guidance {
 
 
     // Compute a set of branches for which the current input may assume responsibility
-    private Set<Object> computeResponsibilities(boolean valid) {
+    protected Set<Object> computeResponsibilities(boolean valid) {
         Set<Object> result = new HashSet<>();
 
         // This input is responsible for all new coverage
@@ -1005,7 +1005,7 @@ public class ZestGuidance implements Guidance {
          * <p>This field is modified by the construction and mutation
          * operations.</p>
          */
-        String desc;
+        public String desc;
 
         /**
          * The run coverage for this input, if the input is saved.
@@ -1087,6 +1087,9 @@ public class ZestGuidance implements Guidance {
             return responsibilities.size() > 0;
         }
 
+        public void setValid(boolean v) {
+            valid = v;
+        }
 
         /**
          * Sample from a geometric distribution with given mean.
