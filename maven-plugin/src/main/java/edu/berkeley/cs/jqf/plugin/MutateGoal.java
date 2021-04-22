@@ -178,3 +178,8 @@ public class MutateGoal extends AbstractMojo {
         return junit.run(testRunner);
     }
 }
+
+// guidance + method: getClassLoader()
+// + method 2: runTest() or getTrialRunner()
+// fuzzstatement 191 -> guidance.run(class, method, args)
+// - default would be the current 191

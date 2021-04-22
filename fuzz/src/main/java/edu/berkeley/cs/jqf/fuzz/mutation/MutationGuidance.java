@@ -242,7 +242,6 @@ public class MutationGuidance extends ZestGuidance {
 
             // Attempt to add this to the set of unique failures
             if (uniqueFailures.add(Arrays.asList(rootCause.getStackTrace()))) {
-
                 // Trim input (remove unused keys)
                 currentInput.gc();
 
