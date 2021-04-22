@@ -289,21 +289,6 @@ public class FuzzGoal extends AbstractMojo {
         try {
             List<String> classpathElements = project.getTestClasspathElements();
 
-            if (disableCoverage) {
-                loader = new URLClassLoader(
-                        stringsToUrls(classpathElements.toArray(new String[0])),
-                        getClass().getClassLoader());
-
-            } else {
-                loader = new InstrumentingClassLoader(
-                        classpathElements.toArray(new String[0]),
-                        getClass().getClassLoader());
-            }
-        } catch (DependencyResolutionRequiredException|MalformedURLException e) {
-            throw new MojoExecutionException("Could not get project classpath", e);
-        }
-
-        try {
             File resultsDir = new File(target, outputDirectory);
             String targetName = testClassName + "#" + testMethod;
             File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
@@ -319,6 +304,15 @@ public class FuzzGoal extends AbstractMojo {
                     throw new MojoExecutionException("Unknown fuzzing engine: " + engine);
             }
             guidance.setBlind(blind);
+            if (disableCoverage) {
+                loader = new URLClassLoader(
+                        stringsToUrls(classpathElements.toArray(new String[0])),
+                        getClass().getClassLoader());
+            } else {
+                loader = guidance.getClassLoader(classpathElements.toArray(new String[0]), getClass().getClassLoader());
+            }
+        } catch (DependencyResolutionRequiredException|MalformedURLException e) {
+            throw new MojoExecutionException("Could not get project classpath", e);
         } catch (FileNotFoundException e) {
             throw new MojoExecutionException("File not found", e);
         } catch (IOException e) {
