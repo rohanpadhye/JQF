@@ -75,10 +75,6 @@ import static java.lang.Math.log;
  */
 public class ZestGuidance implements Guidance {
 
-    // Currently, we only support single-threaded applications
-    // This field is used to ensure that
-    protected Thread appThread;
-
     /** A pseudo-random number generator for generating fresh values. */
     protected Random random = new Random();
 
@@ -881,12 +877,6 @@ public class ZestGuidance implements Guidance {
 
     @Override
     public Consumer<TraceEvent> generateCallBack(Thread thread) {
-        if (appThread != null) {
-            throw new IllegalStateException(ZestGuidance.class +
-                " only supports single-threaded apps at the moment");
-        }
-        appThread = thread;
-
         return this::handleEvent;
     }
 
