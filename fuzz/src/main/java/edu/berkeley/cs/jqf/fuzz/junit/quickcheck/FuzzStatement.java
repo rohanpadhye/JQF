@@ -182,7 +182,14 @@ public class FuzzStatement extends Statement {
                 }
 
                 // Inform guidance about the outcome of this trial
-                guidance.handleResult(result, error);
+                try {
+                    guidance.handleResult(result, error);
+                } catch (GuidanceException e) {
+                    throw e; // Propagate
+                } catch (Throwable e) {
+                    // Anything else thrown from handleResult is an internal error, so wrap
+                    throw new GuidanceException(e);
+                }
 
 
             }
