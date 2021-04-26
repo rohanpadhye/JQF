@@ -195,7 +195,7 @@ public class FuzzStatement extends Statement {
             }
         } catch (GuidanceException e) {
             System.err.println("Fuzzing stopped due to guidance exception: " + e.getMessage());
-            e.printStackTrace();
+            throw e;
         }
 
         if (failures.size() > 0) {

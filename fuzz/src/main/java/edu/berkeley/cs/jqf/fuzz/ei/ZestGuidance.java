@@ -1135,6 +1135,11 @@ public class ZestGuidance implements Guidance {
             // Remove elements beyond "requested"
             values = new ArrayList<>(values.subList(0, requested));
             values.trimToSize();
+
+            // Inputs should not be empty, otherwise mutations don't work
+            if (values.isEmpty()) {
+                throw new IllegalArgumentException("Input is either empty or nothing was requested from the input generator.");
+            }
         }
 
         @Override

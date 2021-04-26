@@ -41,6 +41,7 @@ import java.util.List;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
@@ -321,10 +322,10 @@ public class FuzzGoal extends AbstractMojo {
             throw new MojoExecutionException("Could not get project classpath", e);
         }
 
+        File resultsDir = new File(target, outputDirectory);
+        String targetName = testClassName + "#" + testMethod;
+        File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
         try {
-            File resultsDir = new File(target, outputDirectory);
-            String targetName = testClassName + "#" + testMethod;
-            File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
             switch (engine) {
                 case "zest":
                     guidance = new ZestGuidance(targetName, duration, resultsDir, seedsDir);
@@ -354,8 +355,17 @@ public class FuzzGoal extends AbstractMojo {
         }
 
         if (!result.wasSuccessful()) {
-            throw new MojoFailureException("Fuzzing revealed errors. " +
-                "Use mvn jqf:repro to reproduce failing test case.");
+            Throwable e = result.getFailures().get(0).getException();
+            if (result.getFailureCount() == 1) {
+                if (e instanceof GuidanceException) {
+                    throw new MojoExecutionException("Internal error", e);
+                }
+            }
+            throw new MojoFailureException(String.format("Fuzzing resulted in the test failing on " +
+                    "%d input(s). Possible bugs found. " +
+                    "Use mvn jqf:repro to reproduce failing test cases from %s/failures. ",
+                    result.getFailureCount(), resultsDir) +
+                    "Sample exception included with this message.", e);
         }
     }
 }
