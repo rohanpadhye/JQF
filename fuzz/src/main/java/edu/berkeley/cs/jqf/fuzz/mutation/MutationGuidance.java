@@ -27,17 +27,55 @@ public class MutationGuidance extends ZestGuidance {
     String[] mutables, immutables;
     CartographyClassLoader cartographyClassLoader;
 
-    //TODO how to populate mutables + immutables? (janala?)
-    public MutationGuidance(String testName, Duration duration, File outputDirectory) throws IOException {
+    public MutationGuidance(String testName, Duration duration, File outputDirectory, String include, String exclude) throws IOException {
         super(testName, duration, outputDirectory);
+        if(include != null && !include.equals("")) {
+            mutables = include.split(",");
+        } else {
+            mutables = new String[0];
+        }
+        if(exclude != null && !exclude.equals("")) {
+            immutables = exclude.split(",");
+        } else {
+            immutables = new String[0];
+        }
+        totalCoverage = new MutationCoverage();
+        runCoverage = new MutationCoverage();
+        validCoverage = new MutationCoverage();
     }
 
-    public MutationGuidance(String testName, Duration duration, File outputDirectory, File[] seedInputFiles) throws IOException {
+    public MutationGuidance(String testName, Duration duration, File outputDirectory, File[] seedInputFiles, String include, String exclude) throws IOException {
         super(testName, duration, outputDirectory, seedInputFiles);
+        if(include != null && !include.equals("")) {
+            mutables = include.split(",");
+        } else {
+            mutables = new String[0];
+        }
+        if(exclude != null && !exclude.equals("")) {
+            immutables = exclude.split(",");
+        } else {
+            immutables = new String[0];
+        }
+        totalCoverage = new MutationCoverage();
+        runCoverage = new MutationCoverage();
+        validCoverage = new MutationCoverage();
     }
 
-    public MutationGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir) throws IOException {
+    public MutationGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir, String include, String exclude) throws IOException {
         super(testName, duration, outputDirectory, seedInputDir);
+        if(include != null && !include.equals("")) {
+            mutables = include.split(",");
+        } else {
+            mutables = new String[0];
+        }
+        if(exclude != null && !exclude.equals("")) {
+            immutables = exclude.split(",");
+        } else {
+            immutables = new String[0];
+        }
+        totalCoverage = new MutationCoverage();
+        runCoverage = new MutationCoverage();
+        validCoverage = new MutationCoverage();
     }
 
     @Override
@@ -49,16 +87,17 @@ public class MutationGuidance extends ZestGuidance {
             numValid++;
         }
 
+        //TODO assumption failure -> not valid coverage, still total coverage
         if (result == Result.SUCCESS || (result == Result.INVALID && SAVE_ONLY_VALID == false)) {
-            int prevMutants = totalCoverage.numCaughtMutants();
+            int prevMutants = ((MutationCoverage) totalCoverage).numCaughtMutants();
             int validNonZeroBefore = validCoverage.getNonZeroCount();
             boolean coverageBitsUpdated = totalCoverage.updateBits(runCoverage);
-            boolean mutantsUpdated = totalCoverage.updateMutants(runCoverage);
+            boolean mutantsUpdated = ((MutationCoverage) totalCoverage).updateMutants(((MutationCoverage) runCoverage));
             if (valid) {
                 validCoverage.updateBits(runCoverage);
             }
             int validNonZeroAfter = validCoverage.getNonZeroCount();
-            int newMutants = totalCoverage.numCaughtMutants();
+            int newMutants = ((MutationCoverage) totalCoverage).numCaughtMutants();
 
             boolean toSave = false;
             String why = "";
@@ -76,7 +115,7 @@ public class MutationGuidance extends ZestGuidance {
                 currentInput.gc();
 
                 // It must still be non-empty
-                //assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
+                assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
 
                 // libFuzzerCompat stats are only displayed when they hit new coverage
                 if (LIBFUZZER_COMPAT_OUTPUT) {
@@ -94,8 +133,8 @@ public class MutationGuidance extends ZestGuidance {
 
                 // Save input to queue and to disk
                 final String reason = why;
-                GuidanceException.wrap(() -> saveCurrentInput(totalCoverage.getMutants(), reason));
-
+                //TODO give responsibility for mutants caught
+                GuidanceException.wrap(() -> saveCurrentInput(((MutationCoverage) totalCoverage).getMutants(), reason));
             }
         } else if (result == Result.FAILURE || result == Result.TIMEOUT) {
             String msg = error.getMessage();
@@ -112,7 +151,7 @@ public class MutationGuidance extends ZestGuidance {
                 currentInput.gc();
 
                 // It must still be non-empty
-                //assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
+                assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
 
                 // Save crash to disk
                 int crashIdx = uniqueFailures.size()-1;
@@ -160,6 +199,7 @@ public class MutationGuidance extends ZestGuidance {
     @Override
     public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
         // BufferedWriter writer = null; //TODO
+        new TrialRunner(testClass.getJavaClass(), method, args).run(); //loaded by CartographyClassLoader
         long totalRun = 0, totalFail = 0, totalIgnore = 0;
         List<Throwable> fails = new ArrayList<>();
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
@@ -171,11 +211,16 @@ public class MutationGuidance extends ZestGuidance {
             } catch (GuidanceException e) {
                 throw e;
             } catch (AssumptionViolatedException | TimeoutException e) {
-                totalIgnore++;
+                totalIgnore++; //TODO track separately? if everything times out...
+                //TODO consider how to get timeout (stop infinite loops) - could use instrumentingclassloader, but that's really slow
+                // could try with thread.stop (works, but deprecated/dangerous)
+                // could move toward running all mutants in parallel with this sort of thing
             } catch (Throwable e) {
                 if (!isExceptionExpected(e.getClass(), expectedExceptions)) {
                     totalFail++; //TODO mutant killed - indicate?
+                    //TODO do update here - can call by getting tracelogger
                     fails.add(e);
+                    //what have
                 }
             }
             totalRun++; //TODO mutant not killed - indicate?

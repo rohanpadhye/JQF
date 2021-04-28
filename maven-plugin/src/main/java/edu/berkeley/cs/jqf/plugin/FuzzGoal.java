@@ -44,6 +44,7 @@ import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
+import edu.berkeley.cs.jqf.fuzz.mutation.MutationGuidance;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
@@ -351,6 +352,8 @@ public class FuzzGoal extends AbstractMojo {
                     System.setProperty("jqf.tracing.MATCH_CALLEE_NAMES", "true");
                     guidance = new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
                     break;
+                case "mutation":
+                    guidance = new MutationGuidance(targetName, duration, resultsDir, seedsDir, includes, excludes);
                 default:
                     throw new MojoExecutionException("Unknown fuzzing engine: " + engine);
             }
