@@ -142,6 +142,7 @@ public class MutationGuidance extends ZestGuidance {
             numValid++;
         }
 
+        //TODO assumption failure -> not valid coverage, still total coverage
         if (result == Result.SUCCESS || (result == Result.INVALID && SAVE_ONLY_VALID == false)) {
 
             int prevMutants = ((MutationCoverage) totalCoverage).numCaughtMutants();
