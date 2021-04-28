@@ -68,12 +68,12 @@ public class MutateGoal extends AbstractMojo {
         if(includeRegex == null || includeRegex.equals("")) {
             includeArray = new String[0];
         } else {
-            includeArray = includeRegex.split(":");
+            includeArray = includeRegex.split(",");
         }
         if(excludeRegex == null || excludeRegex.equals("")) {
             excludeArray = new String[0];
         } else {
-            excludeArray = excludeRegex.split(":");
+            excludeArray = excludeRegex.split(",");
         }
         if(outputDirectory == null || outputDirectory.equals("")) {
             outputDirectory = "mutation-results" + File.separator + testClassName;

@@ -46,8 +46,6 @@ public class Coverage implements TraceEventVisitor {
     /** The coverage counts for each edge. */
     private final Counter counter = new NonZeroCachingCounter(COVERAGE_MAP_SIZE);
 
-    private Set<MutationInstance> caughtMutants = new HashSet<>();
-
     /** Creates a new coverage map. */
     public Coverage() {
 
@@ -93,26 +91,6 @@ public class Coverage implements TraceEventVisitor {
     @Override
     public void visitCallEvent(CallEvent e) {
         counter.increment(e.getIid());
-    }
-
-    @Override
-    public void visitKillEvent(KillEvent k) {
-        caughtMutants.add(k.getMutant());
-    }
-
-    public int numCaughtMutants() {
-        return caughtMutants.size();
-    }
-
-    public boolean updateMutants(Coverage that) {
-        int prevSize = caughtMutants.size();
-        caughtMutants.addAll(that.caughtMutants);
-        return caughtMutants.size() > prevSize;
-    }
-
-    public Set<Object> getMutants() {
-        Set<Object> toReturn = new HashSet<>(caughtMutants);
-        return toReturn;
     }
 
     /**
