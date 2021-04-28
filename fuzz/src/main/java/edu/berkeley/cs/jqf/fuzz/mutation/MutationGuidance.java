@@ -6,6 +6,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
+import edu.berkeley.cs.jqf.instrument.tracing.TraceLogger;
 import edu.berkeley.cs.jqf.instrument.tracing.events.KillEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 import mutation.CartographyClassLoader;
@@ -217,10 +218,9 @@ public class MutationGuidance extends ZestGuidance {
                 // could move toward running all mutants in parallel with this sort of thing
             } catch (Throwable e) {
                 if (!isExceptionExpected(e.getClass(), expectedExceptions)) {
-                    totalFail++; //TODO mutant killed - indicate?
-                    //TODO do update here - can call by getting tracelogger
+                    totalFail++;
+                    TraceLogger.get().emit(new KillEvent(0, null, 0, mcl)); //temp 0 values
                     fails.add(e);
-                    //what have
                 }
             }
             totalRun++; //TODO mutant not killed - indicate?

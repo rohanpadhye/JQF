@@ -27,7 +27,6 @@ public class MutationCoverage extends Coverage {
     }
 
     public Set<Object> getMutants() {
-        Set<Object> toReturn = new HashSet<>(caughtMutants);
-        return toReturn;
+        return new HashSet<>(caughtMutants);
     }
 }
