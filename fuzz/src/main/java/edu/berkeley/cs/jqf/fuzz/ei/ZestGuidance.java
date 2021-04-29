@@ -389,7 +389,7 @@ public class ZestGuidance implements Guidance {
         }
     }
 
-    private String millisToDuration(long millis) {
+    protected String millisToDuration(long millis) {
         long seconds = TimeUnit.MILLISECONDS.toSeconds(millis % TimeUnit.MINUTES.toMillis(1));
         long minutes = TimeUnit.MILLISECONDS.toMinutes(millis % TimeUnit.HOURS.toMillis(1));
         long hours = TimeUnit.MILLISECONDS.toHours(millis);
@@ -496,7 +496,7 @@ public class ZestGuidance implements Guidance {
         this.blind = blind;
     }
 
-    private int getTargetChildrenForParent(Input parentInput) {
+    protected int getTargetChildrenForParent(Input parentInput) {
         // Baseline is a constant
         int target = NUM_CHILDREN_BASELINE;
 
@@ -997,7 +997,7 @@ public class ZestGuidance implements Guidance {
          *
          * <p>This field is -1 for inputs that are not saved.</p>
          */
-        int id;
+        public int id;
 
         /**
          * The description for this input.
@@ -1049,7 +1049,7 @@ public class ZestGuidance implements Guidance {
          * in at least some responsibility set. Hence, this list
          * needs to be kept in-sync with {@link #responsibleInputs}.</p>
          */
-        Set<Object> responsibilities = null;
+        public Set<Object> responsibilities = null;
 
 
         /**
