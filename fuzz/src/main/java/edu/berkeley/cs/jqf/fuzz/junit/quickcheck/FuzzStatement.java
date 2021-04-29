@@ -30,14 +30,10 @@
 package edu.berkeley.cs.jqf.fuzz.junit.quickcheck;
 
 import java.io.EOFException;
-import java.io.File;
-import java.lang.reflect.Executable;
 import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
@@ -48,12 +44,8 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
-import edu.berkeley.cs.jqf.fuzz.random.NoGuidance;
-import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.StreamBackedRandom;
-import edu.berkeley.cs.jqf.fuzz.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
 import org.junit.AssumptionViolatedException;
