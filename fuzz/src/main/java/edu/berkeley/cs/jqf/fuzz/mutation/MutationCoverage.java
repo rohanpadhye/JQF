@@ -17,9 +17,7 @@ public class MutationCoverage extends Coverage {
         caughtMutants.add(k.getMutant());
     }
 
-    @Override
-    public void clear() {
-        super.clear();
+    public void clearMutants() {
         caughtMutants = new HashSet<>();
     }
 
