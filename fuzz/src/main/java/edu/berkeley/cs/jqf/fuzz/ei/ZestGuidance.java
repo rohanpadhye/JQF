@@ -972,7 +972,7 @@ public class ZestGuidance implements Guidance {
         /**
          * Whether this input resulted in a valid run.
          */
-        boolean valid = false;
+        public boolean valid = false;
 
         /**
          * The set of coverage keys for which this input is
