@@ -124,6 +124,8 @@ public class MutationGuidance extends ZestGuidance {
             }
             int validNonZeroAfter = validCoverage.getNonZeroCount();
 
+            //((MutationCoverage) runCoverage).clearMutants();
+
             // Possibly save input
             boolean toSave = false;
             String why = "";
@@ -147,13 +149,13 @@ public class MutationGuidance extends ZestGuidance {
             }
 
             // Save if new valid coverage is found
-            /*if (this.validityFuzzing && validNonZeroAfter > validNonZeroBefore) {
+            if (this.validityFuzzing && validNonZeroAfter > validNonZeroBefore) {
                 // Must be responsible for some branch
                 assert(responsibilities.size() > 0);
                 currentInput.valid = true;
                 toSave = true;
                 why = why + "+valid";
-            }*/
+            }
 
             if (toSave) {
 
@@ -266,23 +268,20 @@ public class MutationGuidance extends ZestGuidance {
 
     @Override
     public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
-        //System.out.println("running " + testClass.getName());
-        // BufferedWriter writer = null; //TODO
         new TrialRunner(testClass.getJavaClass(), method, args).run(); //loaded by CartographyClassLoader
-        //System.out.println("loaded " + testClass.getName());
         long totalRun = 0, totalFail = 0, totalIgnore = 0;
         List<Throwable> fails = new ArrayList<>();
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         for(MutationInstance mcl : cartographyClassLoader.getCartograph()) {
             if(!mcl.isDead()) {
                 try {
-                    //System.out.println("testClass: " + testClass.getName() + ",  method: " + method.getName());
-                    //System.out.println("running mutant " + mcl);
                     Class<?> clazz = Class.forName(testClass.getName(), true, mcl);
+                    //System.out.println("method name: ");
+                    //System.out.println(clazz.getMethod(method.getName(), method.getMethod().getParameterTypes()).getName());
                     //TODO don't want to hardcode args
                     //TODO make cartographyclassloader extend instrumentingclassloader --> code coverage + mutants
                     // or just include instructiontransformer
-                    new TrialRunner(clazz, new FrameworkMethod(clazz.getMethod(method.getName(), List.class)), args).run();
+                    new TrialRunner(clazz, new FrameworkMethod(clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())), args).run();
                 } catch (InstrumentationException e) {
                     throw new GuidanceException(e);
                 } catch (GuidanceException e) {
@@ -295,24 +294,15 @@ public class MutationGuidance extends ZestGuidance {
                 } catch (Throwable e) {
                     if (!isExceptionExpected(e.getClass(), expectedExceptions)) {
                         totalFail++;
-                    /*if(!mcl.isDead()) {
-                        System.out.println("exception for mutant " + mcl + ": " + e.getClass());
-                        // e.printStackTrace();
-                    }*/
                         mcl.kill();
                         TraceLogger.get().emit(new KillEvent(0, null, 0, mcl)); //temp 0 values
                         fails.add(e);
                     }
                 }
-                totalRun++; //TODO mutant not killed - indicate?
+                totalRun++;
                 ((MutationCoverage) runCoverage).see(mcl);
             }
         }
-        //System.out.println("run " + testClass.getName());
-        /*writer.write("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun + "\nFailure List:\n");
-        for(Throwable fail : fails) {
-            writer.write(fail + "\n");
-        }*/
     }
 
     private boolean isExceptionExpected(Class<? extends Throwable> e, List<Class<?>> expectedExceptions) {
