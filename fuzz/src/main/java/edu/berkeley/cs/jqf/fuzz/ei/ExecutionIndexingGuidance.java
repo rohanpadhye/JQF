@@ -334,6 +334,9 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
     /** Handles a trace event generated during test execution */
     @Override
     protected void handleEvent(TraceEvent e) {
+        // Ignore events if the execution hasn't started.
+        if (eiState == null) return;
+
         // Set last event to this event
         lastEvent = e;
 
