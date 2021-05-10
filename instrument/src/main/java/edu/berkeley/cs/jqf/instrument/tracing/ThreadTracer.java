@@ -65,11 +65,13 @@ public class ThreadTracer {
     private final Values values = new Values();
 
     // Whether to instrument generators
-    private final boolean traceGenerators;
+    // Set this to TRUE when computing execution indexes for generators
+    private final boolean traceGenerators = Boolean.getBoolean("jqf.tracing.TRACE_GENERATORS");;
 
     // Whether to check if caller and callee have the same method name/desc when tracing
     // Set this to TRUE if instrumenting JDK classes, in order to skip JVM classloading activity
-    private static final boolean MATCH_CALLEE_NAMES = Boolean.getBoolean("jqf.tracing.MATCH_CALLEE_NAMES");
+    // Also set this to TRUE when using execution indexes, to ensure that every call site has exactly one push/pop
+    private final boolean MATCH_CALLEE_NAMES = Boolean.getBoolean("jqf.tracing.MATCH_CALLEE_NAMES");
 
 
     /**
@@ -93,7 +95,6 @@ public class ThreadTracer {
             this.entryPointClass = null;
             this.entryPointMethod = null;
         }
-        this.traceGenerators = Boolean.getBoolean("jqf.traceGenerators");
         this.callback = callback;
         this.handlers.push(new BaseHandler());
     }

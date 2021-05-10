@@ -331,7 +331,8 @@ public class FuzzGoal extends AbstractMojo {
                     guidance = new ZestGuidance(targetName, duration, resultsDir, seedsDir);
                     break;
                 case "zeal":
-                    System.setProperty("jqf.traceGenerators", "true");
+                    System.setProperty("jqf.tracing.TRACE_GENERATORS", "true");
+                    System.setProperty("jqf.tracing.MATCH_CALLEE_NAMES", "true");
                     guidance = new ExecutionIndexingGuidance(targetName, duration, resultsDir, seedsDir);
                     break;
                 default:
