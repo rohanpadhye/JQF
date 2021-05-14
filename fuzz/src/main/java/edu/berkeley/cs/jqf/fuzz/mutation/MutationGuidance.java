@@ -6,23 +6,20 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
+import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
+import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
 import edu.berkeley.cs.jqf.instrument.tracing.TraceLogger;
 import edu.berkeley.cs.jqf.instrument.tracing.events.KillEvent;
-import mutation.CartographyClassLoader;
-import mutation.MutationInstance;
 import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.TestClass;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 public class MutationGuidance extends ZestGuidance {
     String[] mutables, immutables;
@@ -274,6 +271,7 @@ public class MutationGuidance extends ZestGuidance {
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         for(MutationInstance mcl : cartographyClassLoader.getCartograph()) {
             if(!mcl.isDead()) {
+                //System.out.println(mcl + " (of " + cartographyClassLoader.getCartograph().size() + ")");
                 try {
                     Class<?> clazz = Class.forName(testClass.getName(), true, mcl);
                     //System.out.println("method name: ");

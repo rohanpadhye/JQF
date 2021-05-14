@@ -1,14 +1,13 @@
 package edu.berkeley.cs.jqf.fuzz.mutation;
 
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
+import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
 import edu.berkeley.cs.jqf.instrument.tracing.events.KillEvent;
-import mutation.MutationInstance;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class MutationCoverage extends Coverage {
-    //TODO subclass instead of modify
     private Set<MutationInstance> caughtMutants = new HashSet<>();
     private Set<MutationInstance> seenMutants = new HashSet<>();
 

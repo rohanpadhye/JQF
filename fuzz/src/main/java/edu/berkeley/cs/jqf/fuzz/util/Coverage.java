@@ -31,7 +31,6 @@ package edu.berkeley.cs.jqf.fuzz.util;
 import java.util.*;
 
 import edu.berkeley.cs.jqf.instrument.tracing.events.*;
-import mutation.MutationInstance;
 
 /**
  * Utility class to collect branch and function coverage

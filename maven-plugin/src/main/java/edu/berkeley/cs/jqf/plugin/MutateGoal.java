@@ -1,15 +1,14 @@
 package edu.berkeley.cs.jqf.plugin;
 
 import edu.berkeley.cs.jqf.fuzz.util.IOUtils;
-import mutation.CartographyClassLoader;
-import mutation.MutationInstance;
+import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
+import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.junit.internal.TextListener;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Request;
 import org.junit.runner.Result;
@@ -19,6 +18,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -89,15 +89,25 @@ public class MutateGoal extends AbstractMojo {
             List<MutationInstance> instanceMap = ccl.getCartograph();
             System.out.println(instanceMap);
             long totalRun = 0, totalFail = 0, totalIgnore = 0;
+            long runByTest = 0, failByTest = 0;
+            List<MutationInstance> killedMutants = new ArrayList<>();
             for(MutationInstance mcl : instanceMap) {
+                System.out.println(mcl);
                 Result mclResult = runTest(mcl);
                 writer.write("Failures from MutationClassLoader " + mcl + ":\n" + mclResult.getFailures() + "\n  --> Failed: " + mclResult.getFailureCount() + ", Ignored: " + mclResult.getIgnoreCount() + ", Run: " + mclResult.getRunCount() + "\n");
                 totalRun += mclResult.getRunCount();
                 totalFail += mclResult.getFailureCount();
                 totalIgnore += mclResult.getIgnoreCount();
+                runByTest++;
+                if(mclResult.getFailureCount() > 0) {
+                    failByTest++;
+                    killedMutants.add(mcl);
+                }
             }
             writer.write("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
+            System.out.println(killedMutants);
             System.out.println("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
+            System.out.println("Mutants Run: " + runByTest + ", Failing Mutants: " + failByTest);
             writer.close();
         } catch (ClassNotFoundException | DependencyResolutionRequiredException | IOException e) {
             e.printStackTrace();

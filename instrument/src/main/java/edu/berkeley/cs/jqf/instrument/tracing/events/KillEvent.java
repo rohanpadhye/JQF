@@ -1,8 +1,9 @@
 package edu.berkeley.cs.jqf.instrument.tracing.events;
 
+import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
 import janala.logger.inst.MemberRef;
-import mutation.MutationInstance;
 
+/** send this when a mutant is killed - mutation-guided fuzzing only */
 public class KillEvent extends TraceEvent {
     private MutationInstance mutant;
 
