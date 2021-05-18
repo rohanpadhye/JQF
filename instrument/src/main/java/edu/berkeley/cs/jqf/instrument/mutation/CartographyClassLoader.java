@@ -125,8 +125,8 @@ public class CartographyClassLoader extends URLClassLoader {
         return baos.toByteArray();
     }
 
-    /** get number of opportunities to apply mutator mm in the class described by bytes */
-    private long getInstanceCount(byte[] bytes, Mutator mm) {
+    /** get number of opportunities to apply mutator in the class described by bytes */
+    private long getInstanceCount(byte[] bytes, Mutator mutator) {
         AtomicLong instances = new AtomicLong(0);
         ClassWriter cw = new ClassWriter(0);
         ClassReader cr = new ClassReader(bytes);
@@ -138,35 +138,35 @@ public class CartographyClassLoader extends URLClassLoader {
                         signature, superName, interfaces)) {
                     @Override
                     public void visitJumpInsn(int opcode, Label label) {
-                        if (opcode == mm.toReplace()) {
+                        if (opcode == mutator.toReplace()) {
                             instances.getAndIncrement();
                         }
                         super.visitJumpInsn(opcode, label);
                     }
                     @Override
                     public void visitLdcInsn(Object value) {
-                        if (Opcodes.LDC == mm.toReplace()) {
+                        if (Opcodes.LDC == mutator.toReplace()) {
                             instances.getAndIncrement();
                         }
                         super.visitLdcInsn(value);
                     }
                     @Override
                     public void visitIincInsn(int var, int increment) {
-                        if (Opcodes.IINC == mm.toReplace()) {
+                        if (Opcodes.IINC == mutator.toReplace()) {
                             instances.getAndIncrement();
                         }
                         super.visitIincInsn(var, increment);
                     }
                     @Override
                     public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                        if (opcode == mm.toReplace() && (mm.returnType() == null || Type.getReturnType(descriptor).getDescriptor().equals(mm.returnType()))) {
+                        if (mutator.isOpportunity(opcode, descriptor)) {
                             instances.getAndIncrement();
                         }
                         super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                     }
                     @Override
                     public void visitInsn(int opcode) {
-                        if (opcode == mm.toReplace() && (mm.returnType() == null || Type.getReturnType(signature).getDescriptor().equals(mm.returnType()))) {
+                        if (mutator.isOpportunity(opcode, signature)) {
                             instances.getAndIncrement();
                         }
                         super.visitInsn(opcode);

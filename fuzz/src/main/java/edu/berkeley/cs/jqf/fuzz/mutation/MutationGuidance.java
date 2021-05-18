@@ -121,8 +121,6 @@ public class MutationGuidance extends ZestGuidance {
             }
             int validNonZeroAfter = validCoverage.getNonZeroCount();
 
-            //((MutationCoverage) runCoverage).clearMutants();
-
             // Possibly save input
             boolean toSave = false;
             String why = "";
@@ -266,38 +264,28 @@ public class MutationGuidance extends ZestGuidance {
     @Override
     public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
         new TrialRunner(testClass.getJavaClass(), method, args).run(); //loaded by CartographyClassLoader
-        long totalRun = 0, totalFail = 0, totalIgnore = 0;
         List<Throwable> fails = new ArrayList<>();
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         for(MutationInstance mcl : cartographyClassLoader.getCartograph()) {
             if(!mcl.isDead()) {
-                //System.out.println(mcl + " (of " + cartographyClassLoader.getCartograph().size() + ")");
                 try {
                     Class<?> clazz = Class.forName(testClass.getName(), true, mcl);
-                    //System.out.println("method name: ");
-                    //System.out.println(clazz.getMethod(method.getName(), method.getMethod().getParameterTypes()).getName());
-                    //TODO don't want to hardcode args
-                    //TODO make cartographyclassloader extend instrumentingclassloader --> code coverage + mutants
-                    // or just include instructiontransformer
                     new TrialRunner(clazz, new FrameworkMethod(clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())), args).run();
                 } catch (InstrumentationException e) {
                     throw new GuidanceException(e);
                 } catch (GuidanceException e) {
                     throw e;
                 } catch (AssumptionViolatedException | TimeoutException e) {
-                    totalIgnore++; //TODO track separately? if everything times out...
-                    //TODO consider how to get timeout (stop infinite loops) - could use instrumentingclassloader, but that's really slow
-                    // could try with thread.stop (works, but deprecated/dangerous)
-                    // could move toward running all mutants in parallel with this sort of thing
+                    // ignored
                 } catch (Throwable e) {
                     if (!isExceptionExpected(e.getClass(), expectedExceptions)) {
-                        totalFail++;
+                        // failed
                         mcl.kill();
                         TraceLogger.get().emit(new KillEvent(0, null, 0, mcl)); //temp 0 values
                         fails.add(e);
                     }
                 }
-                totalRun++;
+                // run
                 ((MutationCoverage) runCoverage).see(mcl);
             }
         }

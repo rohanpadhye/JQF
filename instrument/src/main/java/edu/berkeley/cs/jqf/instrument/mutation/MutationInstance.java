@@ -121,12 +121,12 @@ public class MutationInstance extends URLClassLoader {
                         @Override
                         public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
                             //TODO make this one guard
-                            if (opcode == mutator.toReplace() && found.get() == instance && (mutator.returnType() == null || Type.getReturnType(descriptor).getDescriptor().equals(mutator.returnType()))) {
+                            if (mutator.isOpportunity(opcode, descriptor) && found.get() == instance) {
                                 for (InstructionCall ic : mutator.replaceWith(descriptor, opcode == Opcodes.INVOKESTATIC/*owner.equals(internalName)*/)) {
                                     ic.call(mv, null);
                                 }
                                 found.getAndIncrement();
-                            } else if (opcode == mutator.toReplace()) {
+                            } else if (mutator.isOpportunity(opcode, descriptor)) {
                                 super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                                 found.getAndIncrement();
                             } else {
@@ -135,12 +135,12 @@ public class MutationInstance extends URLClassLoader {
                         }
                         @Override
                         public void visitInsn(int opcode) {
-                            if (opcode == mutator.toReplace() && found.get() == instance && (mutator.returnType() == null || Type.getReturnType(signature).getDescriptor().equals(mutator.returnType()))) {
+                            if (mutator.isOpportunity(opcode, signature) && found.get() == instance) {
                                 for (InstructionCall ic : mutator.replaceWith(signature, false)) {
                                     ic.call(mv, null);
                                 }
                                 found.getAndIncrement();
-                            } else if (opcode == mutator.toReplace() && (mutator.returnType() == null || Type.getReturnType(signature).getDescriptor().equals(mutator.returnType()))) {
+                            } else if (mutator.isOpportunity(opcode, signature)) {
                                 super.visitInsn(opcode);
                                 found.getAndIncrement();
                             } else {
