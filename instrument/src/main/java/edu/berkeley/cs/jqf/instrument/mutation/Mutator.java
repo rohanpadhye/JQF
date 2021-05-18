@@ -169,6 +169,10 @@ public enum Mutator {
         return returnType;
     }
 
+    public boolean isOpportunity(int opcode, String descriptor) {
+        return opcode == toReplace && (returnType == null || Type.getReturnType(descriptor).getDescriptor().equals(returnType));
+    }
+
     public List<InstructionCall> replaceWith(String sig, boolean same) {
         List<InstructionCall> toReturn = new ArrayList<>(replaceWith);
         if(this.toString().contains("VOID_REMOVE")) {
