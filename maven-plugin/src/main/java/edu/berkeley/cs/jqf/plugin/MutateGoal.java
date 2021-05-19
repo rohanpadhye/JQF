@@ -63,7 +63,6 @@ public class MutateGoal extends AbstractMojo {
     @Override
     public void execute() {
         String targetName = testClassName + "#" + testMethod;
-        System.out.println("targetName: " + targetName);
         String[] includeArray, excludeArray;
         if(includeRegex == null || includeRegex.equals("")) {
             includeArray = new String[0];
@@ -87,7 +86,6 @@ public class MutateGoal extends AbstractMojo {
             Result cclResult = runTest(ccl);
             writer.write("Tested CartographyClassLoader (original): " + cclResult.getFailures() + "\n");
             List<MutationInstance> instanceMap = ccl.getCartograph();
-            System.out.println(instanceMap);
             long totalRun = 0, totalFail = 0, totalIgnore = 0;
             long runByTest = 0, failByTest = 0;
             List<MutationInstance> killedMutants = new ArrayList<>();
@@ -105,7 +103,6 @@ public class MutateGoal extends AbstractMojo {
                 }
             }
             writer.write("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
-            System.out.println(killedMutants);
             System.out.println("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
             System.out.println("Mutants Run: " + runByTest + ", Failing Mutants: " + failByTest);
             writer.close();
@@ -118,12 +115,6 @@ public class MutateGoal extends AbstractMojo {
         Request testRequest = Request.method(Class.forName(testClassName, true, cl), testMethod);
         Runner testRunner = testRequest.getRunner();
         JUnitCore junit = new JUnitCore();
-        //junit.addListener(new TextListener(System.out));
         return junit.run(testRunner);
     }
 }
-
-// guidance + method: getClassLoader()
-// + method 2: runTest() or getTrialRunner()
-// fuzzstatement 191 -> guidance.run(class, method, args)
-// - default would be the current 191
