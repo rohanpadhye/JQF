@@ -173,11 +173,11 @@ public enum Mutator {
         return opcode == toReplace && (returnType == null || Type.getReturnType(descriptor).getDescriptor().equals(returnType));
     }
 
-    public List<InstructionCall> replaceWith(String sig, boolean same) {
+    public List<InstructionCall> replaceWith(int opcode, String sig) {
         List<InstructionCall> toReturn = new ArrayList<>(replaceWith);
-        if(this.toString().contains("VOID_REMOVE")) {
+        if(this.toString().contains("VOID_REMOVE")) { //TODO string parsing isn't great
             int args = (Type.getArgumentsAndReturnSizes(sig)) >> 2;
-            if(same) {
+            if(opcode == Opcodes.INVOKESTATIC) {
                 args = args - 1;
             }
             for(int c = 0; c < args; c++) {
