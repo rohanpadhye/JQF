@@ -79,12 +79,12 @@ public class MutationInstance extends URLClassLoader {
                         @Override
                         public void visitJumpInsn(int opcode, Label label) {
                             mv.visitMethodInsn(Opcodes.INVOKESTATIC, className, "timeoutCheck", "()V", false);
-                            if (opcode == mutator.toReplace() && found.get() == instance) {
-                                for (InstructionCall ic : mutator.replaceWith(signature, false)) {
+                            if (mutator.isOpportunity(opcode, signature) && found.get() == instance) {
+                                for (InstructionCall ic : mutator.replaceWith(opcode, signature)) {
                                     ic.call(mv, label);
                                 }
                                 found.getAndIncrement();
-                            } else if (opcode == mutator.toReplace()) {
+                            } else if (mutator.isOpportunity(opcode, signature)) {
                                 super.visitJumpInsn(opcode, label);
                                 found.getAndIncrement();
                             } else {
@@ -94,12 +94,12 @@ public class MutationInstance extends URLClassLoader {
 
                         @Override
                         public void visitLdcInsn(Object value) {
-                            if (Opcodes.LDC == mutator.toReplace() && found.get() == instance) {
-                                for (InstructionCall ic : mutator.replaceWith(signature, false)) {
+                            if (mutator.isOpportunity(Opcodes.LDC, signature) && found.get() == instance) {
+                                for (InstructionCall ic : mutator.replaceWith(Opcodes.LDC, signature)) {
                                     ic.call(mv, null);
                                 }
                                 found.getAndIncrement();
-                            } else if (Opcodes.LDC == mutator.toReplace()) {
+                            } else if (mutator.isOpportunity(Opcodes.LDC, signature)) {
                                 super.visitLdcInsn(value);
                                 found.getAndIncrement();
                             } else {
@@ -108,10 +108,10 @@ public class MutationInstance extends URLClassLoader {
                         }
                         @Override
                         public void visitIincInsn(int var, int increment) {
-                            if (Opcodes.IINC == mutator.toReplace() && found.get() == instance) {
+                            if (mutator.isOpportunity(Opcodes.IINC, signature) && found.get() == instance) {
                                 super.visitIincInsn(var, -increment);
                                 found.getAndIncrement();
-                            } else if (Opcodes.IINC == mutator.toReplace()) {
+                            } else if (mutator.isOpportunity(Opcodes.IINC, signature)) {
                                 super.visitIincInsn(var, increment);
                                 found.getAndIncrement();
                             } else {
@@ -120,9 +120,8 @@ public class MutationInstance extends URLClassLoader {
                         }
                         @Override
                         public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                            //TODO make this one guard
                             if (mutator.isOpportunity(opcode, descriptor) && found.get() == instance) {
-                                for (InstructionCall ic : mutator.replaceWith(descriptor, opcode == Opcodes.INVOKESTATIC/*owner.equals(internalName)*/)) {
+                                for (InstructionCall ic : mutator.replaceWith(opcode, descriptor)) {
                                     ic.call(mv, null);
                                 }
                                 found.getAndIncrement();
@@ -136,7 +135,7 @@ public class MutationInstance extends URLClassLoader {
                         @Override
                         public void visitInsn(int opcode) {
                             if (mutator.isOpportunity(opcode, signature) && found.get() == instance) {
-                                for (InstructionCall ic : mutator.replaceWith(signature, false)) {
+                                for (InstructionCall ic : mutator.replaceWith(opcode, signature)) {
                                     ic.call(mv, null);
                                 }
                                 found.getAndIncrement();
