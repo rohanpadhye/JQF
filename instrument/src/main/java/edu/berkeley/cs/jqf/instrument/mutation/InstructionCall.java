@@ -62,4 +62,9 @@ public class InstructionCall implements Opcodes {
             case JUMP_INSN: mv.visitJumpInsn(opcode, l);
         }
     }
+
+    @Override
+    public String toString() {
+        return "InstructionCall " + type + " - " + opcode;
+    }
 }

@@ -15,8 +15,7 @@ import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.TestClass;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.time.Duration;
 import java.util.*;
@@ -258,7 +257,24 @@ public class MutationGuidance extends ZestGuidance {
 
     @Override
     public ClassLoader getClassLoader(String[] classPath, ClassLoader parent) throws MalformedURLException {
-        cartographyClassLoader = new CartographyClassLoader(classPath, mutables, immutables, parent);
+        byte[] bytes;
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream("edu/berkeley/cs/jqf/instrument/mutation/MutationTimeoutException.class")) {
+            if (in == null) {
+                throw new ClassNotFoundException("Cannot find class " + "edu/berkeley/cs/jqf/instrument/mutation/MutationTimeoutException");
+            }
+            BufferedInputStream buf = new BufferedInputStream(in);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            int b;
+            while ((b = buf.read()) != -1) {
+                baos.write(b);
+            }
+            bytes = baos.toByteArray();
+        } catch (IOException | ClassNotFoundException e) {
+            throw new MalformedURLException("I/O exception while loading class." + e);
+        }
+
+        cartographyClassLoader = new CartographyClassLoader(classPath, mutables, immutables, parent, bytes);
         return cartographyClassLoader;
     }
 
@@ -270,15 +286,22 @@ public class MutationGuidance extends ZestGuidance {
         for(MutationInstance mcl : cartographyClassLoader.getCartograph()) {
             if(!mcl.isDead()) {
                 try {
+                    //System.out.println("try: " + mcl);
                     Class<?> clazz = Class.forName(testClass.getName(), true, mcl);
+                    //System.out.println("tried");
                     new TrialRunner(clazz, new FrameworkMethod(clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())), args).run();
                 } catch (InstrumentationException e) {
+                    //System.out.println("instr");
                     throw new GuidanceException(e);
                 } catch (GuidanceException e) {
+                    //System.out.println("guide");
                     throw e;
-                } catch (AssumptionViolatedException | TimeoutException e) {
+                } catch (AssumptionViolatedException e) {
+                    //System.out.println("assump");
                     // ignored
                 } catch (Throwable e) {
+                    //System.out.println("other; " + e.getClass());
+                    //e.printStackTrace();
                     if (!isExceptionExpected(e.getClass(), expectedExceptions)) {
                         // failed
                         mcl.kill();
@@ -288,6 +311,7 @@ public class MutationGuidance extends ZestGuidance {
                 }
                 // run
                 ((MutationCoverage) runCoverage).see(mcl);
+                //mcl.resetTimeout();
             }
         }
     }
