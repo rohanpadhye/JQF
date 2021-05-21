@@ -167,10 +167,6 @@ public enum Mutator {
         return toReplace;
     }
 
-    public String returnType() {
-        return returnType;
-    }
-
     public boolean isOpportunity(int opcode, String descriptor) {
         return opcode == toReplace && (returnType == null || Type.getReturnType(descriptor).getDescriptor().equals(returnType));
     }
@@ -178,26 +174,16 @@ public enum Mutator {
     public List<InstructionCall> replaceWith(int opcode, String sig) {
         List<InstructionCall> toReturn = new ArrayList<>(replaceWith);
         if(this.toString().contains("VOID_REMOVE")) { //TODO string parsing isn't great
-            int args = (Type.getArgumentsAndReturnSizes(sig)) >> 2;
-            System.out.println(sig);
-            //System.out.println("args: " + args + ", opcode: " +opcode);
-            /*if(opcode == Opcodes.INVOKESTATIC) {
-                args = args - 1;
-            }
-            for(int c = 0; c < args; c++) {
-                toReturn.add(new InstructionCall(Opcodes.POP));
-            }*/
+            //int args = (Type.getArgumentsAndReturnSizes(sig)) >> 2;
             List<InstructionCall> popList = new ArrayList<>();
             pops(sig.split("[(]")[1].split("[)]")[0] + " ", popList);
             Collections.reverse(popList);
             toReturn.addAll(popList);
-            System.out.println(toReturn);
         }
         return toReturn;
     }
 
     public void pops(String args, List<InstructionCall> popList) {
-        System.out.println(args);
         char next = args.charAt(0);
         if(next == ' ') {
             return;

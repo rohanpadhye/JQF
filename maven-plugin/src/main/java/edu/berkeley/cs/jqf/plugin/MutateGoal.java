@@ -120,7 +120,6 @@ public class MutateGoal extends AbstractMojo {
             writer.write("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
             System.out.println("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
             System.out.println("Mutants Run: " + runByTest + ", Failing Mutants: " + failByTest);
-            System.out.println("Mutants Found: " + instanceMap.size());
             writer.close();
         } catch (ClassNotFoundException | DependencyResolutionRequiredException | IOException e) {
             e.printStackTrace();
