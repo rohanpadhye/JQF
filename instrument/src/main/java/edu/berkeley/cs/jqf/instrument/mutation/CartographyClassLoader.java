@@ -31,12 +31,15 @@ public class CartographyClassLoader extends URLClassLoader {
     /** see InstrumentingClassLoader */
     private final ClassFileTransformer transformer = new SnoopInstructionTransformer();
 
+    private final byte[] timeoutBytes;
+
     /** Constructor */
-    public CartographyClassLoader(String[] paths, String[] mutables, String[] immutables, ClassLoader parent) throws MalformedURLException {
+    public CartographyClassLoader(String[] paths, String[] mutables, String[] immutables, ClassLoader parent, byte[] tB) throws MalformedURLException {
         super(stringsToUrls(paths), parent);
         includeClasses = new ArrayList<>(Arrays.asList(mutables));
         excludeClasses = new ArrayList<>(Arrays.asList(immutables));
         cartograph = new ArrayList<>();
+        timeoutBytes = tB;
     }
 
     /** see InstrumentingClassLoader */
@@ -88,7 +91,7 @@ public class CartographyClassLoader extends URLClassLoader {
                 long instances = getInstanceCount(bytes, m);
                 for(int c = 0; c < instances; c++) {
                     try {
-                        cartograph.add(new MutationInstance(getURLs(), getParent(), m, c, name));
+                        cartograph.add(new MutationInstance(getURLs(), getParent(), m, c, name, timeoutBytes));
                     } catch (MalformedURLException e) {
                         e.printStackTrace();
                     }

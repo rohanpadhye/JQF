@@ -1,10 +1,12 @@
 package edu.berkeley.cs.jqf.instrument.mutation;
 
+import janala.logger.inst.Instruction;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /** Duplicates PIT's default mutator set */
@@ -177,13 +179,38 @@ public enum Mutator {
         List<InstructionCall> toReturn = new ArrayList<>(replaceWith);
         if(this.toString().contains("VOID_REMOVE")) { //TODO string parsing isn't great
             int args = (Type.getArgumentsAndReturnSizes(sig)) >> 2;
-            if(opcode == Opcodes.INVOKESTATIC) {
+            System.out.println(sig);
+            //System.out.println("args: " + args + ", opcode: " +opcode);
+            /*if(opcode == Opcodes.INVOKESTATIC) {
                 args = args - 1;
             }
             for(int c = 0; c < args; c++) {
                 toReturn.add(new InstructionCall(Opcodes.POP));
-            }
+            }*/
+            List<InstructionCall> popList = new ArrayList<>();
+            pops(sig.split("[(]")[1].split("[)]")[0] + " ", popList);
+            Collections.reverse(popList);
+            toReturn.addAll(popList);
+            System.out.println(toReturn);
         }
         return toReturn;
+    }
+
+    public void pops(String args, List<InstructionCall> popList) {
+        System.out.println(args);
+        char next = args.charAt(0);
+        if(next == ' ') {
+            return;
+        }
+        if(next == 'J' || next == 'D') {
+            popList.add(new InstructionCall(Opcodes.POP2));
+        } else {
+            popList.add(new InstructionCall(Opcodes.POP));
+        }
+        if(next == 'L') {
+            pops(args.substring(args.split(";")[0].length() + 1), popList);
+        } else {
+            pops(args.substring(1), popList);
+        }
     }
 }

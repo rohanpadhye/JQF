@@ -1,11 +1,12 @@
 package edu.berkeley.cs.jqf.instrument.mutation;
 
+import janala.instrument.SnoopInstructionTransformer;
+import org.graalvm.compiler.nodes.calc.IntegerDivRemNode;
 import org.objectweb.asm.*;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.IllegalClassFormatException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -23,30 +24,58 @@ public class MutationInstance extends URLClassLoader {
     /** name of the class to mutate */
     private final String mutateName;
 
+    /** see InstrumentingClassLoader */
+    private final ClassFileTransformer transformer = new SnoopInstructionTransformer();
+
     /** whether this mutation has been killed already */
     private boolean dead;
 
     private final String className = this.getClass().getName();
     private static final int MAX_ITERATIONS = 100000;
-    private int jumps;
+    private static int jumps;
 
     //TODO potential for more information:
     //  line number
     //  who's seen it
     //  whether this mutation is likely to be killed by a particular input
 
-    public MutationInstance(URL[] paths, ClassLoader parent, Mutator m, long i, String n) throws MalformedURLException {
+    public MutationInstance(URL[] paths, ClassLoader parent, Mutator m, long i, String n, byte[] bytes) throws MalformedURLException, ClassNotFoundException {
         super(paths, parent);
         mutator = m;
         instance = i;
         mutateName = n;
         dead = false;
         jumps = 0;
+        /*byte[] bytes;
+        try (InputStream in = new FileInputStream(new File("target/edu/berkeley/cs/jqf/instrument/mutation/MutationTimeoutException.class"))) {
+            if (in == null) {
+                throw new ClassNotFoundException("Cannot find class MutationTimeoutException");
+            }
+            BufferedInputStream buf = new BufferedInputStream(in);
+
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            int b;
+            while ((b = buf.read()) != -1) {
+                baos.write(b);
+            }
+            bytes = baos.toByteArray();
+        } catch (IOException e) {
+            throw new ClassNotFoundException("I/O exception while loading class.", e);
+        }*/
+        defineClass("edu.berkeley.cs.jqf.instrument.mutation.MutationTimeoutException", bytes, 0, bytes.length);
+        /*File outputFile = new File("MutationTimeoutException.class");
+        try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
+            outputStream.write(bytes);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }*/
     }
 
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
         byte[] bytes;
+
+        //System.out.println(super.findLoadedClass("edu.berkeley.cs.jqf.instrument.mutation.MutationTimeoutException"));
 
         String internalName = name.replace('.', '/');
         String path = internalName.concat(".class");
@@ -66,6 +95,13 @@ public class MutationInstance extends URLClassLoader {
             throw new ClassNotFoundException("I/O exception while loading class.", e);
         }
 
+        //System.out.println("act name: " + name);
+        /*System.out.println("defined already? " + super.findLoadedClass(name));
+        boolean selfLoaded = super.findLoadedClass(className) != null;
+        if(!selfLoaded) {
+            super.loadClass(className);
+        }*/
+
         if(name.equals(mutateName)) {
             AtomicLong found = new AtomicLong(0);
             ClassWriter cw = new ClassWriter(0);
@@ -78,7 +114,28 @@ public class MutationInstance extends URLClassLoader {
                             signature, superName, interfaces)) {
                         @Override
                         public void visitJumpInsn(int opcode, Label label) {
-                            mv.visitMethodInsn(Opcodes.INVOKESTATIC, className, "timeoutCheck", "()V", false);
+                            /*System.out.println("class name: " + className);
+
+                            byte[] xbytes = new byte[0];
+                            try (InputStream in = getClass().getClassLoader().getResourceAsStream("edu/berkeley/cs/jqf/instrument/mutation/MutationTimeoutException.class")) {
+                                BufferedInputStream buf = new BufferedInputStream(in);
+
+                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                int b;
+                                while ((b = buf.read()) != -1) {
+                                    baos.write(b);
+                                }
+                                xbytes = baos.toByteArray();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            File outputFile = new File("MutationTimeoutException.class");
+                            try (FileOutputStream outputStream = new FileOutputStream(outputFile)) {
+                                outputStream.write(xbytes);
+                            } catch(Exception e) {
+                                e.printStackTrace();
+                            }*/
+                            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/berkeley/cs/jqf/instrument/mutation/MutationTimeoutException", "checkTimeout", "()V", false);
                             if (mutator.isOpportunity(opcode, signature) && found.get() == instance) {
                                 for (InstructionCall ic : mutator.replaceWith(opcode, signature)) {
                                     ic.call(mv, label);
@@ -150,9 +207,14 @@ public class MutationInstance extends URLClassLoader {
                 }
             }, 0);
             bytes = cw.toByteArray();
+            //System.out.println(cr.getClassName());
         }
 
-        return defineClass(name, bytes, 0, bytes.length);
+        //System.out.println("name: ");
+        Class<?> clazz = defineClass(name, bytes, 0, bytes.length);
+        //System.out.println(clazz.getName());
+
+        return clazz;
     }
 
     public void kill() {
@@ -167,7 +229,8 @@ public class MutationInstance extends URLClassLoader {
      * Insert calls to this as instrumentation in the program
      * (see line 81)
      */
-    public void timeoutCheck() throws MutationTimeoutException {
+    public static void timeoutCheck() throws MutationTimeoutException {
+        System.out.println("timeout check!");
         if(++jumps > MAX_ITERATIONS) {
             throw new MutationTimeoutException();
         }

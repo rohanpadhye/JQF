@@ -14,10 +14,7 @@ import org.junit.runner.Request;
 import org.junit.runner.Result;
 import org.junit.runner.Runner;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,7 +79,25 @@ public class MutateGoal extends AbstractMojo {
             IOUtils.createDirectory(resultsDir);
             BufferedWriter writer = new BufferedWriter(new FileWriter(new File(resultsDir.getPath() + File.separator + testMethod + ".txt")));
             List<String> classpaths =  project.getTestClasspathElements();
-            CartographyClassLoader ccl = new CartographyClassLoader(classpaths.toArray(new String[0]), includeArray, excludeArray, getClass().getClassLoader());
+
+            byte[] bytes;
+            try (InputStream in = getClass().getClassLoader().getResourceAsStream("edu/berkeley/cs/jqf/instrument/mutation/MutationTimeoutException.class")) {
+                if (in == null) {
+                    throw new ClassNotFoundException("Cannot find class " + "edu/berkeley/cs/jqf/instrument/mutation/MutationTimeoutException");
+                }
+                BufferedInputStream buf = new BufferedInputStream(in);
+
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                int b;
+                while ((b = buf.read()) != -1) {
+                    baos.write(b);
+                }
+                bytes = baos.toByteArray();
+            } catch (IOException e) {
+                throw new ClassNotFoundException("I/O exception while loading class.", e);
+            }
+
+            CartographyClassLoader ccl = new CartographyClassLoader(classpaths.toArray(new String[0]), includeArray, excludeArray, getClass().getClassLoader(), bytes);
             Result cclResult = runTest(ccl);
             writer.write("Tested CartographyClassLoader (original): " + cclResult.getFailures() + "\n");
             List<MutationInstance> instanceMap = ccl.getCartograph();
@@ -105,6 +120,7 @@ public class MutateGoal extends AbstractMojo {
             writer.write("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
             System.out.println("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
             System.out.println("Mutants Run: " + runByTest + ", Failing Mutants: " + failByTest);
+            System.out.println("Mutants Found: " + instanceMap.size());
             writer.close();
         } catch (ClassNotFoundException | DependencyResolutionRequiredException | IOException e) {
             e.printStackTrace();
@@ -112,7 +128,8 @@ public class MutateGoal extends AbstractMojo {
     }
 
     public Result runTest(ClassLoader cl) throws ClassNotFoundException {
-        Request testRequest = Request.method(Class.forName(testClassName, true, cl), testMethod);
+        Class<?> clazz = Class.forName(testClassName, true, cl);
+        Request testRequest = Request.method(clazz, testMethod);
         Runner testRunner = testRequest.getRunner();
         JUnitCore junit = new JUnitCore();
         return junit.run(testRunner);
