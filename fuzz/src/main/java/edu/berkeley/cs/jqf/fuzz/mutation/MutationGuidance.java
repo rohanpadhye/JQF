@@ -3,12 +3,10 @@ package edu.berkeley.cs.jqf.fuzz.mutation;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
-import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
 import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
-import edu.berkeley.cs.jqf.instrument.mutation.MutationTimeoutException;
 import edu.berkeley.cs.jqf.instrument.tracing.TraceLogger;
 import edu.berkeley.cs.jqf.instrument.tracing.events.KillEvent;
 import org.junit.AssumptionViolatedException;
@@ -286,22 +284,15 @@ public class MutationGuidance extends ZestGuidance {
         for(MutationInstance mcl : cartographyClassLoader.getCartograph()) {
             if(!mcl.isDead()) {
                 try {
-                    //System.out.println("try: " + mcl);
                     Class<?> clazz = Class.forName(testClass.getName(), true, mcl);
-                    //System.out.println("tried");
                     new TrialRunner(clazz, new FrameworkMethod(clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())), args).run();
                 } catch (InstrumentationException e) {
-                    //System.out.println("instr");
                     throw new GuidanceException(e);
                 } catch (GuidanceException e) {
-                    //System.out.println("guide");
                     throw e;
                 } catch (AssumptionViolatedException e) {
-                    //System.out.println("assump");
                     // ignored
                 } catch (Throwable e) {
-                    //System.out.println("other; " + e.getClass());
-                    //e.printStackTrace();
                     if (!isExceptionExpected(e.getClass(), expectedExceptions)) {
                         // failed
                         mcl.kill();
@@ -311,7 +302,6 @@ public class MutationGuidance extends ZestGuidance {
                 }
                 // run
                 ((MutationCoverage) runCoverage).see(mcl);
-                //mcl.resetTimeout();
             }
         }
     }

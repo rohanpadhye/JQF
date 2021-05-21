@@ -10,6 +10,7 @@ public class MutationTimeoutException extends Exception {
 
     public static void checkTimeout() throws Exception {
         if(++jumps > MAX_ITERATIONS) {
+            jumps = 0;
             throw new MutationTimeoutException();
         }
     }
