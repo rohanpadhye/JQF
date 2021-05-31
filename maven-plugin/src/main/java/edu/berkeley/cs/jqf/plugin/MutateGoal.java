@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2018 The Regents of the University of California
+ * Copyright (c) 2021 Isabella Laybourn
  *
  * All rights reserved.
  *
