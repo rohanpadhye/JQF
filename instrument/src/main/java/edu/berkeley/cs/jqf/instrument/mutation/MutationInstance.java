@@ -141,70 +141,73 @@ public class MutationInstance {
                                 mv.visitLdcInsn(MutationInstance.this.id);
                                 mv.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/berkeley/cs/jqf/instrument/mutation/MutationSnoop", "checkTimeout", "(I)V", false);
 
-                                if (mutator.isOpportunity(opcode, signature) && found.get() == mutatorOffsetWithinClass) {
-                                    for (InstructionCall ic : mutator.replaceWith(opcode, signature)) {
+                                // Increment offset if the mutator matches
+                                if (mutator.isOpportunity(opcode, signature) &&
+                                        found.getAndIncrement() == mutatorOffsetWithinClass) {
+                                    // Mutator and offset match, so perform mutation
+                                    for (InstructionCall ic : mutator.replaceWith()) {
                                         ic.call(mv, label);
                                     }
-                                    found.getAndIncrement();
-                                } else if (mutator.isOpportunity(opcode, signature)) {
-                                    super.visitJumpInsn(opcode, label);
-                                    found.getAndIncrement();
                                 } else {
+                                    // No mutation
                                     super.visitJumpInsn(opcode, label);
                                 }
                             }
 
                             @Override
                             public void visitLdcInsn(Object value) {
-                                if (mutator.isOpportunity(Opcodes.LDC, signature) && found.get() == mutatorOffsetWithinClass) {
-                                    for (InstructionCall ic : mutator.replaceWith(Opcodes.LDC, signature)) {
+                                // Increment offset if the mutator matches
+                                if (mutator.isOpportunity(Opcodes.LDC, signature) &&
+                                        found.getAndIncrement() == mutatorOffsetWithinClass) {
+                                    // Mutator and offset match, so perform mutation
+                                    for (InstructionCall ic : mutator.replaceWith()) {
                                         ic.call(mv, null);
                                     }
-                                    found.getAndIncrement();
-                                } else if (mutator.isOpportunity(Opcodes.LDC, signature)) {
-                                    super.visitLdcInsn(value);
-                                    found.getAndIncrement();
                                 } else {
+                                    // No mutation
                                     super.visitLdcInsn(value);
                                 }
                             }
+
                             @Override
                             public void visitIincInsn(int var, int increment) {
-                                if (mutator.isOpportunity(Opcodes.IINC, signature) && found.get() == mutatorOffsetWithinClass) {
-                                    super.visitIincInsn(var, -increment);
-                                    found.getAndIncrement();
-                                } else if (mutator.isOpportunity(Opcodes.IINC, signature)) {
-                                    super.visitIincInsn(var, increment);
-                                    found.getAndIncrement();
+                                // Increment offset if the mutator matches
+                                if (mutator.isOpportunity(Opcodes.IINC, signature) &&
+                                        found.getAndIncrement() == mutatorOffsetWithinClass) {
+                                    // Mutator and offset match, so perform mutation
+                                    super.visitIincInsn(var, -increment); // TODO: Why is this hardcoded?
                                 } else {
+                                    // No mutation
                                     super.visitIincInsn(var, increment);
                                 }
                             }
+
                             @Override
                             public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                                if (mutator.isOpportunity(opcode, descriptor) && found.get() == mutatorOffsetWithinClass) {
-                                    for (InstructionCall ic : mutator.replaceWith(opcode, descriptor)) {
+                                // Increment offset if the mutator matches
+                                if (mutator.isOpportunity(opcode, descriptor) &&
+                                        found.getAndIncrement() == mutatorOffsetWithinClass) {
+                                    // Mutator and offset match, so perform mutation
+                                    for (InstructionCall ic : mutator.replaceWith()) {
                                         ic.call(mv, null);
                                     }
-                                    found.getAndIncrement();
-                                } else if (mutator.isOpportunity(opcode, descriptor)) {
-                                    super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-                                    found.getAndIncrement();
                                 } else {
+                                    // No mutation
                                     super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                                 }
                             }
+
                             @Override
                             public void visitInsn(int opcode) {
-                                if (mutator.isOpportunity(opcode, signature) && found.get() == mutatorOffsetWithinClass) {
-                                    for (InstructionCall ic : mutator.replaceWith(opcode, signature)) {
+                                // Increment offset if the mutator matches
+                                if (mutator.isOpportunity(opcode, signature) &&
+                                        found.getAndIncrement() == mutatorOffsetWithinClass) {
+                                    // Mutator and offset match, so perform mutation
+                                    for (InstructionCall ic : mutator.replaceWith()) {
                                         ic.call(mv, null);
                                     }
-                                    found.getAndIncrement();
-                                } else if (mutator.isOpportunity(opcode, signature)) {
-                                    super.visitInsn(opcode);
-                                    found.getAndIncrement();
                                 } else {
+                                    // No mutation
                                     super.visitInsn(opcode);
                                 }
                             }

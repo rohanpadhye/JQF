@@ -121,10 +121,6 @@ public enum Mutator {
             new InstructionCall(Opcodes.ARETURN)),
     //Swap increments (INCREMENTS):
     IINC_SWAP(Opcodes.IINC, null, new InstructionCall(Opcodes.NOP)), //More symbolic
-    //Remove void calls (VOID_METHOD_CALLS)
-    VOID_REMOVE_STATIC(Opcodes.INVOKESTATIC, "V", new InstructionCall(Opcodes.NOP)),
-    VOID_REMOVE_VIRTUAL(Opcodes.INVOKEVIRTUAL, "V", new InstructionCall(Opcodes.NOP)),
-    VOID_REMOVE_INTERFACE(Opcodes.INVOKEINTERFACE, "V", new InstructionCall(Opcodes.NOP)),
     //Return empty object (EMPTY_RETURNS)
     I_ARETURN_TO_EMPTY(Opcodes.ARETURN, "Ljava/lang/Integer;", new InstructionCall(Opcodes.POP),
             new InstructionCall(Opcodes.ICONST_0),
@@ -202,32 +198,8 @@ public enum Mutator {
         return opcode == toReplace && (returnType == null || Type.getReturnType(descriptor).getDescriptor().equals(returnType));
     }
 
-    public List<InstructionCall> replaceWith(int opcode, String sig) {
-        List<InstructionCall> toReturn = new ArrayList<>(replaceWith);
-        if(this.toString().contains("VOID_REMOVE")) { //TODO string parsing isn't great
-            //int args = (Type.getArgumentsAndReturnSizes(sig)) >> 2;
-            List<InstructionCall> popList = new ArrayList<>();
-            pops(sig.split("[(]")[1].split("[)]")[0] + " ", popList);
-            Collections.reverse(popList);
-            toReturn.addAll(popList);
-        }
-        return toReturn;
+    public List<InstructionCall> replaceWith() {
+        return replaceWith;
     }
 
-    public void pops(String args, List<InstructionCall> popList) {
-        char next = args.charAt(0);
-        if(next == ' ') {
-            return;
-        }
-        if(next == 'J' || next == 'D') {
-            popList.add(new InstructionCall(Opcodes.POP2));
-        } else {
-            popList.add(new InstructionCall(Opcodes.POP));
-        }
-        if(next == 'L') {
-            pops(args.substring(args.split(";")[0].length() + 1), popList);
-        } else {
-            pops(args.substring(1), popList);
-        }
-    }
 }
