@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Isabella Laybourn
+ * Copyright (c) 2021 Isabella Laybourn, Rohan Padhye
  *
  * All rights reserved.
  *
@@ -33,6 +33,8 @@ import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
@@ -88,7 +90,7 @@ public class MutateGoal extends AbstractMojo {
     String excludeRegex;
 
     @Override
-    public void execute() {
+    public void execute() throws MojoExecutionException, MojoFailureException {
         String targetName = testClassName + "#" + testMethod;
         String[] includeArray, excludeArray;
         if(includeRegex == null || includeRegex.equals("")) {
@@ -104,55 +106,61 @@ public class MutateGoal extends AbstractMojo {
         if(outputDirectory == null || outputDirectory.equals("")) {
             outputDirectory = "mutation-results" + File.separator + testClassName;
         }
+
+
+        File resultsDir = new File(target, outputDirectory);
         try {
-            File resultsDir = new File(target, outputDirectory);
             IOUtils.createDirectory(resultsDir);
-            BufferedWriter writer = new BufferedWriter(new FileWriter(new File(resultsDir.getPath() + File.separator + testMethod + ".txt")));
+        } catch (IOException e) {
+            throw new MojoExecutionException("Could not create log file", e);
+        }
+
+        try (PrintWriter log = new PrintWriter(new FileWriter(new File(resultsDir.getPath() + File.separator + testMethod + ".txt")))) {
+            // Create main classloader
             List<String> classpaths =  project.getTestClasspathElements();
+            CartographyClassLoader ccl = new CartographyClassLoader(classpaths.toArray(new String[0]), includeArray, excludeArray, getClass().getClassLoader());
 
-            byte[] bytes;
-            try (InputStream in = getClass().getClassLoader().getResourceAsStream("edu/berkeley/cs/jqf/instrument/mutation/MutationTimeoutException.class")) {
-                if (in == null) {
-                    throw new ClassNotFoundException("Cannot find class " + "edu/berkeley/cs/jqf/instrument/mutation/MutationTimeoutException");
-                }
-                BufferedInputStream buf = new BufferedInputStream(in);
-
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                int b;
-                while ((b = buf.read()) != -1) {
-                    baos.write(b);
-                }
-                bytes = baos.toByteArray();
-            } catch (IOException e) {
-                throw new ClassNotFoundException("I/O exception while loading class.", e);
+            // Run initial test to compute mutants dynamically
+            Result initialResults = runTest(ccl);
+            if (!initialResults.wasSuccessful()) {
+                System.err.println("Initial test run fails!");
+                System.err.println(initialResults.getFailures());
+                return;
             }
 
-            CartographyClassLoader ccl = new CartographyClassLoader(classpaths.toArray(new String[0]), includeArray, excludeArray, getClass().getClassLoader(), bytes);
-            Result cclResult = runTest(ccl);
-            writer.write("Tested CartographyClassLoader (original): " + cclResult.getFailures() + "\n");
-            List<MutationInstance> instanceMap = ccl.getCartograph();
+            // Mutants created after initial run
+            List<MutationInstance> mutationInstances = ccl.getCartograph();
+            System.out.printf("Mutants created: %d\n", mutationInstances.size());
+
+            // Set up stats
             long totalRun = 0, totalFail = 0, totalIgnore = 0;
             long runByTest = 0, failByTest = 0;
             List<MutationInstance> killedMutants = new ArrayList<>();
-            for(MutationInstance mcl : instanceMap) {
-                System.out.println(mcl);
-                Result mclResult = runTest(mcl);
-                writer.write("Failures from MutationClassLoader " + mcl + ":\n" + mclResult.getFailures() + "\n  --> Failed: " + mclResult.getFailureCount() + ", Ignored: " + mclResult.getIgnoreCount() + ", Run: " + mclResult.getRunCount() + "\n");
-                totalRun += mclResult.getRunCount();
-                totalFail += mclResult.getFailureCount();
-                totalIgnore += mclResult.getIgnoreCount();
+
+            // Run each mutant
+            for(MutationInstance mutationInstance : mutationInstances) {
+                System.out.println(mutationInstance);
+                log.println(mutationInstance);
+                mutationInstance.resetTimer();
+                Result mutantTestResult = runTest(mutationInstance.getClassLoader());
                 runByTest++;
-                if(mclResult.getFailureCount() > 0) {
+                if(mutantTestResult.getFailureCount() > 0) {
                     failByTest++;
-                    killedMutants.add(mcl);
+                    killedMutants.add(mutationInstance);
+                    log.println(mutantTestResult.getFailures());
+                    Throwable t = mutantTestResult.getFailures().get(0).getException();
+                    if (t instanceof VerifyError) {
+                        log.println(t.getMessage());
+                    }
                 }
             }
-            writer.write("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
-            System.out.println("Totals:\nFailures: " + totalFail + ", Ignored: " + totalIgnore + ", Run: " + totalRun);
-            System.out.println("Mutants Run: " + runByTest + ", Failing Mutants: " + failByTest);
-            writer.close();
-        } catch (ClassNotFoundException | DependencyResolutionRequiredException | IOException e) {
-            e.printStackTrace();
+
+            System.out.println("Mutants Run: " + runByTest + ", Killed Mutants: " + failByTest);
+            log.println("Mutants Run: " + runByTest + ", Killed Mutants: " + failByTest);
+        } catch (ClassNotFoundException | DependencyResolutionRequiredException e) {
+            throw new MojoFailureException("Bad Request", e);
+        } catch (IOException e) {
+            throw new MojoExecutionException("IO Exception", e);
         }
     }
 
