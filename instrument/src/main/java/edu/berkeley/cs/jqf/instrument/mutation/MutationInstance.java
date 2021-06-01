@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021 Isabella Laybourn
+ * Copyright (c) 2021 Isabella Laybourn, Rohan Padhye
  *
  * All rights reserved.
  *
@@ -28,165 +28,196 @@
  */
 package edu.berkeley.cs.jqf.instrument.mutation;
 
-import janala.instrument.SnoopInstructionTransformer;
 import org.objectweb.asm.*;
 
 import java.io.*;
-import java.lang.instrument.ClassFileTransformer;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * mostly exported from InstrumentingClassLoader with additions to FindClass
- *
- * @author Bella Laybourn
- */
-public class MutationInstance extends URLClassLoader {
 
-    /** which mutator to use */
+public class MutationInstance {
+
+    /** Globally unique identifier for this mutation instance */
+    public final int id;
+
+    /** Static list of all registered mutation instances. */
+    private static final ArrayList<MutationInstance> mutationInstances = new ArrayList<>();
+
+    /** The type of mutation represented by a mutator */
     private final Mutator mutator;
 
-    /** numbered instance of the opportunity for mutation this classloader uses */
-    private final long instance;
+    /** Name of the class to mutate */
+    private final String className;
 
-    /** name of the class to mutate */
-    private final String mutateName;
+    /** Numbered instance of the opportunity for mutation this classloader uses */
+    private final long mutatorOffsetWithinClass;
 
-    /** see InstrumentingClassLoader */
-    private final ClassFileTransformer transformer = new SnoopInstructionTransformer();
+    /** The classloader for this mutation instance. */
+    private final MutationClassLoader classLoader;
 
-    /** whether this mutation has been killed already */
-    private boolean dead;
+    /** Whether this mutation has been killed already */
+    private boolean dead; // TODO: Move this to guidance
+
+    /** Counter that is incremented during execution of this mutation instance to catch infinite loops. */
+    private long timeoutCounter = 0;
 
     //TODO potential for more information:
     //  line number
     //  who's seen it
     //  whether this mutation is likely to be killed by a particular input
 
-    public MutationInstance(URL[] paths, ClassLoader parent, Mutator m, long i, String n, byte[] bytes) throws MalformedURLException, ClassNotFoundException {
-        super(paths, parent);
-        mutator = m;
-        instance = i;
-        mutateName = n;
-        dead = false;
-        defineClass("edu.berkeley.cs.jqf.instrument.mutation.MutationTimeoutException", bytes, 0, bytes.length);
+    public MutationInstance(URL[] paths, ClassLoader parent, Mutator m, long i, String n) {
+        this.id = mutationInstances.size();
+        this.className = n;
+        this.mutator = m;
+        this.mutatorOffsetWithinClass = i;
+        this.classLoader = new MutationClassLoader(paths, parent);
+        this.dead = false;
+
+        // Register mutation instance
+        mutationInstances.add(this);
     }
 
-    @Override
-    public Class<?> findClass(String name) throws ClassNotFoundException {
-        byte[] bytes;
+    /**
+     * Get the class loader associated with this mutation instance.
+     *
+     * @return a classloader that performs exactly one mutation
+     */
+    public MutationClassLoader getClassLoader() {
+        return classLoader;
+    }
 
-        String internalName = name.replace('.', '/');
-        String path = internalName.concat(".class");
-        try (InputStream in = super.getResourceAsStream(path)) {
-            if (in == null) {
-                throw new ClassNotFoundException("Cannot find class " + name);
-            }
-            BufferedInputStream buf = new BufferedInputStream(in);
+    /**
+     * Classloader that loads test classes and performs exactly one mutation.
+     *
+     * Mostly exported from InstrumentingClassLoader with additions to FindClass.
+     *
+     * @author Bella Laybourn
+     */
+    public class MutationClassLoader extends URLClassLoader {
 
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            int b;
-            while ((b = buf.read()) != -1) {
-                baos.write(b);
-            }
-            bytes = baos.toByteArray();
-        } catch (IOException e) {
-            throw new ClassNotFoundException("I/O exception while loading class.", e);
+        public MutationClassLoader(URL[] paths, ClassLoader parent) {
+            super(paths, parent);
         }
 
-        if(name.equals(mutateName)) {
-            AtomicLong found = new AtomicLong(0);
-            ClassWriter cw = new ClassWriter(0);
-            ClassReader cr = new ClassReader(bytes);
-            cr.accept(new ClassVisitor(Mutator.cvArg, cw) {
-                @Override
-                public MethodVisitor visitMethod(int access, String name, String signature,
-                                                 String superName, String[] interfaces) {
-                    return new MethodVisitor(Mutator.cvArg, cv.visitMethod(access, name,
-                            signature, superName, interfaces)) {
-                        @Override
-                        public void visitJumpInsn(int opcode, Label label) {
-                            mv.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/berkeley/cs/jqf/instrument/mutation/MutationTimeoutException", "checkTimeout", "()V", false);
-                            if (mutator.isOpportunity(opcode, signature) && found.get() == instance) {
-                                for (InstructionCall ic : mutator.replaceWith(opcode, signature)) {
-                                    ic.call(mv, label);
-                                }
-                                found.getAndIncrement();
-                            } else if (mutator.isOpportunity(opcode, signature)) {
-                                super.visitJumpInsn(opcode, label);
-                                found.getAndIncrement();
-                            } else {
-                                super.visitJumpInsn(opcode, label);
-                            }
-                        }
+        @Override
+        public Class<?> findClass(String name) throws ClassNotFoundException {
+            byte[] bytes;
 
-                        @Override
-                        public void visitLdcInsn(Object value) {
-                            if (mutator.isOpportunity(Opcodes.LDC, signature) && found.get() == instance) {
-                                for (InstructionCall ic : mutator.replaceWith(Opcodes.LDC, signature)) {
-                                    ic.call(mv, null);
-                                }
-                                found.getAndIncrement();
-                            } else if (mutator.isOpportunity(Opcodes.LDC, signature)) {
-                                super.visitLdcInsn(value);
-                                found.getAndIncrement();
-                            } else {
-                                super.visitLdcInsn(value);
-                            }
-                        }
-                        @Override
-                        public void visitIincInsn(int var, int increment) {
-                            if (mutator.isOpportunity(Opcodes.IINC, signature) && found.get() == instance) {
-                                super.visitIincInsn(var, -increment);
-                                found.getAndIncrement();
-                            } else if (mutator.isOpportunity(Opcodes.IINC, signature)) {
-                                super.visitIincInsn(var, increment);
-                                found.getAndIncrement();
-                            } else {
-                                super.visitIincInsn(var, increment);
-                            }
-                        }
-                        @Override
-                        public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
-                            if (mutator.isOpportunity(opcode, descriptor) && found.get() == instance) {
-                                for (InstructionCall ic : mutator.replaceWith(opcode, descriptor)) {
-                                    ic.call(mv, null);
-                                }
-                                found.getAndIncrement();
-                            } else if (mutator.isOpportunity(opcode, descriptor)) {
-                                super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-                                found.getAndIncrement();
-                            } else {
-                                super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
-                            }
-                        }
-                        @Override
-                        public void visitInsn(int opcode) {
-                            if(opcode == Opcodes.IRETURN || opcode == Opcodes.ARETURN || opcode == Opcodes.RETURN) {
-                                mv.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/berkeley/cs/jqf/instrument/mutation/MutationTimeoutException", "resetTimeout", "()V", false);
-                            }
-                            if (mutator.isOpportunity(opcode, signature) && found.get() == instance) {
-                                for (InstructionCall ic : mutator.replaceWith(opcode, signature)) {
-                                    ic.call(mv, null);
-                                }
-                                found.getAndIncrement();
-                            } else if (mutator.isOpportunity(opcode, signature)) {
-                                super.visitInsn(opcode);
-                                found.getAndIncrement();
-                            } else {
-                                super.visitInsn(opcode);
-                            }
-                        }
-                    };
+            String internalName = name.replace('.', '/');
+            String path = internalName.concat(".class");
+            try (InputStream in = super.getResourceAsStream(path)) {
+                if (in == null) {
+                    throw new ClassNotFoundException("Cannot find class " + name);
                 }
-            }, 0);
-            bytes = cw.toByteArray();
-        }
+                BufferedInputStream buf = new BufferedInputStream(in);
 
-        return defineClass(name, bytes, 0, bytes.length);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                int b;
+                while ((b = buf.read()) != -1) {
+                    baos.write(b);
+                }
+                bytes = baos.toByteArray();
+            } catch (IOException e) {
+                throw new ClassNotFoundException("I/O exception while loading class.", e);
+            }
+
+            if(name.equals(className)) {
+                AtomicLong found = new AtomicLong(0);
+                ClassWriter cw = new ClassWriter(
+                        ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                ClassReader cr = new ClassReader(bytes);
+                cr.accept(new ClassVisitor(Mutator.cvArg, cw) {
+                    @Override
+                    public MethodVisitor visitMethod(int access, String name, String signature,
+                                                     String superName, String[] interfaces) {
+                        return new MethodVisitor(Mutator.cvArg, cv.visitMethod(access, name,
+                                signature, superName, interfaces)) {
+                            @Override
+                            public void visitJumpInsn(int opcode, Label label) {
+                                // Increment timer and check for time outs at each jump instruction
+                                mv.visitLdcInsn(MutationInstance.this.id);
+                                mv.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/berkeley/cs/jqf/instrument/mutation/MutationSnoop", "checkTimeout", "(I)V", false);
+
+                                if (mutator.isOpportunity(opcode, signature) && found.get() == mutatorOffsetWithinClass) {
+                                    for (InstructionCall ic : mutator.replaceWith(opcode, signature)) {
+                                        ic.call(mv, label);
+                                    }
+                                    found.getAndIncrement();
+                                } else if (mutator.isOpportunity(opcode, signature)) {
+                                    super.visitJumpInsn(opcode, label);
+                                    found.getAndIncrement();
+                                } else {
+                                    super.visitJumpInsn(opcode, label);
+                                }
+                            }
+
+                            @Override
+                            public void visitLdcInsn(Object value) {
+                                if (mutator.isOpportunity(Opcodes.LDC, signature) && found.get() == mutatorOffsetWithinClass) {
+                                    for (InstructionCall ic : mutator.replaceWith(Opcodes.LDC, signature)) {
+                                        ic.call(mv, null);
+                                    }
+                                    found.getAndIncrement();
+                                } else if (mutator.isOpportunity(Opcodes.LDC, signature)) {
+                                    super.visitLdcInsn(value);
+                                    found.getAndIncrement();
+                                } else {
+                                    super.visitLdcInsn(value);
+                                }
+                            }
+                            @Override
+                            public void visitIincInsn(int var, int increment) {
+                                if (mutator.isOpportunity(Opcodes.IINC, signature) && found.get() == mutatorOffsetWithinClass) {
+                                    super.visitIincInsn(var, -increment);
+                                    found.getAndIncrement();
+                                } else if (mutator.isOpportunity(Opcodes.IINC, signature)) {
+                                    super.visitIincInsn(var, increment);
+                                    found.getAndIncrement();
+                                } else {
+                                    super.visitIincInsn(var, increment);
+                                }
+                            }
+                            @Override
+                            public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                                if (mutator.isOpportunity(opcode, descriptor) && found.get() == mutatorOffsetWithinClass) {
+                                    for (InstructionCall ic : mutator.replaceWith(opcode, descriptor)) {
+                                        ic.call(mv, null);
+                                    }
+                                    found.getAndIncrement();
+                                } else if (mutator.isOpportunity(opcode, descriptor)) {
+                                    super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                                    found.getAndIncrement();
+                                } else {
+                                    super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
+                                }
+                            }
+                            @Override
+                            public void visitInsn(int opcode) {
+                                if (mutator.isOpportunity(opcode, signature) && found.get() == mutatorOffsetWithinClass) {
+                                    for (InstructionCall ic : mutator.replaceWith(opcode, signature)) {
+                                        ic.call(mv, null);
+                                    }
+                                    found.getAndIncrement();
+                                } else if (mutator.isOpportunity(opcode, signature)) {
+                                    super.visitInsn(opcode);
+                                    found.getAndIncrement();
+                                } else {
+                                    super.visitInsn(opcode);
+                                }
+                            }
+                        };
+                    }
+                }, 0);
+                bytes = cw.toByteArray();
+            }
+
+            return defineClass(name, bytes, 0, bytes.length);
+        }
     }
+
 
     public void kill() {
         dead = true;
@@ -196,13 +227,24 @@ public class MutationInstance extends URLClassLoader {
         return dead;
     }
 
+    public void resetTimer() {
+        this.timeoutCounter = 0;
+    }
+
+    public long getTimeoutCounter() {
+        return this.timeoutCounter;
+    }
+
+    public long incrementTimeoutCounter() {
+        return ++this.timeoutCounter;
+    }
+
     @Override
     public String toString() {
-        String toReturn = "MutationInstance " + instance + " of " + mutator + " in " + mutateName + " (";
-        if(dead) {
-            return toReturn + "dead)";
-        } else {
-            return toReturn + "alive)";
-        }
+        return String.format("%s::%s::%d", className, mutator, mutatorOffsetWithinClass);
+    }
+
+    public static MutationInstance getInstance(int id) {
+        return mutationInstances.get(id);
     }
 }
