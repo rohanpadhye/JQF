@@ -40,6 +40,7 @@ import java.io.OutputStream;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.function.Consumer;
 
@@ -79,7 +80,7 @@ public class AFLGuidance implements Guidance {
     protected static final int COVERAGE_MAP_SIZE = 1 << 16;
 
     /** The "coverage" map that will be sent to AFL. */
-    protected byte[] traceBits;
+    protected byte[] traceBits = new byte[COVERAGE_MAP_SIZE];
 
     /** Whether to keep executing more inputs. */
     protected boolean everything_ok = true;
@@ -212,7 +213,7 @@ public class AFLGuidance implements Guidance {
                 }
 
                 // Reset trace-bits
-                traceBits = new byte[COVERAGE_MAP_SIZE];
+                Arrays.fill(traceBits, (byte) 0);
 
             } catch (IOException e) {
                 everything_ok = false;
