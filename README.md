@@ -1,4 +1,4 @@
-This is a fork for working on fault-guided fuzz testing
+This is a fork for working on fault-guided fuzz testing.
 
 ---
 
