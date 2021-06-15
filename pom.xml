@@ -4,7 +4,7 @@
 
     <groupId>edu.berkeley.cs.jqf</groupId>
     <artifactId>jqf</artifactId>
-    <version>1.7-SNAPSHOT</version>
+    <version>1.8-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>jqf</name>
@@ -86,12 +86,12 @@
             <dependency>
                 <groupId>com.pholser</groupId>
                 <artifactId>junit-quickcheck-core</artifactId>
-                <version>0.8</version>
+                <version>1.0</version>
             </dependency>
             <dependency>
                 <groupId>com.pholser</groupId>
                 <artifactId>junit-quickcheck-generators</artifactId>
-                <version>0.8</version>
+                <version>1.0</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
@@ -106,12 +106,12 @@
             <dependency>
                 <groupId>edu.berkeley.cs.jqf</groupId>
                 <artifactId>jqf-fuzz</artifactId>
-                <version>1.7-SNAPSHOT</version>
+                <version>1.8-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>edu.berkeley.cs.jqf</groupId>
                 <artifactId>jqf-instrument</artifactId>
-                <version>1.7-SNAPSHOT</version>
+                <version>1.8-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -146,8 +146,8 @@
                         <source>1.8</source>
                         <links>
                             <link>http://junit.org/junit4/javadoc/latest/</link>
-                            <link>https://pholser.github.io/junit-quickcheck/site/0.7/junit-quickcheck-core/apidocs/</link>
-                            <link>https://pholser.github.io/junit-quickcheck/site/0.7/junit-quickcheck-generators/apidocs/</link>
+                            <link>https://pholser.github.io/junit-quickcheck/site/1.0/junit-quickcheck-core/apidocs/</link>
+                            <link>https://pholser.github.io/junit-quickcheck/site/1.0/junit-quickcheck-generators/apidocs/</link>
                         </links>
                     </configuration>
                     <executions>
@@ -175,7 +175,7 @@
                 <plugin>
                     <groupId>edu.berkeley.cs.jqf</groupId>
                     <artifactId>jqf-maven-plugin</artifactId>
-                    <version>1.7-SNAPSHOT</version>
+                    <version>1.8-SNAPSHOT</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

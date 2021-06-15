@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2017-2018 The Regents of the University of California
+ * Copyright (c) 2020-2021 Rohan Padhye
  *
  * All rights reserved.
  *
@@ -40,6 +41,7 @@ import java.util.List;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.mutation.MutationGuidance;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
@@ -231,7 +233,6 @@ public class FuzzGoal extends AbstractMojo {
     @Parameter(property="exitOnCrash")
     private String exitOnCrash;
 
-
     /**
      * The timeout for each individual trial, in milliseconds.
      *
@@ -239,6 +240,21 @@ public class FuzzGoal extends AbstractMojo {
      */
     @Parameter(property="runTimeout")
     private int runTimeout;
+
+    /**
+     * Whether to bound size of inputs being mutated by the fuzzer.
+     *
+     * <p>If this property is set to true, then the fuzzing engine
+     * will treat inputs as fixed-size arrays of bytes
+     * rather than as an infinite stream of pseudo-random choices. This option
+     * is appropriate when fuzzing test methods that take a single
+     * argument of type {@link java.io.InputStream} and that also provide a
+     * set of seed inputs via the `in' property.</p>
+     *
+     * <p>If not provided, defaults to {@code false}.</p>
+     */
+    @Parameter(property="fixedSize")
+    private boolean fixedSizeInputs;
 
 
     @Override
@@ -273,6 +289,9 @@ public class FuzzGoal extends AbstractMojo {
         if (runTimeout > 0) {
             System.setProperty("jqf.ei.TIMEOUT", String.valueOf(runTimeout));
         }
+        if (fixedSizeInputs) {
+            System.setProperty("jqf.ei.GENERATE_EOF_WHEN_OUT", String.valueOf(true));
+        }
 
         Duration duration = null;
         if (time != null && !time.isEmpty()) {
@@ -286,19 +305,21 @@ public class FuzzGoal extends AbstractMojo {
         if (outputDirectory == null || outputDirectory.isEmpty()) {
             outputDirectory = "fuzz-results" + File.separator + testClassName + File.separator + testMethod;
         }
+        
+        File resultsDir = new File(target, outputDirectory);
+        String targetName = testClassName + "#" + testMethod;
+        File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
 
         try {
             List<String> classpathElements = project.getTestClasspathElements();
 
-            File resultsDir = new File(target, outputDirectory);
-            String targetName = testClassName + "#" + testMethod;
-            File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
             switch (engine) {
                 case "zest":
                     guidance = new ZestGuidance(targetName, duration, resultsDir, seedsDir);
                     break;
                 case "zeal":
-                    System.setProperty("jqf.traceGenerators", "true");
+                    System.setProperty("jqf.tracing.TRACE_GENERATORS", "true");
+                    System.setProperty("jqf.tracing.MATCH_CALLEE_NAMES", "true");
                     guidance = new ExecutionIndexingGuidance(targetName, duration, resultsDir, seedsDir);
                     break;
                 case "mutation":
@@ -334,8 +355,17 @@ public class FuzzGoal extends AbstractMojo {
         }
 
         if (!result.wasSuccessful()) {
-            throw new MojoFailureException("Fuzzing revealed errors. " +
-                "Use mvn jqf:repro to reproduce failing test case.");
+            Throwable e = result.getFailures().get(0).getException();
+            if (result.getFailureCount() == 1) {
+                if (e instanceof GuidanceException) {
+                    throw new MojoExecutionException("Internal error", e);
+                }
+            }
+            throw new MojoFailureException(String.format("Fuzzing resulted in the test failing on " +
+                    "%d input(s). Possible bugs found. " +
+                    "Use mvn jqf:repro to reproduce failing test cases from %s/failures. ",
+                    result.getFailureCount(), resultsDir) +
+                    "Sample exception included with this message.", e);
         }
     }
 }

@@ -11,7 +11,7 @@ print_usage() {
   echo "Usage: $0 [-c CLASSPATH] [-i] [-v] [-r] TEST_CLASS TEST_METHOD INPUT_FILE.."
 }
 
-while getopts ":c:ivr" opt; do
+while getopts ":c:ivre" opt; do
   case $opt in
     /?)
       echo "Invalid option: -$OPTARG" >&2
@@ -30,6 +30,9 @@ while getopts ":c:ivr" opt; do
     v)
       verbose=1
       export JVM_OPTS="$JVM_OPTS -Djqf.logCoverage=true -Djanala.verbose=true"
+      ;;
+    e)
+      export JVM_OPTS="$JVM_OPTS -Djqf.tracing.MATCH_CALLEE_NAMES=true -Djqf.tracing.TRACE_GENERATORS=true"
       ;;
   esac
 done

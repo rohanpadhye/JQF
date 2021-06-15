@@ -34,5 +34,8 @@ if [ $# -lt 2 ]; then
   exit 1
 fi
 
+# Make sure that caller/callee names are matched
+export JVM_OPTS="$JVM_OPTS -Djqf.tracing.MATCH_CALLEE_NAMES=true -Djqf.tracing.TRACE_GENERATORS=true"
+
 # Run the execution indexing input driver
 $ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingDriver $@

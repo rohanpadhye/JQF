@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2017-2018 The Regents of the University of California
+ * Copyright (c) 2021 Rohan Padhye
  *
  * All rights reserved.
  *
@@ -46,11 +47,35 @@ public class TraceLogger extends AbstractLogger {
 
     private static final TraceLogger singleton = new TraceLogger();
 
-    private final ThreadLocal<ThreadTracer> tracer
+    // Each thread (except the first; see below) has a thread-local tracer object
+    private final ThreadLocal<ThreadTracer> threadLocalTracer
             = ThreadLocal.withInitial(() -> ThreadTracer.spawn(Thread.currentThread()));
+
+    // The first thread is often the main program or test thread
+    private Thread firstThread = null;
+
+    // For performance reasons (e.g. to optimize single-threaded fuzzing), we remember the tracer for this thread
+    private ThreadTracer firstTracer;
 
     private TraceLogger() {
         // Singleton: Prevent outside construction
+    }
+
+    private ThreadTracer getTracer() {
+        // The vast majority of fuzzing sessions are single-threaded; so, return the tracer quickly instead of
+        // looking up the thread-local map. This provides about a 10-20% speedup.
+        if (Thread.currentThread() == firstThread) {
+            return firstTracer;
+        } else if (firstThread == null) {
+            // The first time this method is called, remember the "first" thread and its associated treacer
+            assert firstTracer == null;
+            firstThread = Thread.currentThread();
+            firstTracer = ThreadTracer.spawn(firstThread);
+            return firstTracer;
+        } else {
+            // In multi-threaded fuzzing mode, we have to use thread-local variables
+            return threadLocalTracer.get();
+        }
     }
 
     /**
@@ -65,7 +90,7 @@ public class TraceLogger extends AbstractLogger {
     /** Logs an instrumented byteode instruction for the current thread. */
     @Override
     protected void log(Instruction instruction) {
-        tracer.get().consume(instruction);
+        getTracer().consume(instruction);
     }
 
     /**
@@ -74,14 +99,20 @@ public class TraceLogger extends AbstractLogger {
      * @param event the event to be emitted
      */
     public void emit(TraceEvent event) {
-        tracer.get().emit(event);
+        getTracer().emit(event);
     }
 
     /**
      * Removes the trace logger for the current thread
      */
     public void remove() {
-        tracer.remove();
+        // Make sure to remove the right tracer depending on whether its in the thread-local map or in the field
+        if (Thread.currentThread() == firstThread) {
+            firstTracer = null;
+            firstThread = null;
+        } else {
+            threadLocalTracer.remove();
+        }
     }
 
 }

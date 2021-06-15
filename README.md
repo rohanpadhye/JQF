@@ -81,6 +81,9 @@ In the above example, the generators for `Map` and `String` were synthesized aut
 
 ## Documentation
 
+* The [JQF Maven Plugin](https://github.com/rohanpadhye/JQF/wiki/JQF-Maven-Plugin) documentation shows how to run `mvn jqf:fuzz`.
+* [Writing a JQF Test](https://github.com/rohanpadhye/JQF/wiki/Writing-a-JQF-test) demonstrates the creation of a JUnit-based parameterized test method for JQF.
+
 ### Tutorials
 
 * [Zest 101](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest): A basic tutorial for fuzzing a standalone toy program using command-line scripts. Walks through the process of writing a test driver and structured input generator for `Calendar` objects.

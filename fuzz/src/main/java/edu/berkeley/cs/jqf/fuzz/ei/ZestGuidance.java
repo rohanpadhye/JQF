@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2017-2018 The Regents of the University of California
+ * Copyright (c) 2020-2021 Rohan Padhye
  *
  * All rights reserved.
  *
@@ -73,10 +74,6 @@ import static java.lang.Math.log;
  * @author Rohan Padhye
  */
 public class ZestGuidance implements Guidance {
-
-    // Currently, we only support single-threaded applications
-    // This field is used to ensure that
-    protected Thread appThread;
 
     /** A pseudo-random number generator for generating fresh values. */
     protected Random random = new Random();
@@ -213,6 +210,14 @@ public class ZestGuidance implements Guidance {
 
     /** Whether to stop/exit once a crash is found. **/
     protected final boolean EXIT_ON_CRASH = Boolean.getBoolean("jqf.ei.EXIT_ON_CRASH");
+
+    // ------------- THREAD HANDLING ------------
+
+    /** The first thread in the application, which usually runs the test method. */
+    protected Thread firstThread;
+
+    /** Whether the application has more than one thread running coverage-instrumented code */
+    protected boolean multiThreaded = false;
 
     // ------------- FUZZING HEURISTICS ------------
 
@@ -414,28 +419,28 @@ public class ZestGuidance implements Guidance {
         double nonZeroValidFraction = nonZeroValidCount * 100.0 / validCoverage.size();
 
         if (console != null) {
-          if (LIBFUZZER_COMPAT_OUTPUT) {
-              console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, intervalExecsPerSec, currentInput.size());
-          } else if (!QUIET_MODE) {
-              console.printf("\033[2J");
-              console.printf("\033[H");
-              console.printf(this.getTitle() + "\n");
-              if (this.testName != null) {
-                  console.printf("Test name:            %s\n", this.testName);
-              }
-              console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
-              console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
-                      maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
-              console.printf("Number of executions: %,d\n", numTrials);
-              console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
-              console.printf("Cycles completed:     %d\n", cyclesCompleted);
-              console.printf("Unique failures:      %,d\n", uniqueFailures.size());
-              console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
-              console.printf("Current parent input: %s\n", currentParentInputDesc);
-              console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
-              console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
-              console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
-          }
+            if (LIBFUZZER_COMPAT_OUTPUT) {
+                console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, intervalExecsPerSec, currentInput.size());
+            } else if (!QUIET_MODE) {
+                console.printf("\033[2J");
+                console.printf("\033[H");
+                console.printf(this.getTitle() + "\n");
+                if (this.testName != null) {
+                    console.printf("Test name:            %s\n", this.testName);
+                }
+                console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
+                console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
+                        maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
+                console.printf("Number of executions: %,d\n", numTrials);
+                console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
+                console.printf("Cycles completed:     %d\n", cyclesCompleted);
+                console.printf("Unique failures:      %,d\n", uniqueFailures.size());
+                console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
+                console.printf("Current parent input: %s\n", currentParentInputDesc);
+                console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
+                console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
+                console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
+            }
         }
 
         String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%",
@@ -499,7 +504,11 @@ public class ZestGuidance implements Guidance {
         int totalCoverageCount = totalCoverage.getNonZeroCount();
         infoLog("Total %d branches covered", totalCoverageCount);
         if (sumResponsibilities != totalCoverageCount) {
-            throw new AssertionError("Responsibilty mistmatch");
+            if (multiThreaded) {
+                infoLog("Warning: other threads are adding coverage between test executions");
+            } else {
+                throw new AssertionError("Responsibilty mismatch");
+            }
         }
 
         // Break log after cycle
@@ -544,59 +553,61 @@ public class ZestGuidance implements Guidance {
 
     @Override
     public InputStream getInput() throws GuidanceException {
-        // Clear coverage stats for this run
-        runCoverage.clear();
+        conditionallySynchronize(multiThreaded, () -> {
+            // Clear coverage stats for this run
+            runCoverage.clear();
 
-        // Choose an input to execute based on state of queues
-        if (!seedInputs.isEmpty()) {
-            // First, if we have some specific seeds, use those
-            currentInput = seedInputs.removeFirst();
+            // Choose an input to execute based on state of queues
+            if (!seedInputs.isEmpty()) {
+                // First, if we have some specific seeds, use those
+                currentInput = seedInputs.removeFirst();
 
-            // Hopefully, the seeds will lead to new coverage and be added to saved inputs
+                // Hopefully, the seeds will lead to new coverage and be added to saved inputs
 
-        } else if (savedInputs.isEmpty()) {
-            // If no seeds given try to start with something random
-            if (!blind && numTrials > 100_000) {
-                throw new GuidanceException("Too many trials without coverage; " +
-                        "likely all assumption violations");
-            }
-
-            // Make fresh input using either list or maps
-            // infoLog("Spawning new input from thin air");
-            currentInput = createFreshInput();
-        } else {
-            // The number of children to produce is determined by how much of the coverage
-            // pool this parent input hits
-            Input currentParentInput = savedInputs.get(currentParentInputIdx);
-            int targetNumChildren = getTargetChildrenForParent(currentParentInput);
-            if (numChildrenGeneratedForCurrentParentInput >= targetNumChildren) {
-                // Select the next saved input to fuzz
-                currentParentInputIdx = (currentParentInputIdx + 1) % savedInputs.size();
-
-                // Count cycles
-                if (currentParentInputIdx == 0) {
-                    completeCycle();
+            } else if (savedInputs.isEmpty()) {
+                // If no seeds given try to start with something random
+                if (!blind && numTrials > 100_000) {
+                    throw new GuidanceException("Too many trials without coverage; " +
+                            "likely all assumption violations");
                 }
 
-                numChildrenGeneratedForCurrentParentInput = 0;
+                // Make fresh input using either list or maps
+                // infoLog("Spawning new input from thin air");
+                currentInput = createFreshInput();
+            } else {
+                // The number of children to produce is determined by how much of the coverage
+                // pool this parent input hits
+                Input currentParentInput = savedInputs.get(currentParentInputIdx);
+                int targetNumChildren = getTargetChildrenForParent(currentParentInput);
+                if (numChildrenGeneratedForCurrentParentInput >= targetNumChildren) {
+                    // Select the next saved input to fuzz
+                    currentParentInputIdx = (currentParentInputIdx + 1) % savedInputs.size();
+
+                    // Count cycles
+                    if (currentParentInputIdx == 0) {
+                        completeCycle();
+                    }
+
+                    numChildrenGeneratedForCurrentParentInput = 0;
+                }
+                Input parent = savedInputs.get(currentParentInputIdx);
+
+                // Fuzz it to get a new input
+                // infoLog("Mutating input: %s", parent.desc);
+                currentInput = parent.fuzz(random);
+                numChildrenGeneratedForCurrentParentInput++;
+
+                // Write it to disk for debugging
+                try {
+                    writeCurrentInputToFile(currentInputFile);
+                } catch (IOException ignore) {
+                }
+
+                // Start time-counting for timeout handling
+                this.runStart = new Date();
+                this.branchCount = 0;
             }
-            Input parent = savedInputs.get(currentParentInputIdx);
-
-            // Fuzz it to get a new input
-            // infoLog("Mutating input: %s", parent.desc);
-            currentInput = parent.fuzz(random);
-            numChildrenGeneratedForCurrentParentInput++;
-
-            // Write it to disk for debugging
-            try {
-                writeCurrentInputToFile(currentInputFile);
-            } catch (IOException ignore) { }
-
-            // Start time-counting for timeout handling
-            this.runStart = new Date();
-            this.branchCount = 0;
-        }
-
+        });
 
         return createParameterStream();
     }
@@ -614,122 +625,122 @@ public class ZestGuidance implements Guidance {
 
     @Override
     public void handleResult(Result result, Throwable error) throws GuidanceException {
-        // Stop timeout handling
-        this.runStart = null;
+        conditionallySynchronize(multiThreaded, () -> {
+            // Stop timeout handling
+            this.runStart = null;
 
-        // Increment run count
-        this.numTrials++;
+            // Increment run count
+            this.numTrials++;
 
-        boolean valid = result == Result.SUCCESS;
+            boolean valid = result == Result.SUCCESS;
 
-        if (valid) {
-            // Increment valid counter
-            numValid++;
-        }
-
-        if (result == Result.SUCCESS || (result == Result.INVALID && SAVE_ONLY_VALID == false)) {
-
-            // Coverage before
-            int nonZeroBefore = totalCoverage.getNonZeroCount();
-            int validNonZeroBefore = validCoverage.getNonZeroCount();
-
-            // Compute a list of keys for which this input can assume responsiblity.
-            // Newly covered branches are always included.
-            // Existing branches *may* be included, depending on the heuristics used.
-            // A valid input will steal responsibility from invalid inputs
-            Set<Object> responsibilities = computeResponsibilities(valid);
-
-            // Update total coverage
-            boolean coverageBitsUpdated = totalCoverage.updateBits(runCoverage);
             if (valid) {
-                validCoverage.updateBits(runCoverage);
+                // Increment valid counter
+                numValid++;
             }
 
-            // Coverage after
-            int nonZeroAfter = totalCoverage.getNonZeroCount();
-            if (nonZeroAfter > maxCoverage) {
-                maxCoverage = nonZeroAfter;
-            }
-            int validNonZeroAfter = validCoverage.getNonZeroCount();
+            if (result == Result.SUCCESS || (result == Result.INVALID && SAVE_ONLY_VALID == false)) {
 
-            // Possibly save input
-            boolean toSave = false;
-            String why = "";
+                // Coverage before
+                int nonZeroBefore = totalCoverage.getNonZeroCount();
+                int validNonZeroBefore = validCoverage.getNonZeroCount();
 
+                // Compute a list of keys for which this input can assume responsiblity.
+                // Newly covered branches are always included.
+                // Existing branches *may* be included, depending on the heuristics used.
+                // A valid input will steal responsibility from invalid inputs
+                Set<Object> responsibilities = computeResponsibilities(valid);
 
-            if (!DISABLE_SAVE_NEW_COUNTS && coverageBitsUpdated) {
-                toSave = true;
-                why = why + "+count";
-            }
-
-            // Save if new total coverage found
-            if (nonZeroAfter > nonZeroBefore) {
-                // Must be responsible for some branch
-                assert(responsibilities.size() > 0);
-                toSave = true;
-                why = why + "+cov";
-            }
-
-            // Save if new valid coverage is found
-            if (this.validityFuzzing && validNonZeroAfter > validNonZeroBefore) {
-                // Must be responsible for some branch
-                assert(responsibilities.size() > 0);
-                currentInput.valid = true;
-                toSave = true;
-                why = why + "+valid";
-            }
-
-            if (toSave) {
-
-                // Trim input (remove unused keys)
-                currentInput.gc();
-
-                // It must still be non-empty
-                assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
-
-                // libFuzzerCompat stats are only displayed when they hit new coverage
-                if (LIBFUZZER_COMPAT_OUTPUT) {
-                    displayStats();
+                // Update total coverage
+                boolean coverageBitsUpdated = totalCoverage.updateBits(runCoverage);
+                if (valid) {
+                    validCoverage.updateBits(runCoverage);
                 }
 
-                infoLog("Saving new input (at run %d): " +
-                                "input #%d " +
-                                "of size %d; " +
-                                "total coverage = %d",
-                        numTrials,
-                        savedInputs.size(),
-                        currentInput.size(),
-                        nonZeroAfter);
+                // Coverage after
+                int nonZeroAfter = totalCoverage.getNonZeroCount();
+                if (nonZeroAfter > maxCoverage) {
+                    maxCoverage = nonZeroAfter;
+                }
+                int validNonZeroAfter = validCoverage.getNonZeroCount();
 
-                // Save input to queue and to disk
-                final String reason = why;
-                GuidanceException.wrap(() -> saveCurrentInput(responsibilities, reason));
+                // Possibly save input
+                boolean toSave = false;
+                String why = "";
 
-            }
-        } else if (result == Result.FAILURE || result == Result.TIMEOUT) {
-            String msg = error.getMessage();
 
-            // Get the root cause of the failure
-            Throwable rootCause = error;
-            while (rootCause.getCause() != null) {
-                rootCause = rootCause.getCause();
-            }
+                if (!DISABLE_SAVE_NEW_COUNTS && coverageBitsUpdated) {
+                    toSave = true;
+                    why = why + "+count";
+                }
 
-            // Attempt to add this to the set of unique failures
-            if (uniqueFailures.add(Arrays.asList(rootCause.getStackTrace()))) {
+                // Save if new total coverage found
+                if (nonZeroAfter > nonZeroBefore) {
+                    // Must be responsible for some branch
+                    assert (responsibilities.size() > 0);
+                    toSave = true;
+                    why = why + "+cov";
+                }
 
-                // Trim input (remove unused keys)
-                currentInput.gc();
+                // Save if new valid coverage is found
+                if (this.validityFuzzing && validNonZeroAfter > validNonZeroBefore) {
+                    // Must be responsible for some branch
+                    assert (responsibilities.size() > 0);
+                    currentInput.valid = true;
+                    toSave = true;
+                    why = why + "+valid";
+                }
 
-                // It must still be non-empty
-                assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
+                if (toSave) {
 
-                // Save crash to disk
-                    int crashIdx = uniqueFailures.size()-1;
+                    // Trim input (remove unused keys)
+                    currentInput.gc();
+
+                    // It must still be non-empty
+                    assert (currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
+
+                    // libFuzzerCompat stats are only displayed when they hit new coverage
+                    if (LIBFUZZER_COMPAT_OUTPUT) {
+                        displayStats();
+                    }
+
+                    infoLog("Saving new input (at run %d): " +
+                                    "input #%d " +
+                                    "of size %d; " +
+                                    "total coverage = %d",
+                            numTrials,
+                            savedInputs.size(),
+                            currentInput.size(),
+                            nonZeroAfter);
+
+                    // Save input to queue and to disk
+                    final String reason = why;
+                    GuidanceException.wrap(() -> saveCurrentInput(responsibilities, reason));
+                }
+            } else if (result == Result.FAILURE || result == Result.TIMEOUT) {
+                String msg = error.getMessage();
+
+                // Get the root cause of the failure
+                Throwable rootCause = error;
+                while (rootCause.getCause() != null) {
+                    rootCause = rootCause.getCause();
+                }
+
+                // Attempt to add this to the set of unique failures
+                if (uniqueFailures.add(Arrays.asList(rootCause.getStackTrace()))) {
+
+                    // Trim input (remove unused keys)
+                    currentInput.gc();
+
+                    // It must still be non-empty
+                    assert (currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
+
+                    // Save crash to disk
+                    int crashIdx = uniqueFailures.size() - 1;
                     String saveFileName = String.format("id_%06d", crashIdx);
                     File saveFile = new File(savedFailuresDirectory, saveFileName);
                     GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
-                    infoLog("%s","Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
+                    infoLog("%s", "Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
                     String how = currentInput.desc;
                     String why = result == Result.FAILURE ? "+crash" : "+hang";
                     infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
@@ -743,22 +754,22 @@ public class ZestGuidance implements Guidance {
                     if (LIBFUZZER_COMPAT_OUTPUT) {
                         displayStats();
                     }
-
+                }
             }
-        }
 
-        // displaying stats on every interval is only enabled for AFL-like stats screen
-        if (!LIBFUZZER_COMPAT_OUTPUT) {
-            displayStats();
-        }
+            // displaying stats on every interval is only enabled for AFL-like stats screen
+            if (!LIBFUZZER_COMPAT_OUTPUT) {
+                displayStats();
+            }
 
-        // Save input unconditionally if such a setting is enabled
-        if (LOG_ALL_INPUTS) {
-            File logDirectory = new File(allInputsDirectory, result.toString().toLowerCase());
-            String saveFileName = String.format("id_%09d", numTrials);
-            File saveFile = new File(logDirectory, saveFileName);
-            GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
-        }
+            // Save input unconditionally if such a setting is enabled
+            if (LOG_ALL_INPUTS) {
+                File logDirectory = new File(allInputsDirectory, result.toString().toLowerCase());
+                String saveFileName = String.format("id_%09d", numTrials);
+                File saveFile = new File(logDirectory, saveFileName);
+                GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
+            }
+        });
     }
 
 
@@ -877,15 +888,13 @@ public class ZestGuidance implements Guidance {
 
     }
 
-
     @Override
     public Consumer<TraceEvent> generateCallBack(Thread thread) {
-        if (appThread != null) {
-            throw new IllegalStateException(ZestGuidance.class +
-                " only supports single-threaded apps at the moment");
+        if (firstThread == null) {
+            firstThread = thread;
+        } else if (firstThread != thread) {
+            multiThreaded = true;
         }
-        appThread = thread;
-
         return this::handleEvent;
     }
 
@@ -895,18 +904,19 @@ public class ZestGuidance implements Guidance {
      * @param e the trace event to be handled
      */
     protected void handleEvent(TraceEvent e) {
-        // Collect totalCoverage
-        runCoverage.handleEvent(e);
-        // Check for possible timeouts every so often
-        if (this.singleRunTimeoutMillis > 0 &&
-                this.runStart != null && (++this.branchCount) % 10_000 == 0) {
-            long elapsed = new Date().getTime() - runStart.getTime();
-            if (elapsed > this.singleRunTimeoutMillis) {
-                throw new TimeoutException(elapsed, this.singleRunTimeoutMillis);
+        conditionallySynchronize(multiThreaded, () -> {
+            // Collect totalCoverage
+            runCoverage.handleEvent(e);
+            // Check for possible timeouts every so often
+            if (this.singleRunTimeoutMillis > 0 &&
+                    this.runStart != null && (++this.branchCount) % 10_000 == 0) {
+                long elapsed = new Date().getTime() - runStart.getTime();
+                if (elapsed > this.singleRunTimeoutMillis) {
+                    throw new TimeoutException(elapsed, this.singleRunTimeoutMillis);
+                }
             }
-        }
+        });
     }
-
 
     /**
      * Returns a reference to the coverage statistics.
@@ -914,6 +924,21 @@ public class ZestGuidance implements Guidance {
      */
     public Coverage getTotalCoverage() {
         return totalCoverage;
+    }
+
+    /**
+     * Conditionally run a method using synchronization.
+     *
+     * This is used to handle multi-threaded fuzzing.
+     */
+    protected void conditionallySynchronize(boolean cond, Runnable task) {
+        if (cond) {
+            synchronized (this) {
+                task.run();
+            }
+        } else {
+            task.run();
+        }
     }
 
     /**
@@ -1113,6 +1138,11 @@ public class ZestGuidance implements Guidance {
             // Remove elements beyond "requested"
             values = new ArrayList<>(values.subList(0, requested));
             values.trimToSize();
+
+            // Inputs should not be empty, otherwise mutations don't work
+            if (values.isEmpty()) {
+                throw new IllegalArgumentException("Input is either empty or nothing was requested from the input generator.");
+            }
         }
 
         @Override
@@ -1178,7 +1208,7 @@ public class ZestGuidance implements Guidance {
             }
 
             // assert (key == values.size())
-            if (key != values.size()) {
+            if (key != values.size() && value != -1) {
                 throw new IllegalStateException(String.format("Bytes from seed out of order. " +
                         "Size = %d, Key = %d", values.size(), key));
             }

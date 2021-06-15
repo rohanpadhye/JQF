@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2017-2018 The Regents of the University of California
+ * Copyright (c) 2020-2021 Rohan Padhye
  *
  * All rights reserved.
  *
@@ -29,14 +30,10 @@
 package edu.berkeley.cs.jqf.fuzz.junit.quickcheck;
 
 import java.io.EOFException;
-import java.io.File;
-import java.lang.reflect.Executable;
 import java.lang.reflect.Parameter;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
@@ -47,12 +44,8 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
-import edu.berkeley.cs.jqf.fuzz.random.NoGuidance;
-import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.StreamBackedRandom;
-import edu.berkeley.cs.jqf.fuzz.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
 import org.junit.AssumptionViolatedException;
@@ -61,6 +54,7 @@ import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
 import ru.vyarus.java.generics.resolver.GenericsResolver;
+import ru.vyarus.java.generics.resolver.context.MethodGenericsContext;
 
 import static edu.berkeley.cs.jqf.fuzz.guidance.Result.*;
 
@@ -74,22 +68,21 @@ import static edu.berkeley.cs.jqf.fuzz.guidance.Result.*;
 public class FuzzStatement extends Statement {
     private final FrameworkMethod method;
     private final TestClass testClass;
-    private final Map<String, Type> typeVariables;
+    private final MethodGenericsContext generics;
     private final GeneratorRepository generatorRepository;
     private final List<Class<?>> expectedExceptions;
     private final List<Throwable> failures = new ArrayList<>();
+    private final Guidance guidance;
 
     public FuzzStatement(FrameworkMethod method, TestClass testClass,
-                         GeneratorRepository generatorRepository) {
+                         GeneratorRepository generatorRepository, Guidance fuzzGuidance) {
         this.method = method;
         this.testClass = testClass;
-        this.typeVariables =
-                GenericsResolver.resolve(testClass.getJavaClass())
-                        .method(method.getMethod())
-                        .genericsMap();
+        this.generics = GenericsResolver.resolve(testClass.getJavaClass())
+                .method(method.getMethod());
         this.generatorRepository = generatorRepository;
         this.expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
-
+        this.guidance = fuzzGuidance;
     }
 
 
@@ -105,43 +98,6 @@ public class FuzzStatement extends Statement {
                 .map(this::createParameterTypeContext)
                 .map(this::produceGenerator)
                 .collect(Collectors.toList());
-
-        // Get the currently registered fuzz guidance
-        Guidance guidance = GuidedFuzzing.getCurrentGuidance();
-
-        // If nothing is set, default to random or repro
-        if (guidance == null) {
-            // Check for @Fuzz(repro=)
-            String repro = method.getAnnotation(Fuzz.class).repro();
-            if (repro.isEmpty()) {
-                guidance = new NoGuidance(GuidedFuzzing.DEFAULT_MAX_TRIALS, System.err);
-            } else {
-                String reproPath;
-                // Check if repro path is variable (e.g. `${foo}`)
-                if (repro.matches("\\$\\{[a-zA-Z.\\d_$]*\\}")) {
-                    // Get a system property with that name (e.g. `foo`)
-                    String key = repro.substring(2, repro.length()-1);
-                    String val = System.getProperty(key);
-
-                    // Check if such a property is set
-                    if (val == null) {
-                        throw new IllegalArgumentException(String.format("Test method has " +
-                                "@Fuzz annotation with repro=%s, but such a system " +
-                                "property is not set. Use `-D%s=<path>` when running.",
-                                repro, key));
-                    }
-
-                    reproPath = val;
-                } else {
-                    // If it is not a variable, then treat it literally
-                    reproPath = repro;
-                }
-
-                // Create a ReproGuidance with the given path
-                File inputFile = new File(reproPath);
-                guidance = new ReproGuidance(inputFile, null);
-            }
-        }
 
         // Keep fuzzing until no more input or I/O error with guidance
         try {
@@ -220,13 +176,20 @@ public class FuzzStatement extends Statement {
                 }
 
                 // Inform guidance about the outcome of this trial
-                guidance.handleResult(result, error);
+                try {
+                    guidance.handleResult(result, error);
+                } catch (GuidanceException e) {
+                    throw e; // Propagate
+                } catch (Throwable e) {
+                    // Anything else thrown from handleResult is an internal error, so wrap
+                    throw new GuidanceException(e);
+                }
 
 
             }
         } catch (GuidanceException e) {
             System.err.println("Fuzzing stopped due to guidance exception: " + e.getMessage());
-            e.printStackTrace();
+            throw e;
         }
 
         if (failures.size() > 0) {
@@ -258,20 +221,15 @@ public class FuzzStatement extends Statement {
     }
 
     private ParameterTypeContext createParameterTypeContext(Parameter parameter) {
-        Executable exec = parameter.getDeclaringExecutable();
-        String declarerName = exec.getDeclaringClass().getName() + '.' + exec.getName();
-        return new ParameterTypeContext(
-                        parameter.getName(),
-                        parameter.getAnnotatedType(),
-                        declarerName,
-                        typeVariables)
-                        .allowMixedTypes(true).annotate(parameter);
+        return ParameterTypeContext.forParameter(parameter, generics).annotate(parameter);
     }
 
     private Generator<?> produceGenerator(ParameterTypeContext parameter) {
         Generator<?> generator = generatorRepository.generatorFor(parameter);
         generator.provide(generatorRepository);
         generator.configure(parameter.annotatedType());
+        if (parameter.topLevel())
+            generator.configure(parameter.annotatedElement());
         return generator;
     }
 }

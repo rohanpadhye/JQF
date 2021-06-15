@@ -51,7 +51,7 @@ public class DictionaryBackedStringGenerator extends Generator<String> {
         this.fallback = fallback;
 
         // Read dictionary words
-        try (InputStream in = ClassLoader.getSystemClassLoader().getResourceAsStream(source)) {
+        try (InputStream in = this.getClass().getClassLoader().getResourceAsStream(source)) {
             if (in == null) {
                 throw new FileNotFoundException("Dictionary file not found: " + source);
             }
