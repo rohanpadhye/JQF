@@ -53,8 +53,8 @@ import java.util.concurrent.TimeUnit;
  * @author Bella Laybourn
  */
 public class MutationGuidance extends ZestGuidance {
-    String[] mutables, immutables;
-    CartographyClassLoader cartographyClassLoader;
+    private String[] mutables, immutables;
+    private CartographyClassLoader cartographyClassLoader;
 
     public MutationGuidance(String testName, Duration duration, File outputDirectory, String include, String exclude) throws IOException {
         super(testName, duration, outputDirectory);
@@ -288,7 +288,10 @@ public class MutationGuidance extends ZestGuidance {
 
     @Override
     public ClassLoader getClassLoader(String[] classPath, ClassLoader parent) throws MalformedURLException {
-        return new CartographyClassLoader(classPath, mutables, immutables, parent);
+        if (this.cartographyClassLoader == null) {
+            this.cartographyClassLoader = new CartographyClassLoader(classPath, mutables, immutables, parent);
+        }
+        return this.cartographyClassLoader;
     }
 
     @Override
