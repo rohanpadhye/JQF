@@ -16,6 +16,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.ClassWriter;
 
+// TODO: Make a CachingFileTransformer which caches files to disk/in-memory
 @SuppressWarnings("unused") // Registered via -javaagent
 public class SnoopInstructionTransformer implements ClassFileTransformer {
   private static final String instDir = Config.instance.instrumentationCacheDir;

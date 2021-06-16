@@ -34,15 +34,19 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
 import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
+import edu.berkeley.cs.jqf.instrument.mutation.MCLCache;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
 import edu.berkeley.cs.jqf.instrument.tracing.TraceLogger;
 import edu.berkeley.cs.jqf.instrument.tracing.events.KillEvent;
+import edu.berkeley.cs.jqf.instrument.util.ThrowingFunction;
+
 import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.TestClass;
 
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -53,17 +57,24 @@ import java.util.concurrent.TimeUnit;
  * @author Bella Laybourn
  */
 public class MutationGuidance extends ZestGuidance {
+    /** List of classes which should be mutated, and which shouldn't be mutated */
     private String[] mutables, immutables;
+
+    /** The initial classLoader */
     private CartographyClassLoader cartographyClassLoader;
 
-    public MutationGuidance(String testName, Duration duration, File outputDirectory, String include, String exclude) throws IOException {
+    /** The mutants killed so far */
+    private Set<MutationInstance> deadMutants = new HashSet<>();
+
+    public MutationGuidance(String testName, Duration duration, File outputDirectory, String include, String exclude)
+            throws IOException {
         super(testName, duration, outputDirectory);
-        if(include != null && !include.equals("")) {
+        if (include != null && !include.equals("")) {
             mutables = include.split(",");
         } else {
             mutables = new String[0];
         }
-        if(exclude != null && !exclude.equals("")) {
+        if (exclude != null && !exclude.equals("")) {
             immutables = exclude.split(",");
         } else {
             immutables = new String[0];
@@ -73,14 +84,15 @@ public class MutationGuidance extends ZestGuidance {
         validCoverage = new MutationCoverage();
     }
 
-    public MutationGuidance(String testName, Duration duration, File outputDirectory, File[] seedInputFiles, String include, String exclude) throws IOException {
+    public MutationGuidance(String testName, Duration duration, File outputDirectory, File[] seedInputFiles,
+            String include, String exclude) throws IOException {
         super(testName, duration, outputDirectory, seedInputFiles);
-        if(include != null && !include.equals("")) {
+        if (include != null && !include.equals("")) {
             mutables = include.split(",");
         } else {
             mutables = new String[0];
         }
-        if(exclude != null && !exclude.equals("")) {
+        if (exclude != null && !exclude.equals("")) {
             immutables = exclude.split(",");
         } else {
             immutables = new String[0];
@@ -90,14 +102,15 @@ public class MutationGuidance extends ZestGuidance {
         validCoverage = new MutationCoverage();
     }
 
-    public MutationGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir, String include, String exclude) throws IOException {
+    public MutationGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir, String include,
+            String exclude) throws IOException {
         super(testName, duration, outputDirectory, seedInputDir);
-        if(include != null && !include.equals("")) {
+        if (include != null && !include.equals("")) {
             mutables = include.split(",");
         } else {
             mutables = new String[0];
         }
-        if(exclude != null && !exclude.equals("")) {
+        if (exclude != null && !exclude.equals("")) {
             immutables = exclude.split(",");
         } else {
             immutables = new String[0];
@@ -169,7 +182,7 @@ public class MutationGuidance extends ZestGuidance {
             // Save if new total coverage found
             if (nonZeroAfter > nonZeroBefore) {
                 // Must be responsible for some branch
-                assert(responsibilities.size() > 0);
+                assert (responsibilities.size() > 0);
                 toSave = true;
                 why = why + "+cov";
             }
@@ -177,7 +190,7 @@ public class MutationGuidance extends ZestGuidance {
             // Save if new valid coverage is found
             if (this.validityFuzzing && validNonZeroAfter > validNonZeroBefore) {
                 // Must be responsible for some branch
-                assert(responsibilities.size() > 0);
+                assert (responsibilities.size() > 0);
                 currentInput.valid = true;
                 toSave = true;
                 why = why + "+valid";
@@ -189,21 +202,15 @@ public class MutationGuidance extends ZestGuidance {
                 currentInput.gc();
 
                 // It must still be non-empty
-                assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
+                assert (currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
 
                 // libFuzzerCompat stats are only displayed when they hit new coverage
                 if (LIBFUZZER_COMPAT_OUTPUT) {
                     displayStats();
                 }
 
-                infoLog("Saving new input (at run %d): " +
-                                "input #%d " +
-                                "of size %d; " +
-                                "total coverage = %d",
-                        numTrials,
-                        savedInputs.size(),
-                        currentInput.size(),
-                        nonZeroAfter);
+                infoLog("Saving new input (at run %d): " + "input #%d " + "of size %d; " + "total coverage = %d",
+                        numTrials, savedInputs.size(), currentInput.size(), nonZeroAfter);
 
                 // Save input to queue and to disk
                 final String reason = why;
@@ -227,14 +234,14 @@ public class MutationGuidance extends ZestGuidance {
                 currentInput.gc();
 
                 // It must still be non-empty
-                assert(currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
+                assert (currentInput.size() > 0) : String.format("Empty input: %s", currentInput.desc);
 
                 // Save crash to disk
-                int crashIdx = uniqueFailures.size()-1;
+                int crashIdx = uniqueFailures.size() - 1;
                 String saveFileName = String.format("id_%06d", crashIdx);
                 File saveFile = new File(savedFailuresDirectory, saveFileName);
                 GuidanceException.wrap(() -> writeCurrentInputToFile(saveFile));
-                infoLog("%s","Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
+                infoLog("%s", "Found crash: " + error.getClass() + " - " + (msg != null ? msg : ""));
                 String how = currentInput.desc;
                 String why = result == Result.FAILURE ? "+crash" : "+hang";
                 infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
@@ -244,7 +251,8 @@ public class MutationGuidance extends ZestGuidance {
                     GuidanceException.wrap(() -> writeCurrentInputToFile(exactCrashFile));
                 }
 
-                // libFuzzerCompat stats are only displayed when they hit new coverage or crashes
+                // libFuzzerCompat stats are only displayed when they hit new coverage or
+                // crashes
                 if (LIBFUZZER_COMPAT_OUTPUT) {
                     displayStats();
                 }
@@ -287,8 +295,10 @@ public class MutationGuidance extends ZestGuidance {
     }
 
     @Override
-    public ClassLoader getClassLoader(String[] classPath, ClassLoader parent) throws MalformedURLException {
+    public ClassLoader getClassLoader(String[] classStrings, ClassLoader parent) throws MalformedURLException {
         if (this.cartographyClassLoader == null) {
+            URL[] classPath = (URL[]) Arrays.stream(classStrings)
+                    .map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray();
             this.cartographyClassLoader = new CartographyClassLoader(classPath, mutables, immutables, parent);
         }
         return this.cartographyClassLoader;
@@ -296,15 +306,19 @@ public class MutationGuidance extends ZestGuidance {
 
     @Override
     public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
-        new TrialRunner(testClass.getJavaClass(), method, args).run(); //loaded by CartographyClassLoader
+        new TrialRunner(testClass.getJavaClass(), method, args).run(); // loaded by CartographyClassLoader
         List<Throwable> fails = new ArrayList<>();
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
-        for(MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
-            if(!mutationInstance.isDead()) {
+        MCLCache cache = new MCLCache(cartographyClassLoader.getURLs(), cartographyClassLoader.getParent());
+        for (MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
+            if (!deadMutants.contains(mutationInstance)) {
                 try {
                     mutationInstance.resetTimer();
-                    Class<?> clazz = Class.forName(testClass.getName(), true, mutationInstance.getClassLoader());
-                    new TrialRunner(clazz, new FrameworkMethod(clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())), args).run();
+                    Class<?> clazz = Class.forName(testClass.getName(), true, cache.of(mutationInstance));
+                    new TrialRunner(clazz,
+                            new FrameworkMethod(
+                                    clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())),
+                            args).run();
                 } catch (InstrumentationException e) {
                     throw new GuidanceException(e);
                 } catch (GuidanceException e) {
@@ -314,8 +328,8 @@ public class MutationGuidance extends ZestGuidance {
                 } catch (Throwable e) {
                     if (!isExceptionExpected(e.getClass(), expectedExceptions)) {
                         // failed
-                        mutationInstance.kill();
-                        TraceLogger.get().emit(new KillEvent(0, null, 0, mutationInstance)); //temp 0 values
+                        deadMutants.add(mutationInstance);
+                        TraceLogger.get().emit(new KillEvent(0, null, 0, mutationInstance)); // temp 0 values
                         fails.add(e);
                     }
                 }
@@ -356,8 +370,8 @@ public class MutationGuidance extends ZestGuidance {
             Input currentParentInput = savedInputs.get(currentParentInputIdx);
             currentParentInputDesc = currentParentInputIdx + " ";
             currentParentInputDesc += currentParentInput.isFavored() ? "(favored)" : "(not favored)";
-            currentParentInputDesc += " {" + numChildrenGeneratedForCurrentParentInput +
-                    "/" + getTargetChildrenForParent(currentParentInput) + " mutations}";
+            currentParentInputDesc += " {" + numChildrenGeneratedForCurrentParentInput + "/"
+                    + getTargetChildrenForParent(currentParentInput) + " mutations}";
         }
 
         int nonZeroCount = totalCoverage.getNonZeroCount();
@@ -367,7 +381,8 @@ public class MutationGuidance extends ZestGuidance {
 
         if (console != null) {
             if (LIBFUZZER_COMPAT_OUTPUT) {
-                console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, intervalExecsPerSec, currentInput.size());
+                console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount,
+                        intervalExecsPerSec, currentInput.size());
             } else if (!QUIET_MODE) {
                 console.printf("\033[2J");
                 console.printf("\033[H");
@@ -377,25 +392,31 @@ public class MutationGuidance extends ZestGuidance {
                 }
                 console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
                 console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
-                        maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
+                        maxDurationMillis == Long.MAX_VALUE ? "no time limit"
+                                : ("max " + millisToDuration(maxDurationMillis)));
                 console.printf("Number of executions: %,d\n", numTrials);
                 console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
                 console.printf("Cycles completed:     %d\n", cyclesCompleted);
                 console.printf("Unique failures:      %,d\n", uniqueFailures.size());
-                console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
+                console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(),
+                        numFavoredLastCycle);
                 console.printf("Current parent input: %s\n", currentParentInputDesc);
-                console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
+                console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec,
+                        execsPerSec);
                 console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
-                console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
-                console.printf("Total coverage:       %,d mutants\n", ((MutationCoverage) totalCoverage).numCaughtMutants());
-                console.printf("Available to Cover:   %,d mutants\n",((MutationCoverage) totalCoverage).numSeenMutants());
+                console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount,
+                        nonZeroValidFraction);
+                console.printf("Total coverage:       %,d mutants\n",
+                        ((MutationCoverage) totalCoverage).numCaughtMutants());
+                console.printf("Available to Cover:   %,d mutants\n",
+                        ((MutationCoverage) totalCoverage).numSeenMutants());
             }
         }
 
         String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%",
-                TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
-                numSavedInputs, 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
-                numValid, numTrials-numValid, nonZeroValidFraction);
+                TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx, numSavedInputs,
+                0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble, numValid,
+                numTrials - numValid, nonZeroValidFraction);
         appendLineToFile(statsFile, plotData);
 
     }
@@ -403,11 +424,9 @@ public class MutationGuidance extends ZestGuidance {
     @Override
     protected String getTitle() {
         if (blind) {
-            return  "Generator-based random fuzzing (no guidance)\n" +
-                    "--------------------------------------------\n";
+            return "Generator-based random fuzzing (no guidance)\n" + "--------------------------------------------\n";
         } else {
-            return  "Mutation-Guided Fuzzing\n" +
-                    "--------------------------\n";
+            return "Mutation-Guided Fuzzing\n" + "--------------------------\n";
         }
     }
 }
