@@ -64,7 +64,6 @@ public class InstrumentingClassLoader extends URLClassLoader {
         return urls;
     }
 
-
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
         byte[] bytes;
@@ -98,13 +97,11 @@ public class InstrumentingClassLoader extends URLClassLoader {
             transformedBytes = null;
         }
 
-
         // Load the class with transformed bytes, if possible
         if (transformedBytes != null) {
             bytes = transformedBytes;
         }
-        return defineClass(name, bytes,
-                0, bytes.length);
+        return defineClass(name, bytes, 0, bytes.length);
     }
 
 }

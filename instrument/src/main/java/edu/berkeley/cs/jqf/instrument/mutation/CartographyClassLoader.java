@@ -43,8 +43,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * ClassLoader for initial run in mutation guidance
- * Runs like InstrumentingClassLoader while also prepping MutationInstances
+ * ClassLoader for initial run in mutation guidance Runs like
+ * InstrumentingClassLoader while also prepping MutationInstances
  *
  * @author Bella Laybourn
  */
@@ -59,10 +59,11 @@ public class CartographyClassLoader extends URLClassLoader {
     private final List<String> excludeClasses;
 
     /** see InstrumentingClassLoader */
-    private final ClassFileTransformer transformer = new SnoopInstructionTransformer();
+    private final ClassFileTransformer coverageTransformer = new SnoopInstructionTransformer();
 
     /** Constructor */
-    public CartographyClassLoader(String[] paths, String[] mutables, String[] immutables, ClassLoader parent) throws MalformedURLException {
+    public CartographyClassLoader(String[] paths, String[] mutables, String[] immutables, ClassLoader parent)
+            throws MalformedURLException {
         super(stringsToUrls(paths), parent);
         includeClasses = new ArrayList<>(Arrays.asList(mutables));
         excludeClasses = new ArrayList<>(Arrays.asList(immutables));
@@ -88,6 +89,7 @@ public class CartographyClassLoader extends URLClassLoader {
 
         String internalName = name.replace('.', '/');
         String path = internalName.concat(".class");
+
         try (InputStream in = super.getResourceAsStream(path)) {
             if (in == null) {
                 throw new ClassNotFoundException("Cannot find class " + name);
@@ -99,13 +101,14 @@ public class CartographyClassLoader extends URLClassLoader {
 
         // Check includes + excludes
         boolean mutable = includeClasses.isEmpty();
-        for(String s : includeClasses) {
+        for (String s : includeClasses) {
             if (name.startsWith(s)) {
                 mutable = true;
                 break;
             }
         }
-        for(String s : excludeClasses) {
+        
+        for (String s : excludeClasses) {
             if (name.startsWith(s)) {
                 mutable = false;
                 break;
@@ -113,28 +116,19 @@ public class CartographyClassLoader extends URLClassLoader {
         }
 
         // Make cartograph
-        if(mutable) {
-            for(Mutator m : Mutator.values()) {
+        if (mutable) {
+            for (Mutator m : Mutator.values()) {
                 long instances = getInstanceCount(bytes, m);
-                for(int c = 0; c < instances; c++) {
+                for (int c = 0; c < instances; c++) {
                     cartograph.add(new MutationInstance(getURLs(), getParent(), m, c, name));
                 }
             }
         }
 
         // Instrument class to run like InstrumentingClassLoader
-        byte[] transformedBytes;
         try {
-            transformedBytes = transformer.transform(this, internalName, null, null, bytes);
-        } catch (IllegalClassFormatException e) {
-            // Just use original bytes
-            transformedBytes = null;
-        }
-
-        // Load the class with transformed bytes, if possible
-        if (transformedBytes != null) {
-            bytes = transformedBytes;
-        }
+            bytes = coverageTransformer.transform(this, internalName, null, null, bytes);
+        } catch (IllegalClassFormatException __) {}
 
         return defineClass(name, bytes, 0, bytes.length);
     }
@@ -151,17 +145,19 @@ public class CartographyClassLoader extends URLClassLoader {
         return baos.toByteArray();
     }
 
-    /** get number of opportunities to apply mutator in the class described by bytes */
+    /**
+     * get number of opportunities to apply mutator in the class described by bytes
+     */
     private long getInstanceCount(byte[] bytes, Mutator mutator) {
         AtomicLong instances = new AtomicLong(0);
         ClassWriter cw = new ClassWriter(0);
         ClassReader cr = new ClassReader(bytes);
         ClassVisitor cv = new ClassVisitor(Mutator.cvArg, cw) {
             @Override
-            public MethodVisitor visitMethod(int access, String name, String signature,
-                                             String superName, String[] interfaces) {
-                return new MethodVisitor(Mutator.cvArg, cv.visitMethod(access, name,
-                        signature, superName, interfaces)) {
+            public MethodVisitor visitMethod(int access, String name, String signature, String superName,
+                    String[] interfaces) {
+                return new MethodVisitor(Mutator.cvArg,
+                        cv.visitMethod(access, name, signature, superName, interfaces)) {
                     @Override
                     public void visitJumpInsn(int opcode, Label label) {
                         if (mutator.isOpportunity(opcode, signature)) {
@@ -169,6 +165,7 @@ public class CartographyClassLoader extends URLClassLoader {
                         }
                         super.visitJumpInsn(opcode, label);
                     }
+
                     @Override
                     public void visitLdcInsn(Object value) {
                         if (mutator.isOpportunity(Opcodes.LDC, signature)) {
@@ -176,6 +173,7 @@ public class CartographyClassLoader extends URLClassLoader {
                         }
                         super.visitLdcInsn(value);
                     }
+
                     @Override
                     public void visitIincInsn(int var, int increment) {
                         if (mutator.isOpportunity(Opcodes.IINC, signature)) {
@@ -183,13 +181,16 @@ public class CartographyClassLoader extends URLClassLoader {
                         }
                         super.visitIincInsn(var, increment);
                     }
+
                     @Override
-                    public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                    public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
+                            boolean isInterface) {
                         if (mutator.isOpportunity(opcode, descriptor)) {
                             instances.getAndIncrement();
                         }
                         super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                     }
+
                     @Override
                     public void visitInsn(int opcode) {
                         if (mutator.isOpportunity(opcode, signature)) {
