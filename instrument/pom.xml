@@ -18,7 +18,6 @@
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
-            <version>9.1</version>
         </dependency>
     </dependencies>
 
