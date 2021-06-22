@@ -25,6 +25,9 @@ public class Cartographer extends ClassVisitor {
     /** The API Version */
     private static final int API = Opcodes.ASM8;
 
+    /** The name of the class we're visitng */ 
+    private String name = null;
+
     /**
      * Creates a cartographer
      */
@@ -62,10 +65,17 @@ public class Cartographer extends ClassVisitor {
      * @param r a reader for reading the class in question
      * @return the cartographer which has walked the class
      */
-    public static Cartographer visit(ClassReader r) {
+    public static Cartographer explore(ClassReader r) {
         Cartographer c = new Cartographer(r);
         r.accept(c, 0);
         return c;
+    }
+
+    @Override
+    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        // Change from the ASM's internal naming scheme to the package naming scheme
+        this.name = name.replace("/", ".");
+        super.visit(version, access, name, signature, superName, interfaces);
     }
 
     /**
@@ -88,10 +98,10 @@ public class Cartographer extends ClassVisitor {
              * @param mut The mutator to be logged
              */
             private void logMutOp(Mutator mut) {
-                // TODO: Fill out this method
-                
-                // List<MutationInstance> ops = opportunities.get(mut);
-                // ops.add(new MutationInstance(null, null, mut, ops.size(), Cartographer.this.));
+                List<MutationInstance> ops = opportunities.get(mut);
+                ops.add(new MutationInstance(mut, ops.size(), Cartographer.this.name));
+
+                // TODO: Add instrumentation
             }
 
             /**
@@ -148,4 +158,8 @@ public class Cartographer extends ClassVisitor {
             }
         };
     };
+
+    byte[] toByteArray() {
+        return ((ClassWriter) cv).toByteArray();
+    }
 }

@@ -34,6 +34,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
 import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
+import edu.berkeley.cs.jqf.instrument.mutation.MCLCache;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
 import edu.berkeley.cs.jqf.instrument.tracing.TraceLogger;
 import edu.berkeley.cs.jqf.instrument.tracing.events.KillEvent;
@@ -56,13 +57,13 @@ import java.util.concurrent.TimeUnit;
  * @author Bella Laybourn
  */
 public class MutationGuidance extends ZestGuidance {
-    /** List of classes which should be mutated, and which shouldn't be mutated */ 
+    /** List of classes which should be mutated, and which shouldn't be mutated */
     private String[] mutables, immutables;
 
-    /** The initial classLoader */ 
+    /** The initial classLoader */
     private CartographyClassLoader cartographyClassLoader;
 
-    /** The mutants killed so far */ 
+    /** The mutants killed so far */
     private Set<MutationInstance> deadMutants = new HashSet<>();
 
     public MutationGuidance(String testName, Duration duration, File outputDirectory, String include, String exclude)
@@ -295,9 +296,9 @@ public class MutationGuidance extends ZestGuidance {
 
     @Override
     public ClassLoader getClassLoader(String[] classStrings, ClassLoader parent) throws MalformedURLException {
-        URL[] classPath = (URL[]) Arrays.stream(classStrings)
-                .map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray();
         if (this.cartographyClassLoader == null) {
+            URL[] classPath = (URL[]) Arrays.stream(classStrings)
+                    .map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray();
             this.cartographyClassLoader = new CartographyClassLoader(classPath, mutables, immutables, parent);
         }
         return this.cartographyClassLoader;
@@ -308,12 +309,12 @@ public class MutationGuidance extends ZestGuidance {
         new TrialRunner(testClass.getJavaClass(), method, args).run(); // loaded by CartographyClassLoader
         List<Throwable> fails = new ArrayList<>();
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
+        MCLCache cache = new MCLCache(cartographyClassLoader.getURLs(), cartographyClassLoader.getParent());
         for (MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
             if (!deadMutants.contains(mutationInstance)) {
                 try {
                     mutationInstance.resetTimer();
-                    Class<?> clazz = Class.forName(testClass.getName(), true, mutationInstance
-                            .getClassLoader(cartographyClassLoader.getURLs(), cartographyClassLoader.getParent()));
+                    Class<?> clazz = Class.forName(testClass.getName(), true, cache.of(mutationInstance));
                     new TrialRunner(clazz,
                             new FrameworkMethod(
                                     clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())),

@@ -64,14 +64,7 @@ public class MutationInstance {
     // who's seen it
     // whether this mutation is likely to be killed by a particular input
 
-    /** */ 
-    public MutationClassLoader getClassLoader(URL[] paths, ClassLoader parent) {
-        if (mcl == null)
-            mcl = new MutationClassLoader(this, paths, parent);
-        return mcl;
-    }
-
-    public MutationInstance(URL[] paths, ClassLoader parent, Mutator m, long i, String n) {
+    public MutationInstance(Mutator m, long i, String n) {
         this.id = mutationInstances.size();
         this.className = n;
         this.mutator = m;
@@ -100,5 +93,9 @@ public class MutationInstance {
 
     public static MutationInstance getInstance(int id) {
         return mutationInstances.get(id);
+    }
+
+    public static int getNumInstances() {
+        return mutationInstances.size();
     }
 }
