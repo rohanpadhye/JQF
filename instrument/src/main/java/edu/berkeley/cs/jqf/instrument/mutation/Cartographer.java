@@ -88,9 +88,10 @@ public class Cartographer extends ClassVisitor {
              * @param mut The mutator to be logged
              */
             private void logMutOp(Mutator mut) {
-                opportunities.get(mut).add(new MutationInstance(null, null, mut, api, signature));
-
-                // TODO: Add tracing code
+                // TODO: Fill out this method
+                
+                // List<MutationInstance> ops = opportunities.get(mut);
+                // ops.add(new MutationInstance(null, null, mut, ops.size(), Cartographer.this.));
             }
 
             /**
