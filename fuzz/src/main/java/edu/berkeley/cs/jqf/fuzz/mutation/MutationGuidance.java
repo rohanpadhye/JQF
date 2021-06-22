@@ -78,6 +78,7 @@ public class MutationGuidance extends ZestGuidance {
     public MutationGuidance(String testName, Duration duration, Long trials, File outputDirectory, String include, String exclude, Random rand)
             throws IOException {
         super(testName, duration, trials, outputDirectory, rand);
+
         if (include != null && !include.equals("")) {
             mutables = include.split(",");
         } else {
