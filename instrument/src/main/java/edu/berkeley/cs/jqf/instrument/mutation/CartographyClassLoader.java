@@ -106,8 +106,13 @@ public class CartographyClassLoader extends URLClassLoader {
 
         // Make cartograph
         if (mutable) {
-            Cartographer c = Cartographer.visit(new ClassReader(bytes));
-            // TODO: finish writing this
+            Cartographer c = Cartographer.explore(new ClassReader(bytes));
+
+            for (List<MutationInstance> opportunities : c.getOpportunities().values())
+                for (MutationInstance chance: opportunities)
+                    cartograph.add(chance);
+
+            bytes = c.toByteArray();
         }
 
         // Instrument class to measure both line coverage and mutation coverage
