@@ -37,12 +37,15 @@ import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
 import edu.berkeley.cs.jqf.instrument.tracing.TraceLogger;
 import edu.berkeley.cs.jqf.instrument.tracing.events.KillEvent;
+import edu.berkeley.cs.jqf.instrument.util.ThrowingFunction;
+
 import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.TestClass;
 
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -53,17 +56,24 @@ import java.util.concurrent.TimeUnit;
  * @author Bella Laybourn
  */
 public class MutationGuidance extends ZestGuidance {
+    /** List of classes which should be mutated, and which shouldn't be mutated */ 
     private String[] mutables, immutables;
+
+    /** The initial classLoader */ 
     private CartographyClassLoader cartographyClassLoader;
 
-    public MutationGuidance(String testName, Duration duration, File outputDirectory, String include, String exclude) throws IOException {
+    /** The mutants killed so far */ 
+    private Set<MutationInstance> deadMutants = new HashSet<>();
+
+    public MutationGuidance(String testName, Duration duration, File outputDirectory, String include, String exclude)
+            throws IOException {
         super(testName, duration, outputDirectory);
-        if(include != null && !include.equals("")) {
+        if (include != null && !include.equals("")) {
             mutables = include.split(",");
         } else {
             mutables = new String[0];
         }
-        if(exclude != null && !exclude.equals("")) {
+        if (exclude != null && !exclude.equals("")) {
             immutables = exclude.split(",");
         } else {
             immutables = new String[0];
@@ -287,7 +297,9 @@ public class MutationGuidance extends ZestGuidance {
     }
 
     @Override
-    public ClassLoader getClassLoader(String[] classPath, ClassLoader parent) throws MalformedURLException {
+    public ClassLoader getClassLoader(String[] classStrings, ClassLoader parent) throws MalformedURLException {
+        URL[] classPath = (URL[]) Arrays.stream(classStrings)
+                .map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray();
         if (this.cartographyClassLoader == null) {
             this.cartographyClassLoader = new CartographyClassLoader(classPath, mutables, immutables, parent);
         }
@@ -296,15 +308,19 @@ public class MutationGuidance extends ZestGuidance {
 
     @Override
     public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
-        new TrialRunner(testClass.getJavaClass(), method, args).run(); //loaded by CartographyClassLoader
+        new TrialRunner(testClass.getJavaClass(), method, args).run(); // loaded by CartographyClassLoader
         List<Throwable> fails = new ArrayList<>();
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
-        for(MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
-            if(!mutationInstance.isDead()) {
+        for (MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
+            if (!deadMutants.contains(mutationInstance)) {
                 try {
                     mutationInstance.resetTimer();
-                    Class<?> clazz = Class.forName(testClass.getName(), true, mutationInstance.getClassLoader());
-                    new TrialRunner(clazz, new FrameworkMethod(clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())), args).run();
+                    Class<?> clazz = Class.forName(testClass.getName(), true, mutationInstance
+                            .getClassLoader(cartographyClassLoader.getURLs(), cartographyClassLoader.getParent()));
+                    new TrialRunner(clazz,
+                            new FrameworkMethod(
+                                    clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())),
+                            args).run();
                 } catch (InstrumentationException e) {
                     throw new GuidanceException(e);
                 } catch (GuidanceException e) {
@@ -314,8 +330,8 @@ public class MutationGuidance extends ZestGuidance {
                 } catch (Throwable e) {
                     if (!isExceptionExpected(e.getClass(), expectedExceptions)) {
                         // failed
-                        mutationInstance.kill();
-                        TraceLogger.get().emit(new KillEvent(0, null, 0, mutationInstance)); //temp 0 values
+                        deadMutants.add(mutationInstance);
+                        TraceLogger.get().emit(new KillEvent(0, null, 0, mutationInstance)); // temp 0 values
                         fails.add(e);
                     }
                 }
