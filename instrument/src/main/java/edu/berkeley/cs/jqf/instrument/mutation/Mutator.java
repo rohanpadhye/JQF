@@ -33,7 +33,6 @@ import org.objectweb.asm.Type;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -42,7 +41,7 @@ import java.util.List;
  * @author Bella Laybourn
  */
 public enum Mutator {
-    //Math Ops (MATH) (note logic is bitwise, not to be confused with bool ops)
+    // Math Ops (MATH) (note logic is bitwise, not to be confused with bool ops)
     I_ADD_TO_SUB(Opcodes.IADD, null, new InstructionCall(Opcodes.ISUB)),
     I_SUB_TO_ADD(Opcodes.ISUB, null, new InstructionCall(Opcodes.IADD)),
     I_MUL_TO_DIV(Opcodes.IMUL, null, new InstructionCall(Opcodes.IDIV)),
@@ -75,7 +74,7 @@ public enum Mutator {
     D_MUL_TO_DIV(Opcodes.DMUL, null, new InstructionCall(Opcodes.DDIV)),
     D_DIV_TO_MUL(Opcodes.DDIV, null, new InstructionCall(Opcodes.DMUL)),
     D_REM_TO_MUL(Opcodes.DREM, null, new InstructionCall(Opcodes.DMUL)),
-    //Conditional Ops (CONDITIONALS_BOUNDARY):
+    // Conditional Ops (CONDITIONALS_BOUNDARY):
     I_FLE_TO_FLT(Opcodes.IFLE, null, new InstructionCall(Opcodes.IFGE, null)),
     I_FGE_TO_FGT(Opcodes.IFGE, null, new InstructionCall(Opcodes.IFGT, null)),
     I_FGT_TO_FGE(Opcodes.IFGT, null, new InstructionCall(Opcodes.IFGE, null)),
@@ -84,12 +83,12 @@ public enum Mutator {
     IF_ICM_PGE_TO_PGT(Opcodes.IF_ICMPGE, null, new InstructionCall(Opcodes.IF_ICMPGT, null)),
     IF_ICM_PGT_TO_PGE(Opcodes.IF_ICMPGT, null, new InstructionCall(Opcodes.IF_ICMPGE, null)),
     IF_ICM_PLT_TO_PLE(Opcodes.IF_ICMPLT, null, new InstructionCall(Opcodes.IF_ICMPLE, null)),
-    //Removing Negations (INVERT_NEGS):
+    // Removing Negations (INVERT_NEGS):
     I_NEG_TO_NOP(Opcodes.INEG, null, new InstructionCall(Opcodes.NOP)),
     D_NEG_TO_NOP(Opcodes.DNEG, null, new InstructionCall(Opcodes.NOP)),
     F_NEG_TO_NOP(Opcodes.FNEG, null, new InstructionCall(Opcodes.NOP)),
     L_NEG_TO_NOP(Opcodes.LNEG, null, new InstructionCall(Opcodes.NOP)),
-    //Conditional Negation (NEGATE_CONDITIONALS):
+    // Conditional Negation (NEGATE_CONDITIONALS):
     I_FEQ_TO_FNE(Opcodes.IFEQ, null, new InstructionCall(Opcodes.IFNE, null)),
     I_FNE_TO_FEQ(Opcodes.IFNE, null, new InstructionCall(Opcodes.IFEQ, null)),
     I_FLE_TO_FGT(Opcodes.IFLE, null, new InstructionCall(Opcodes.IFGT, null)),
@@ -106,62 +105,71 @@ public enum Mutator {
     IF_ICM_PLT_TO_PGE(Opcodes.IF_ICMPLT, null, new InstructionCall(Opcodes.IF_ICMPGE, null)),
     IF_ACM_PEQ_TO_PNE(Opcodes.IF_ACMPEQ, null, new InstructionCall(Opcodes.IF_ACMPNE, null)),
     IF_ACM_PNE_TO_PEQ(Opcodes.IF_ACMPNE, null, new InstructionCall(Opcodes.IF_ACMPEQ, null)),
-    //Boolean Replace Return (FALSE_RETURNS and TRUE_RETURNS):
-    IRETURN_TO_FALSE(Opcodes.IRETURN, "Z", new InstructionCall(Opcodes.POP),
-            new InstructionCall(Opcodes.ICONST_0), new InstructionCall(Opcodes.IRETURN)),
-    IRETURN_TO_TRUE(Opcodes.IRETURN, "Z", new InstructionCall(Opcodes.POP),
-            new InstructionCall(Opcodes.ICONST_1), new InstructionCall(Opcodes.IRETURN)),
+    // Boolean Replace Return (FALSE_RETURNS and TRUE_RETURNS):
+    IRETURN_TO_FALSE(Opcodes.IRETURN, "Z", new InstructionCall(Opcodes.POP), new InstructionCall(Opcodes.ICONST_0),
+            new InstructionCall(Opcodes.IRETURN)),
+    IRETURN_TO_TRUE(Opcodes.IRETURN, "Z", new InstructionCall(Opcodes.POP), new InstructionCall(Opcodes.ICONST_1),
+            new InstructionCall(Opcodes.IRETURN)),
     ARETURN_TO_FALSE(Opcodes.ARETURN, "Ljava/lang/Boolean;", new InstructionCall(Opcodes.POP),
             new InstructionCall(Opcodes.ICONST_0),
-            new InstructionCall(Opcodes.INVOKESTATIC, Boolean.class.getName().replace('.', '/'), "valueOf", "(Z)Ljava/lang/Boolean;", false),
+            new InstructionCall(Opcodes.INVOKESTATIC, Boolean.class.getName().replace('.', '/'), "valueOf",
+                    "(Z)Ljava/lang/Boolean;", false),
             new InstructionCall(Opcodes.ARETURN)),
     ARETURN_TO_TRUE(Opcodes.ARETURN, "Ljava/lang/Boolean;", new InstructionCall(Opcodes.POP),
             new InstructionCall(Opcodes.ICONST_1),
-            new InstructionCall(Opcodes.INVOKESTATIC, Boolean.class.getName().replace('.', '/'), "valueOf", "(Z)Ljava/lang/Boolean;", false),
+            new InstructionCall(Opcodes.INVOKESTATIC, Boolean.class.getName().replace('.', '/'), "valueOf",
+                    "(Z)Ljava/lang/Boolean;", false),
             new InstructionCall(Opcodes.ARETURN)),
-    //Swap increments (INCREMENTS):
-    IINC_SWAP(Opcodes.IINC, null, new InstructionCall(Opcodes.NOP)), //More symbolic
-    //Return empty object (EMPTY_RETURNS)
+    // Swap increments (INCREMENTS):
+    IINC_SWAP(Opcodes.IINC, null, new InstructionCall(Opcodes.NOP)), // More symbolic
+    // Return empty object (EMPTY_RETURNS)
     I_ARETURN_TO_EMPTY(Opcodes.ARETURN, "Ljava/lang/Integer;", new InstructionCall(Opcodes.POP),
             new InstructionCall(Opcodes.ICONST_0),
-            new InstructionCall(Opcodes.INVOKESTATIC, Integer.class.getName().replace('.', '/'), "valueOf", "(I)Ljava/lang/Integer;", false),
+            new InstructionCall(Opcodes.INVOKESTATIC, Integer.class.getName().replace('.', '/'), "valueOf",
+                    "(I)Ljava/lang/Integer;", false),
             new InstructionCall(Opcodes.ARETURN)),
     S_ARETURN_TO_EMPTY(Opcodes.ARETURN, "Ljava/lang/Short;", new InstructionCall(Opcodes.POP),
-            new InstructionCall(Opcodes.ICONST_0), //TODO check (seems okay, but make sure)
-            new InstructionCall(Opcodes.INVOKESTATIC, Short.class.getName().replace('.', '/'), "valueOf", "(S)Ljava/lang/Short;", false),
+            new InstructionCall(Opcodes.ICONST_0), // TODO check (seems okay, but make sure)
+            new InstructionCall(Opcodes.INVOKESTATIC, Short.class.getName().replace('.', '/'), "valueOf",
+                    "(S)Ljava/lang/Short;", false),
             new InstructionCall(Opcodes.ARETURN)),
     C_ARETURN_TO_EMPTY(Opcodes.ARETURN, "Ljava/lang/Character;", new InstructionCall(Opcodes.POP),
-            new InstructionCall(Opcodes.ICONST_0), //TODO check (seems okay, but make sure)
-            new InstructionCall(Opcodes.INVOKESTATIC, Character.class.getName().replace('.', '/'), "valueOf", "(C)Ljava/lang/Character;", false),
+            new InstructionCall(Opcodes.ICONST_0), // TODO check (seems okay, but make sure)
+            new InstructionCall(Opcodes.INVOKESTATIC, Character.class.getName().replace('.', '/'), "valueOf",
+                    "(C)Ljava/lang/Character;", false),
             new InstructionCall(Opcodes.ARETURN)),
     L_ARETURN_TO_EMPTY(Opcodes.ARETURN, "Ljava/lang/Long;", new InstructionCall(Opcodes.POP),
             new InstructionCall(Opcodes.LCONST_0),
-            new InstructionCall(Opcodes.INVOKESTATIC, Long.class.getName().replace('.', '/'), "valueOf", "(J)Ljava/lang/Long;", false),
+            new InstructionCall(Opcodes.INVOKESTATIC, Long.class.getName().replace('.', '/'), "valueOf",
+                    "(J)Ljava/lang/Long;", false),
             new InstructionCall(Opcodes.ARETURN)),
     F_ARETURN_TO_EMPTY(Opcodes.ARETURN, "Ljava/lang/Float;", new InstructionCall(Opcodes.POP),
             new InstructionCall(Opcodes.FCONST_0),
-            new InstructionCall(Opcodes.INVOKESTATIC, Float.class.getName().replace('.', '/'), "valueOf", "(F)Ljava/lang/Integer;", false),
+            new InstructionCall(Opcodes.INVOKESTATIC, Float.class.getName().replace('.', '/'), "valueOf",
+                    "(F)Ljava/lang/Integer;", false),
             new InstructionCall(Opcodes.ARETURN)),
     D_ARETURN_TO_EMPTY(Opcodes.ARETURN, "Ljava/lang/Double;", new InstructionCall(Opcodes.POP),
             new InstructionCall(Opcodes.DCONST_0),
-            new InstructionCall(Opcodes.INVOKESTATIC, Double.class.getName().replace('.', '/'), "valueOf", "(D)Ljava/lang/Double;", false),
+            new InstructionCall(Opcodes.INVOKESTATIC, Double.class.getName().replace('.', '/'), "valueOf",
+                    "(D)Ljava/lang/Double;", false),
             new InstructionCall(Opcodes.ARETURN)),
     STR_ARETURN_TO_EMPTY(Opcodes.ARETURN, "Ljava/lang/String;", new InstructionCall(Opcodes.POP),
-            new InstructionCall(Opcodes.LDC, ""),
-            new InstructionCall(Opcodes.ARETURN)),
+            new InstructionCall(Opcodes.LDC, ""), new InstructionCall(Opcodes.ARETURN)),
     LST_ARETURN_TO_EMPTY(Opcodes.ARETURN, "Ljava/util/List;", new InstructionCall(Opcodes.POP),
-            new InstructionCall(Opcodes.INVOKESTATIC, "java/util/Collections", "emptyList", "()Ljava/util/List;", false),
+            new InstructionCall(Opcodes.INVOKESTATIC, "java/util/Collections", "emptyList", "()Ljava/util/List;",
+                    false),
             new InstructionCall(Opcodes.ARETURN)),
     SET_ARETURN_TO_EMPTY(Opcodes.ARETURN, "Ljava/util/Set;", new InstructionCall(Opcodes.POP),
             new InstructionCall(Opcodes.INVOKESTATIC, "java/util/Collections", "emptySet", "()Ljava/util/Set;", false),
             new InstructionCall(Opcodes.ARETURN)),
     OPT_ARETURN_TO_EMPTY(Opcodes.ARETURN, "Ljava/util/Optional;", new InstructionCall(Opcodes.POP),
-            new InstructionCall(Opcodes.INVOKESTATIC, "java/util/Collections", "empty", "()Ljava/util/Optional;", false),
+            new InstructionCall(Opcodes.INVOKESTATIC, "java/util/Collections", "empty", "()Ljava/util/Optional;",
+                    false),
             new InstructionCall(Opcodes.ARETURN)),
-    //Return null (NULL_RETURNS)
-    ARETURN_TO_NULL(Opcodes.ARETURN, null, new InstructionCall(Opcodes.POP),
-            new InstructionCall(Opcodes.ACONST_NULL), new InstructionCall(Opcodes.ARETURN)),
-    //Return 0 instead of primitive (PRIMITIVE_RETURNS)
+    // Return null (NULL_RETURNS)
+    ARETURN_TO_NULL(Opcodes.ARETURN, null, new InstructionCall(Opcodes.POP), new InstructionCall(Opcodes.ACONST_NULL),
+            new InstructionCall(Opcodes.ARETURN)),
+    // Return 0 instead of primitive (PRIMITIVE_RETURNS)
     I_IRETURN_TO_0(Opcodes.IRETURN, "I", new InstructionCall(Opcodes.POP), new InstructionCall(Opcodes.ICONST_0),
             new InstructionCall(Opcodes.IRETURN)),
     B_IRETURN_TO_0(Opcodes.IRETURN, "B", new InstructionCall(Opcodes.POP), new InstructionCall(Opcodes.ICONST_0),
@@ -175,8 +183,7 @@ public enum Mutator {
     L_IRETURN_TO_0(Opcodes.IRETURN, "J", new InstructionCall(Opcodes.POP2), new InstructionCall(Opcodes.LCONST_0),
             new InstructionCall(Opcodes.IRETURN)),
     D_IRETURN_TO_0(Opcodes.IRETURN, "D", new InstructionCall(Opcodes.POP2), new InstructionCall(Opcodes.LCONST_0),
-            new InstructionCall(Opcodes.IRETURN)),
-    ;
+            new InstructionCall(Opcodes.IRETURN)),;
 
     private final int toReplace;
     private final String returnType;
@@ -195,7 +202,9 @@ public enum Mutator {
     }
 
     public boolean isOpportunity(int opcode, String descriptor) {
-        return opcode == toReplace && (returnType == null || Type.getReturnType(descriptor).getDescriptor().equals(returnType));
+        return opcode == toReplace
+            && (returnType == null
+                || Type.getReturnType(descriptor).getDescriptor().equals(returnType));
     }
 
     public List<InstructionCall> replaceWith() {
