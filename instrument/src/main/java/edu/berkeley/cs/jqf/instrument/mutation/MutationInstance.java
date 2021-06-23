@@ -51,8 +51,6 @@ public class MutationInstance {
     /** Numbered instance of the opportunity for mutation this classloader uses */
     final long mutatorOffsetWithinClass;
 
-    MutationClassLoader mcl = null;
-
     /**
      * Counter that is incremented during execution of this mutation instance to
      * catch infinite loops.
