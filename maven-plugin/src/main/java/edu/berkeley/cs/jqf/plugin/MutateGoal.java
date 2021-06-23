@@ -63,25 +63,25 @@ import java.util.stream.Collectors;
 @Mojo(name="mutate",
       requiresDependencyResolution= ResolutionScope.TEST)
 public class MutateGoal extends AbstractMojo {
-    @Parameter(defaultValue = "${project}", required = true, readonly = true)
+    @Parameter(defaultValue="${project}", required=true, readonly=true)
     MavenProject project;
 
-    @Parameter(defaultValue = "${project.build.directory}", readonly = true)
+    @Parameter(defaultValue="${project.build.directory}", readonly=true)
     private File target;
 
-    @Parameter(property = "out", required = false, defaultValue = "")
+    @Parameter(property="out", required = false, defaultValue = "")
     private String outputDirectory;
 
     /**
      * Test class
      */
-    @Parameter(property = "class", required = true)
+    @Parameter(property = "class", required=true)
     String testClassName;
 
     /**
      * Test method
      */
-    @Parameter(property = "method", required = true)
+    @Parameter(property = "method", required=true)
     private String testMethod;
 
     /**
@@ -178,8 +178,3 @@ public class MutateGoal extends AbstractMojo {
         return junit.run(testRunner);
     }
 }
-
-// guidance + method: getClassLoader()
-// + method 2: runTest() or getTrialRunner()
-// fuzzstatement 191 -> guidance.run(class, method, args)
-// - default would be the current 191
