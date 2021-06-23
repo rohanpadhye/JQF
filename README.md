@@ -1,7 +1,3 @@
-This is a fork for working on fault-guided fuzz testing.
-
----
-
 # JQF + Zest: Semantic Fuzzing for Java
 
 [ISSTA'19 paper]: https://rohan.padhye.org/files/zest-issta19.pdf
