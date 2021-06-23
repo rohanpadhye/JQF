@@ -1,6 +1,7 @@
 package edu.berkeley.cs.jqf.instrument.mutation;
 
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 /**
  * This is a class with static methods that are invoked from
@@ -29,4 +30,15 @@ public class MutationSnoop {
         }
     }
 
+    private static Consumer<MutationInstance> consumer = x -> {};
+    
+    public static void addMutationLogCallback(Consumer<MutationInstance> c) {
+        consumer = c;
+    }
+
+    public static void logMutation(int id) {
+        assert consumer != null;
+
+        consumer.accept(MutationInstance.getInstance(id));
+    }
 }

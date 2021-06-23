@@ -25,7 +25,7 @@ public class Cartographer extends ClassVisitor {
     /** The API Version */
     private static final int API = Opcodes.ASM8;
 
-    /** The name of the class we're visitng */ 
+    /** The name of the class we're visitng */
     private String name = null;
 
     /**
@@ -99,9 +99,12 @@ public class Cartographer extends ClassVisitor {
              */
             private void logMutOp(Mutator mut) {
                 List<MutationInstance> ops = opportunities.get(mut);
-                ops.add(new MutationInstance(mut, ops.size(), Cartographer.this.name));
+                MutationInstance here = new MutationInstance(mut, ops.size(), Cartographer.this.name);
+                ops.add(here);
 
-                // TODO: Add instrumentation
+                super.visitIntInsn(Opcodes.LDC, here.id);
+                super.visitMethodInsn(Opcodes.INVOKESTATIC, "edu/berkeley/cs/jqf/instrument/mutation/MutationSnoop",
+                        "logMutation", "(I)V", false);
             }
 
             /**
