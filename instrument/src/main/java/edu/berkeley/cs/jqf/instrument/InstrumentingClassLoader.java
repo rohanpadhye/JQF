@@ -82,10 +82,10 @@ public class InstrumentingClassLoader extends URLClassLoader {
         assert (bytes != null);
 
         try {
-            byte[] instrumented;
-            instrumented = transformer.transform(this, internalName, null, null, bytes);
-            if (instrumented != null)
-                bytes = instrumented;
+            byte[] attempt;
+            attempt = transformer.transform(this, internalName, null, null, bytes);
+            if (attempt != null)
+                bytes = attempt;
         } catch (IllegalClassFormatException e) {
         }
 

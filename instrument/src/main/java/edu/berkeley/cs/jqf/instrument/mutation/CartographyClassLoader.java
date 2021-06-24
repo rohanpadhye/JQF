@@ -118,10 +118,10 @@ public class CartographyClassLoader extends URLClassLoader {
         // Instrument class to measure both line coverage and mutation coverage
         //
         try {
-            byte[] instrumented;
-            instrumented = lineCoverageTransformer.transform(this, internalName, null, null, bytes.clone());
-            if (instrumented != null)
-                bytes = instrumented;
+            byte temp[];
+            temp = lineCoverageTransformer.transform(this, internalName, null, null, bytes.clone());
+            if (temp != null)
+                bytes = temp;
         } catch (IllegalClassFormatException __) {
         }
 
