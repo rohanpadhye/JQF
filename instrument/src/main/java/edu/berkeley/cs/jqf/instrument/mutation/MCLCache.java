@@ -1,6 +1,8 @@
 package edu.berkeley.cs.jqf.instrument.mutation;
 
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A lazy cache of {@link MutationClassLoader}s, one for each instance, with the
@@ -9,7 +11,7 @@ import java.net.URL;
 public class MCLCache {
     private URL[] paths;
     private ClassLoader parent;
-    private MutationClassLoader loaders[];
+    private Map<Integer, MutationClassLoader> loaders;
 
     /**
      * Creates an {@code MCLCache}
@@ -20,7 +22,7 @@ public class MCLCache {
     public MCLCache(URL[] paths, ClassLoader parent) {
         this.paths = paths;
         this.parent = parent;
-        loaders = new MutationClassLoader[MutationInstance.getNumInstances()];
+        loaders = new HashMap<>();
     }
 
     /**
@@ -30,9 +32,11 @@ public class MCLCache {
      * @return A {@link MutationClassLoader} which loads the given instance
      */
     public MutationClassLoader of(MutationInstance mi) {
-        // Maybe preload these?
-        if (loaders[mi.id] == null)
-            loaders[mi.id] = new MutationClassLoader(mi, paths, parent);
-        return loaders[mi.id];
+        MutationClassLoader mcl = loaders.get(mi.id);
+        if (mcl == null) {
+            mcl = new MutationClassLoader(mi, paths, parent);
+            loaders.put(mi.id, mcl);
+        }
+        return mcl;
     }
 }

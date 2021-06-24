@@ -63,6 +63,9 @@ public class MutationGuidance extends ZestGuidance {
     /** The initial classLoader */
     private CartographyClassLoader cartographyClassLoader;
 
+    /** The generated classloaders */
+    private MCLCache cache;
+    
     /** The mutants killed so far */
     private Set<MutationInstance> deadMutants = new HashSet<>();
 
@@ -303,6 +306,7 @@ public class MutationGuidance extends ZestGuidance {
             URL[] classPath = (URL[]) Arrays.stream(classStrings)
                     .map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray();
             this.cartographyClassLoader = new CartographyClassLoader(classPath, mutables, immutables, parent);
+            this.cache = new MCLCache(classPath, parent);
         }
         return this.cartographyClassLoader;
     }
@@ -312,7 +316,6 @@ public class MutationGuidance extends ZestGuidance {
         new TrialRunner(testClass.getJavaClass(), method, args).run(); // loaded by CartographyClassLoader
         List<Throwable> fails = new ArrayList<>();
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
-        MCLCache cache = new MCLCache(cartographyClassLoader.getURLs(), cartographyClassLoader.getParent());
         for (MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
             if (!deadMutants.contains(mutationInstance)) {
                 try {
