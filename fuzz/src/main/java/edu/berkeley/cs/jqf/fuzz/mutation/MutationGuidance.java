@@ -34,7 +34,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
 import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
-import edu.berkeley.cs.jqf.instrument.mutation.MCLCache;
+import edu.berkeley.cs.jqf.instrument.mutation.MutationClassLoaders;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
 import edu.berkeley.cs.jqf.instrument.tracing.TraceLogger;
 import edu.berkeley.cs.jqf.instrument.tracing.events.KillEvent;
@@ -64,7 +64,7 @@ public class MutationGuidance extends ZestGuidance {
     private CartographyClassLoader cartographyClassLoader;
 
     /** The generated classloaders */
-    private MCLCache cache;
+    private MutationClassLoaders mutationClassLoaders;
     
     /** The mutants killed so far */
     private Set<MutationInstance> deadMutants = new HashSet<>();
@@ -312,7 +312,7 @@ public class MutationGuidance extends ZestGuidance {
         if (this.cartographyClassLoader == null) {
             URL[] classPath =  Arrays.stream(classStrings).map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray(URL[]::new);
             this.cartographyClassLoader = new CartographyClassLoader(classPath, mutables, immutables, parent);
-            this.cache = new MCLCache(classPath, parent);
+            this.mutationClassLoaders = new MutationClassLoaders(classPath, parent);
         }
         return this.cartographyClassLoader;
     }
@@ -327,7 +327,7 @@ public class MutationGuidance extends ZestGuidance {
             if (!deadMutants.contains(mutationInstance)) {
                 try {
                     mutationInstance.resetTimer();
-                    Class<?> clazz = Class.forName(testClass.getName(), true, cache.of(mutationInstance));
+                    Class<?> clazz = Class.forName(testClass.getName(), true, mutationClassLoaders.get(mutationInstance));
                     new TrialRunner(clazz,
                             new FrameworkMethod(
                                     clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())),
