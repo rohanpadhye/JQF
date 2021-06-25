@@ -140,7 +140,8 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.8.1</version>
                     <configuration>
-                        <release>9</release>
+                        <source>9</source>
+                        <target>9</target>
                     </configuration>
                 </plugin>
                 <plugin>
