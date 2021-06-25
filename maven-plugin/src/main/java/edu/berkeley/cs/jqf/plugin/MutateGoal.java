@@ -120,9 +120,8 @@ public class MutateGoal extends AbstractMojo {
             // Create main classloader
             ClassLoader papa = getClass().getClassLoader();
 
-            URL urls[] = (URL[])
-                project.getTestClasspathElements().stream()
-                .map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray();
+            URL urls[] = project.getTestClasspathElements().stream()
+                    .map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray(URL[]::new);
 
             CartographyClassLoader ccl = new CartographyClassLoader(urls, includeArray, excludeArray, papa);
 
