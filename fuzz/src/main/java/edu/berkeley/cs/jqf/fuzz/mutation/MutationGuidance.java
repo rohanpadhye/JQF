@@ -310,7 +310,7 @@ public class MutationGuidance extends ZestGuidance {
     @Override
     public ClassLoader getClassLoader(String[] classStrings, ClassLoader parent) throws MalformedURLException {
         if (this.cartographyClassLoader == null) {
-            URL[] classPath = (URL[]) Arrays.stream(classStrings)
+            URL[] classPath =  Arrays.stream(classStrings).map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray(URL[]::new);
                     .map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray();
             this.cartographyClassLoader = new CartographyClassLoader(classPath, mutables, immutables, parent);
             this.cache = new MCLCache(classPath, parent);
