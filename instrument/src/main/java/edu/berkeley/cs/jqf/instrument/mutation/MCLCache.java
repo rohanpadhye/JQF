@@ -11,7 +11,7 @@ import java.util.Map;
 public class MCLCache {
     private URL[] paths;
     private ClassLoader parent;
-    private Map<Integer, MutationClassLoader> loaders;
+    private Map<MutationInstance, MutationClassLoader> loaders;
 
     /**
      * Creates an {@code MCLCache}
@@ -32,10 +32,10 @@ public class MCLCache {
      * @return A {@link MutationClassLoader} which loads the given instance
      */
     public MutationClassLoader of(MutationInstance mi) {
-        MutationClassLoader mcl = loaders.get(mi.id);
+        MutationClassLoader mcl = loaders.get(mi);
         if (mcl == null) {
             mcl = new MutationClassLoader(mi, paths, parent);
-            loaders.put(mi.id, mcl);
+            loaders.put(mi, mcl);
         }
         return mcl;
     }

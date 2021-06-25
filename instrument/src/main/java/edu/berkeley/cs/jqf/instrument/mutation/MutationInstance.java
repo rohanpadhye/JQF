@@ -28,10 +28,6 @@
  */
 package edu.berkeley.cs.jqf.instrument.mutation;
 
-import org.objectweb.asm.*;
-
-import java.io.*;
-import java.net.URL;
 import java.util.ArrayList;
 
 public class MutationInstance {
@@ -95,5 +91,16 @@ public class MutationInstance {
 
     public static int getNumInstances() {
         return mutationInstances.size();
+    }
+
+    @Override
+    public boolean equals(Object that) {
+        // Mutation instances are globally unique
+        return this == that;
+    }
+
+    @Override
+    public int hashCode() {
+        return id;
     }
 }
