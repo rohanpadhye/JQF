@@ -195,13 +195,8 @@ public enum Mutator {
     }
 
     public boolean isOpportunity(int opcode, String descriptor) {
-        if (opcode != toReplace)
-            return false;
-        if (returnType == null)
-            return true;
-        if (descriptor == null)
-            return false;
-        return Type.getReturnType(descriptor).getDescriptor().equals(returnType);
+        return opcode == toReplace
+                && (returnType == null || Type.getReturnType(descriptor).getDescriptor().equals(returnType));
     }
 
     public List<InstructionCall> replaceWith() {
