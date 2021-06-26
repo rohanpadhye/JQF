@@ -122,7 +122,7 @@ public class Cartographer extends ClassVisitor {
              * @param opcode The opcode of the instruction
              */
             private void check(int opcode) {
-                check(opcode, null);
+                check(opcode, descriptor);
             }
 
             // TODO: Remove this duplication, somehow
