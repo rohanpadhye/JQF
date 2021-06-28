@@ -36,6 +36,7 @@ import edu.berkeley.cs.jqf.instrument.InstrumentationException;
 import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationClassLoaders;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
+import edu.berkeley.cs.jqf.instrument.mutation.MutationSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.TraceLogger;
 import edu.berkeley.cs.jqf.instrument.tracing.events.KillEvent;
 import edu.berkeley.cs.jqf.instrument.util.ThrowingFunction;
@@ -313,6 +314,7 @@ public class MutationGuidance extends ZestGuidance {
             URL[] classPath =  Arrays.stream(classStrings).map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray(URL[]::new);
             this.cartographyClassLoader = new CartographyClassLoader(classPath, mutables, immutables, parent);
             this.mutationClassLoaders = new MutationClassLoaders(classPath, parent);
+            MutationSnoop.setMutantCallback(mi -> {});
         }
         return this.cartographyClassLoader;
     }
@@ -320,35 +322,41 @@ public class MutationGuidance extends ZestGuidance {
     @Override
     public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
         numRuns++;
+        Set<MutationInstance> runMutants = new HashSet<>();
+        MutationSnoop.setMutantCallback(runMutants::add);
+
         new TrialRunner(testClass.getJavaClass(), method, args).run(); // loaded by CartographyClassLoader
         List<Throwable> fails = new ArrayList<>();
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         for (MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
-            if (!deadMutants.contains(mutationInstance)) {
-                try {
-                    mutationInstance.resetTimer();
-                    Class<?> clazz = Class.forName(testClass.getName(), true, mutationClassLoaders.get(mutationInstance));
-                    new TrialRunner(clazz,
-                            new FrameworkMethod(
-                                    clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())),
-                            args).run();
-                } catch (InstrumentationException e) {
-                    throw new GuidanceException(e);
-                } catch (GuidanceException e) {
-                    throw e;
-                } catch (AssumptionViolatedException e) {
-                    // ignored
-                } catch (Throwable e) {
-                    if (!isExceptionExpected(e.getClass(), expectedExceptions)) {
-                        // failed
-                        deadMutants.add(mutationInstance);
-                        TraceLogger.get().emit(new KillEvent(0, null, 0, mutationInstance)); // temp 0 values
-                        fails.add(e);
-                    }
+            if (deadMutants.contains(mutationInstance))
+                continue;
+            if (!runMutants.contains(mutationInstance))
+                continue;
+
+            try {
+                mutationInstance.resetTimer();
+                Class<?> clazz = Class.forName(testClass.getName(), true, mutationClassLoaders.get(mutationInstance));
+                new TrialRunner(clazz,
+                                new FrameworkMethod(
+                                                    clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())),
+                                args).run();
+            } catch (InstrumentationException e) {
+                throw new GuidanceException(e);
+            } catch (GuidanceException e) {
+                throw e;
+            } catch (AssumptionViolatedException e) {
+                // ignored
+            } catch (Throwable e) {
+                if (!isExceptionExpected(e.getClass(), expectedExceptions)) {
+                    // failed
+                    deadMutants.add(mutationInstance);
+                    TraceLogger.get().emit(new KillEvent(0, null, 0, mutationInstance)); // temp 0 values
+                    fails.add(e);
                 }
-                // run
-                ((MutationCoverage) runCoverage).see(mutationInstance);
             }
+            // run
+            ((MutationCoverage) runCoverage).see(mutationInstance);
         }
     }
 
