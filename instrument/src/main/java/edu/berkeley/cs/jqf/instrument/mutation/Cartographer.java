@@ -99,9 +99,17 @@ public class Cartographer extends ClassVisitor {
              */
             private void logMutOp(Mutator mut) {
                 List<MutationInstance> ops = opportunities.get(mut);
-                ops.add(new MutationInstance(mut, ops.size(), Cartographer.this.name));
+                MutationInstance mi =  new MutationInstance(mut, ops.size(), Cartographer.this.name);
+                ops.add(mi);
 
-                // TODO: Add instrumentation
+                super.visitLdcInsn(mi.id);
+                super.visitMethodInsn(Opcodes.INVOKESTATIC,
+                                      "edu/berkeley/cs/jqf/instrument/mutation/MutationSnoop",
+                                      "logMutant",
+                                      "(I)V",
+                                      false);
+
+
             }
 
             /**

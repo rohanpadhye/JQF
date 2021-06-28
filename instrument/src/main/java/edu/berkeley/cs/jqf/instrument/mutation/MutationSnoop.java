@@ -1,6 +1,7 @@
 package edu.berkeley.cs.jqf.instrument.mutation;
 
 import java.util.ArrayList;
+import java.util.function.Consumer;
 
 /**
  * This is a class with static methods that are invoked from
@@ -29,4 +30,26 @@ public class MutationSnoop {
         }
     }
 
+    /** The callback which must be run upon invoking a mutant */
+    private static Consumer<MutationInstance> callback = x -> {};
+
+    /**
+     * Called when a mutant is run in the intial run
+     * 
+     * @param id The id of the {@link MutationInstance}
+     * @see Cartographer
+     */
+    public static void logMutant(int id) {
+        callback.accept(MutationInstance.getInstance(id));
+    }
+
+    /** 
+     * Set the callback which will be run each time a mutant is run in 
+     * the initial run of the tested class
+     * 
+     * @param cb The new callback
+     */
+    public static void setMutantCallback(Consumer<MutationInstance> cb) {
+        callback = cb;
+    }
 }
