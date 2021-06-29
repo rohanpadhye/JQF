@@ -29,8 +29,12 @@
 package edu.berkeley.cs.jqf.plugin;
 
 import edu.berkeley.cs.jqf.fuzz.util.IOUtils;
+import edu.berkeley.cs.jqf.fuzz.util.ThrowingRunnable;
 import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
+import edu.berkeley.cs.jqf.instrument.mutation.MutationClassLoader;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
+import edu.berkeley.cs.jqf.instrument.util.ThrowingFunction;
+
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -45,8 +49,11 @@ import org.junit.runner.Result;
 import org.junit.runner.Runner;
 
 import java.io.*;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Mutation goal
@@ -54,7 +61,7 @@ import java.util.List;
  * @author Bella Laybourn
  */
 @Mojo(name="mutate",
-        requiresDependencyResolution= ResolutionScope.TEST)
+      requiresDependencyResolution= ResolutionScope.TEST)
 public class MutateGoal extends AbstractMojo {
     @Parameter(defaultValue="${project}", required=true, readonly=true)
     MavenProject project;
@@ -89,24 +96,17 @@ public class MutateGoal extends AbstractMojo {
     @Parameter(property = "excludeClasses")
     String excludeRegex;
 
+    private String[] splitRegex(String regex) {
+        return (includeRegex == null || includeRegex.equals("")) ? new String[0] : regex.split(",");
+    }
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         String targetName = testClassName + "#" + testMethod;
-        String[] includeArray, excludeArray;
-        if(includeRegex == null || includeRegex.equals("")) {
-            includeArray = new String[0];
-        } else {
-            includeArray = includeRegex.split(",");
-        }
-        if(excludeRegex == null || excludeRegex.equals("")) {
-            excludeArray = new String[0];
-        } else {
-            excludeArray = excludeRegex.split(",");
-        }
-        if(outputDirectory == null || outputDirectory.equals("")) {
+        String[] includeArray = splitRegex(includeRegex), excludeArray = splitRegex(excludeRegex);
+        if (outputDirectory == null || outputDirectory.equals("")) {
             outputDirectory = "mutation-results" + File.separator + testClassName;
         }
-
 
         File resultsDir = new File(target, outputDirectory);
         try {
@@ -115,10 +115,15 @@ public class MutateGoal extends AbstractMojo {
             throw new MojoExecutionException("Could not create log file", e);
         }
 
-        try (PrintWriter log = new PrintWriter(new FileWriter(new File(resultsDir.getPath() + File.separator + testMethod + ".txt")))) {
+        try (PrintWriter log = new PrintWriter(
+                new FileWriter(new File(resultsDir.getPath() + File.separator + testMethod + ".txt")))) {
             // Create main classloader
-            List<String> classpaths =  project.getTestClasspathElements();
-            CartographyClassLoader ccl = new CartographyClassLoader(classpaths.toArray(new String[0]), includeArray, excludeArray, getClass().getClassLoader());
+            ClassLoader papa = getClass().getClassLoader();
+
+            URL urls[] = project.getTestClasspathElements().stream()
+                    .map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray(URL[]::new);
+
+            CartographyClassLoader ccl = new CartographyClassLoader(urls, includeArray, excludeArray, papa);
 
             // Run initial test to compute mutants dynamically
             Result initialResults = runTest(ccl);
@@ -138,13 +143,14 @@ public class MutateGoal extends AbstractMojo {
             List<MutationInstance> killedMutants = new ArrayList<>();
 
             // Run each mutant
-            for(MutationInstance mutationInstance : mutationInstances) {
+            for (MutationInstance mutationInstance : mutationInstances) {
                 System.out.println(mutationInstance);
                 log.println(mutationInstance);
+                MutationClassLoader mcl = new MutationClassLoader(mutationInstance, urls, papa);
                 mutationInstance.resetTimer();
-                Result mutantTestResult = runTest(mutationInstance.getClassLoader());
+                Result mutantTestResult = runTest(mcl);
                 runByTest++;
-                if(mutantTestResult.getFailureCount() > 0) {
+                if (mutantTestResult.getFailureCount() > 0) {
                     failByTest++;
                     killedMutants.add(mutationInstance);
                     log.println(mutantTestResult.getFailures());
