@@ -69,6 +69,12 @@ public class MutationGuidance extends ZestGuidance {
     /** The mutants killed so far */
     private Set<MutationInstance> deadMutants = new HashSet<>();
 
+    /** The number of actual runs of the test */
+    private long numRuns = 0;
+
+    /** The number of runs done in the last interval */ 
+    private long lastNumRuns = 0;
+
     public MutationGuidance(String testName, Duration duration, File outputDirectory, String include, String exclude)
             throws IOException {
         super(testName, duration, outputDirectory);
@@ -312,6 +318,7 @@ public class MutationGuidance extends ZestGuidance {
 
     @Override
     public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
+        numRuns++;
         new TrialRunner(testClass.getJavaClass(), method, args).run(); // loaded by CartographyClassLoader
         List<Throwable> fails = new ArrayList<>();
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
@@ -320,6 +327,7 @@ public class MutationGuidance extends ZestGuidance {
                 try {
                     mutationInstance.resetTimer();
                     Class<?> clazz = Class.forName(testClass.getName(), true, mutationClassLoaders.get(mutationInstance));
+                    numRuns++;
                     new TrialRunner(clazz,
                             new FrameworkMethod(
                                     clazz.getMethod(method.getName(), method.getMethod().getParameterTypes())),
@@ -356,17 +364,24 @@ public class MutationGuidance extends ZestGuidance {
     @Override
     protected void displayStats() {
         Date now = new Date();
-        long intervalMilliseconds = now.getTime() - lastRefreshTime.getTime();
-        if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD) {
+        long intervalTime = now.getTime() - lastRefreshTime.getTime();
+        long totalTime = now.getTime() - startTime.getTime();
+
+        if (intervalTime < STATS_REFRESH_TIME_PERIOD) {
             return;
         }
+
+        double trialsPerSec = numTrials * 1000L / totalTime;
         long interlvalTrials = numTrials - lastNumTrials;
-        long intervalExecsPerSec = interlvalTrials * 1000L / intervalMilliseconds;
-        double intervalExecsPerSecDouble = interlvalTrials * 1000.0 / intervalMilliseconds;
+        double intervalTrialsPerSec = interlvalTrials * 1000.0 / intervalTime;
+
+        double runsPerSec = numRuns * 1000L / totalTime;
+        long intervalRuns = numRuns - lastNumRuns;
+        double intervalRunsPerSec = intervalRuns * 1000.0 / intervalTime;
+
         lastRefreshTime = now;
         lastNumTrials = numTrials;
-        long elapsedMilliseconds = now.getTime() - startTime.getTime();
-        long execsPerSec = numTrials * 1000L / elapsedMilliseconds;
+        lastNumRuns = numRuns;
 
         String currentParentInputDesc;
         if (seedInputs.size() > 0 || savedInputs.isEmpty()) {
@@ -386,7 +401,7 @@ public class MutationGuidance extends ZestGuidance {
 
         if (console != null) {
             if (LIBFUZZER_COMPAT_OUTPUT) {
-                console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, intervalExecsPerSec, currentInput.size());
+                console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, (long) intervalTrialsPerSec, currentInput.size());
             } else if (!QUIET_MODE) {
                 console.printf("\033[2J");
                 console.printf("\033[H");
@@ -395,15 +410,17 @@ public class MutationGuidance extends ZestGuidance {
                     console.printf("Test name:            %s\n", this.testName);
                 }
                 console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
-                console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
+                console.printf("Elapsed time:         %s (%s)\n", millisToDuration(totalTime),
                         maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
-                console.printf("Number of executions: %,d\n", numTrials);
+                console.printf("Number of trials:     %,d\n", numTrials);
+                console.printf("Number of executions: %,d\n", numRuns);
                 console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
                 console.printf("Cycles completed:     %d\n", cyclesCompleted);
                 console.printf("Unique failures:      %,d\n", uniqueFailures.size());
                 console.printf("Queue size:           %,d (%,d favored last cycle)\n", savedInputs.size(), numFavoredLastCycle);
                 console.printf("Current parent input: %s\n", currentParentInputDesc);
-                console.printf("Execution speed:      %,d/sec now | %,d/sec overall\n", intervalExecsPerSec, execsPerSec);
+                console.printf("Fuzzing Throughput:   %,d/sec now | %,d/sec overall\n", (long) intervalTrialsPerSec, (long) trialsPerSec);
+                console.printf("Execution Speed:      %,d/sec now | %,d/sec overall\n", (long) intervalRunsPerSec, (long) runsPerSec);
                 console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
                 console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
                 console.printf("Total coverage:       %,d mutants\n", ((MutationCoverage) totalCoverage).numCaughtMutants());
@@ -413,7 +430,7 @@ public class MutationGuidance extends ZestGuidance {
 
         String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%",
                 TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
-                numSavedInputs, 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
+                numSavedInputs, 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalTrialsPerSec,
                 numValid, numTrials-numValid, nonZeroValidFraction);
         appendLineToFile(statsFile, plotData);
 
