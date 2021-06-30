@@ -116,12 +116,15 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
      *                 {@code null} indicates unlimited time.
+     * @param trials   the number of trials for which to run fuzzing, where
+     *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
+     * @param det      Whether or not the fuzzing is deterministic
      * @param seedInputFiles one or more input files to be used as initial inputs
      * @throws IOException if the output directory could not be prepared
      */
-    public ExecutionIndexingGuidance(String testName, Duration duration, File outputDirectory, File... seedInputFiles) throws IOException {
-        super(testName, duration, outputDirectory);
+    public ExecutionIndexingGuidance(String testName, Duration duration, Long trials, File outputDirectory, boolean det, File... seedInputFiles) throws IOException {
+        super(testName, duration, trials, outputDirectory, det);
         if (seedInputFiles != null) {
             for (File seedInputFile : seedInputFiles) {
                 seedInputs.add(new MappedSeedInput(seedInputFile));
@@ -135,12 +138,15 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
      *                 {@code null} indicates unlimited time.
+     * @param trials   the number of trials for which to run fuzzing, where
+     *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
      * @param seedInputDir the directory containing one or more input files to be used as initial inputs
+     * @param det      Whether or not the fuzzing is deterministic
      * @throws IOException if the output directory could not be prepared
      */
-    public ExecutionIndexingGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir) throws IOException {
-        this(testName, duration, outputDirectory, IOUtils.resolveInputFileOrDirectory(seedInputDir));
+    public ExecutionIndexingGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, boolean det) throws IOException {
+        this(testName, duration, trials, outputDirectory, det, IOUtils.resolveInputFileOrDirectory(seedInputDir));
     }
 
         /** Returns the banner to be displayed on the status screen */

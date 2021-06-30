@@ -125,16 +125,45 @@ public class FuzzGoal extends AbstractMojo {
     /**
      * The duration of time for which to run fuzzing.
      *
-     * <p>If this property is not provided, the fuzzing session is
-     * run for an unlimited time until the process is terminated
-     * by the user (e.g. via kill or CTRL+C).</p>
+     * <p>
+     * If neither this property nor {@code trials} are provided, the fuzzing
+     * session is run for an unlimited time until the process is terminated by the
+     * user (e.g. via kill or CTRL+C).
+     * </p>
      *
-     * <p>Valid time durations are non-empty strings in the format
-     * [Nh][Nm][Ns], such as "60s" or "2h30m".</p>
+     * <p>
+     * Valid time durations are non-empty strings in the format [Nh][Nm][Ns], such
+     * as "60s" or "2h30m".
+     * </p>
      */
     @Parameter(property="time")
     private String time;
 
+    /**
+     * The number of trials for which to run fuzzing.
+     *
+     * <p>
+     * If neither this property nor {@code time} are provided, the fuzzing
+     * session is run for an unlimited time until the process is terminated by the
+     * user (e.g. via kill or CTRL+C).
+     * </p>
+     */ 
+    @Parameter(property="trials")
+    private Long trials;
+
+    /**
+     * Whether or not to seed the random fuzzing from a true source of randomness,
+     * or from a constant.
+     *
+     * <p>
+     * Setting this to {@code true} will make the result of running the same fuzzer
+     * with on the same input the same. This is useful for testing the fuzzer, but
+     * shouldn't be used on code attempting to find real bugs.
+     * </p>
+     */
+    @Parameter(property="deterministic")
+    private boolean deterministic;
+    
     /**
      * Whether to generate inputs blindly without taking into
      * account coverage feedback. Blind input generation is equivalent
@@ -328,12 +357,12 @@ public class FuzzGoal extends AbstractMojo {
         try {
             switch (engine) {
                 case "zest":
-                    guidance = new ZestGuidance(targetName, duration, resultsDir, seedsDir);
+                    guidance = new ZestGuidance(targetName, duration, trials, resultsDir, seedsDir, this.deterministic);
                     break;
                 case "zeal":
                     System.setProperty("jqf.tracing.TRACE_GENERATORS", "true");
                     System.setProperty("jqf.tracing.MATCH_CALLEE_NAMES", "true");
-                    guidance = new ExecutionIndexingGuidance(targetName, duration, resultsDir, seedsDir);
+                    guidance = new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, deterministic);
                     break;
                 default:
                     throw new MojoExecutionException("Unknown fuzzing engine: " + engine);

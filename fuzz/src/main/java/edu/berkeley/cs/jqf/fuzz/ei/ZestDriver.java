@@ -65,11 +65,11 @@ public class ZestDriver {
             ZestGuidance guidance = null;
 
             if (seedFiles == null) {
-                guidance = new ZestGuidance(title, null, outputDirectory);
+                guidance = new ZestGuidance(title, null, null, outputDirectory, true);
             } else if (seedFiles.length == 1 && seedFiles[0].isDirectory()) {
-                guidance = new ZestGuidance(title, null, outputDirectory, seedFiles[0]);
+                guidance = new ZestGuidance(title, null, null, outputDirectory, seedFiles[0], true);
             } else {
-                guidance = new ZestGuidance(title, null, outputDirectory, seedFiles);
+                guidance = new ZestGuidance(title, null, null, outputDirectory, seedFiles, true);
             }
 
 

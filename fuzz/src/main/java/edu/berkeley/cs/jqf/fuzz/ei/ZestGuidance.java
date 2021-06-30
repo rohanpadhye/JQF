@@ -76,7 +76,7 @@ import static java.lang.Math.log;
 public class ZestGuidance implements Guidance {
 
     /** A pseudo-random number generator for generating fresh values. */
-    protected Random random = new Random();
+    protected Random random;
 
     /** The name of the test for display purposes. */
     protected final String testName;
@@ -85,6 +85,9 @@ public class ZestGuidance implements Guidance {
 
     /** The max amount of time to run for, in milli-seconds */
     protected final long maxDurationMillis;
+
+    /** The max number of trials to run */
+    protected final long maxTrials;
 
     /** The number of trials completed. */
     protected long numTrials = 0;
@@ -247,6 +250,8 @@ public class ZestGuidance implements Guidance {
 
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
     protected final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
+    /** The inital seed to be used when a running deterministically */ 
+    private static final long DETERMINISTIC_SEED = 0;
 
     /**
      * Creates a new guidance instance.
@@ -254,12 +259,17 @@ public class ZestGuidance implements Guidance {
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
      *                 {@code null} indicates unlimited time.
+     * @param trials   the number of trials for which to run fuzzing, where
+     *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
+     * @param det      whether the fuzzer is deterministic or not
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, File outputDirectory) throws IOException {
+    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, boolean det) throws IOException {
+        this.random = det ? new Random(DETERMINISTIC_SEED) : new Random();
         this.testName = testName;
         this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
+        this.maxTrials = trials != null ? trials : Long.MAX_VALUE;
         this.outputDirectory = outputDirectory;
         this.blind = Boolean.getBoolean("jqf.ei.TOTALLY_RANDOM");
         this.validityFuzzing = !Boolean.getBoolean("jqf.ei.DISABLE_VALIDITY_FUZZING");
@@ -283,12 +293,15 @@ public class ZestGuidance implements Guidance {
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
      *                 {@code null} indicates unlimited time.
+     * @param trials   the number of trials for which to run fuzzing, where
+     *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
      * @param seedInputFiles one or more input files to be used as initial inputs
+     * @param det      whether the fuzzer is deterministic or not
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, File outputDirectory, File[] seedInputFiles) throws IOException {
-        this(testName, duration, outputDirectory);
+    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, File[] seedInputFiles, boolean det) throws IOException {
+        this(testName, duration, trials, outputDirectory, det);
         if (seedInputFiles != null) {
             for (File seedInputFile : seedInputFiles) {
                 seedInputs.add(new SeedInput(seedInputFile));
@@ -302,16 +315,16 @@ public class ZestGuidance implements Guidance {
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
      *                 {@code null} indicates unlimited time.
+     * @param trials   the number of trials for which to run fuzzing, where
+     *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
      * @param seedInputDir the directory containing one or more input files to be used as initial inputs
+     * @param det      whether the fuzzer is deterministic or not
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir) throws IOException {
-        this(testName, duration, outputDirectory, IOUtils.resolveInputFileOrDirectory(seedInputDir));
+    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, boolean det) throws IOException {
+        this(testName, duration, trials, outputDirectory, IOUtils.resolveInputFileOrDirectory(seedInputDir), det);
     }
-
-
-
 
     private void prepareOutputDirectory() throws IOException {
         // Create the output directory if it does not exist
@@ -431,7 +444,8 @@ public class ZestGuidance implements Guidance {
                 console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
                 console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
                         maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
-                console.printf("Number of executions: %,d\n", numTrials);
+                console.printf("Number of executions: %,d (%s)\n", numTrials,
+                               maxTrials == Long.MAX_VALUE ? "no trial limit" : ("max " + maxTrials));
                 console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
                 console.printf("Cycles completed:     %d\n", cyclesCompleted);
                 console.printf("Unique failures:      %,d\n", uniqueFailures.size());
@@ -620,7 +634,8 @@ public class ZestGuidance implements Guidance {
             // exit
             return false;
         }
-        return elapsedMilliseconds < maxDurationMillis;
+        return elapsedMilliseconds < maxDurationMillis
+            && numTrials < maxTrials;
     }
 
     @Override
