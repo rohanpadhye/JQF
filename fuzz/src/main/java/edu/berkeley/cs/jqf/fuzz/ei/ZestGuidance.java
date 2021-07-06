@@ -254,6 +254,10 @@ public class ZestGuidance implements Guidance {
 
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
     protected final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
+
+    /** Whether or not the guidance is deterministic */ 
+    private boolean deterministic;
+
     /** The inital seed to be used when a running deterministically */ 
     private static final long DETERMINISTIC_SEED = 0;
 
@@ -271,6 +275,7 @@ public class ZestGuidance implements Guidance {
      */
     public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, boolean det) throws IOException {
         this.random = det ? new Random(DETERMINISTIC_SEED) : new Random();
+        this.deterministic = det;
         this.testName = testName;
         this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
         this.maxTrials = trials != null ? trials : Long.MAX_VALUE;
@@ -447,6 +452,9 @@ public class ZestGuidance implements Guidance {
                 if (this.testName != null) {
                     console.printf("Test name:            %s\n", this.testName);
                 }
+                if (deterministic)
+                    console.printf("Running deterministically\n");
+                    
                 console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
                 console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
                         maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
@@ -468,14 +476,19 @@ public class ZestGuidance implements Guidance {
                 numSavedInputs, 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
                 numValid, numTrials-numValid, nonZeroValidFraction);
         appendLineToFile(statsFile, plotData);
-        try {
-            PrintWriter pw = new PrintWriter(coverageFile);
-            pw.write("Total: " + getTotalCoverage().hashCode());
-            pw.close();
-        } catch (FileNotFoundException ignore) {
-        }
     }
 
+    /** Updates the data in the coverage file */ 
+    private void updateCoverageFile() {
+        try {
+            PrintWriter pw = new PrintWriter(coverageFile);
+            pw.write("Total: " + getTotalCoverage().hashCode() + "\n");
+            pw.close();
+        } catch (FileNotFoundException ignore) {
+            throw new GuidanceException(ignore);
+        }
+    }
+    
     /* Returns the banner to be displayed on the status screen */
     protected String getTitle() {
         if (blind) {
@@ -742,6 +755,9 @@ public class ZestGuidance implements Guidance {
                     // Save input to queue and to disk
                     final String reason = why;
                     GuidanceException.wrap(() -> saveCurrentInput(responsibilities, reason));
+
+                    // Update coverage information
+                    updateCoverageFile();
                 }
             } else if (result == Result.FAILURE || result == Result.TIMEOUT) {
                 String msg = error.getMessage();
