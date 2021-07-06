@@ -34,6 +34,7 @@ import java.io.BufferedOutputStream;
 import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -191,6 +192,9 @@ public class ZestGuidance implements Guidance {
     /** The currently executing input (for debugging purposes). */
     protected File currentInputFile;
 
+    /** The file contianing the coverage information */ 
+    protected File coverageFile;
+
     /** Use libFuzzer like output instead of AFL like stats screen (https://llvm.org/docs/LibFuzzer.html#output) **/
     protected final boolean LIBFUZZER_COMPAT_OUTPUT = Boolean.getBoolean("jqf.ei.LIBFUZZER_COMPAT_OUTPUT");
 
@@ -342,6 +346,7 @@ public class ZestGuidance implements Guidance {
         this.statsFile = new File(outputDirectory, "plot_data");
         this.logFile = new File(outputDirectory, "fuzz.log");
         this.currentInputFile = new File(outputDirectory, ".cur_input");
+        this.coverageFile = new File(outputDirectory, "coverage_hash");
 
         // Delete everything that we may have created in a previous run.
         // Trying to stay away from recursive delete of parent output directory in case there was a
@@ -349,6 +354,7 @@ public class ZestGuidance implements Guidance {
         // We also do not check if the deletes are actually successful.
         statsFile.delete();
         logFile.delete();
+        coverageFile.delete();
         for (File file : savedCorpusDirectory.listFiles()) {
             file.delete();
         }
@@ -462,7 +468,12 @@ public class ZestGuidance implements Guidance {
                 numSavedInputs, 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
                 numValid, numTrials-numValid, nonZeroValidFraction);
         appendLineToFile(statsFile, plotData);
-
+        try {
+            PrintWriter pw = new PrintWriter(coverageFile);
+            pw.write("Total: " + getTotalCoverage().hashCode());
+            pw.close();
+        } catch (FileNotFoundException ignore) {
+        }
     }
 
     /* Returns the banner to be displayed on the status screen */
