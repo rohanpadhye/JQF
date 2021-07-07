@@ -1,9 +1,9 @@
 name: JQF CI
 on:
   push:
-    branches: [ $default-branch ]
+    branches: [ master ]
   pull_request:
-    branches: [ $default-branch ]
+    branches: [ master ]
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
