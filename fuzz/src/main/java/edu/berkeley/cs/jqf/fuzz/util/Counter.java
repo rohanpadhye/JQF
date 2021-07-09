@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Maps integer keys to integer counts using a fixed-size table.
@@ -229,5 +230,10 @@ public class Counter {
 
     public void setAtIndex(int idx, int value) {
         this.counts[idx] = value;
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.stream(counts).mapToObj(Integer::toString).collect(Collectors.joining(","));
     }
 }
