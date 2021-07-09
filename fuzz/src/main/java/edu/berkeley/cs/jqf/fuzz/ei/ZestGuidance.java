@@ -482,7 +482,7 @@ public class ZestGuidance implements Guidance {
     private void updateCoverageFile() {
         try {
             PrintWriter pw = new PrintWriter(coverageFile);
-            pw.write("Total: " + getTotalCoverage().hashCode() + "\n");
+            pw.write(getTotalCoverage().toString());
             pw.close();
         } catch (FileNotFoundException ignore) {
             throw new GuidanceException(ignore);
