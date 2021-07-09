@@ -32,6 +32,7 @@ import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
+import edu.berkeley.cs.jqf.fuzz.util.MovingAverage;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
 import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationClassLoaders;
@@ -76,7 +77,23 @@ public class MutationGuidance extends ZestGuidance {
     /** The number of runs done in the last interval */ 
     private long lastNumRuns = 0;
 
+    /** The total time spent in the cartography class loader */ 
+    private long totalMapTime = 0;
+
+    /** The total time spent running the tests */
+    private long totalTime = 0;
+
+    /** The size of the moving averages */
+    private static final int MOVING_AVERAGE_CAP = 10;
+    
+    /** The number of mutants run in the most recent test runs */
+    private MovingAverage recentRun = new MovingAverage(MOVING_AVERAGE_CAP);
+    
+    /** The number of mutants found in the most recent test runs */ 
+    private MovingAverage recentTotal = new MovingAverage(MOVING_AVERAGE_CAP);
+
     public MutationGuidance(String testName, Duration duration, Long trials, File outputDirectory, String include, String exclude, Random rand)
+
             throws IOException {
         super(testName, duration, trials, outputDirectory, rand);
 
@@ -325,15 +342,25 @@ public class MutationGuidance extends ZestGuidance {
         Set<MutationInstance> runMutants = new HashSet<>();
         MutationSnoop.setMutantCallback(runMutants::add);
 
+        long startTime = System.currentTimeMillis();
+        
         new TrialRunner(testClass.getJavaClass(), method, args).run(); // loaded by CartographyClassLoader
+
+        long trialTime = System.currentTimeMillis() - startTime;
+        
         List<Throwable> fails = new ArrayList<>();
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
+
+        int run = 0;
+        recentTotal.add(cartographyClassLoader.getCartograph().size());
+        
         for (MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
             if (deadMutants.contains(mutationInstance))
                 continue;
             if (!runMutants.contains(mutationInstance))
                 continue;
 
+            run += 1;
             try {
                 mutationInstance.resetTimer();
                 Class<?> clazz = Class.forName(testClass.getName(), true, mutationClassLoaders.get(mutationInstance));
@@ -358,6 +385,12 @@ public class MutationGuidance extends ZestGuidance {
             // run
             ((MutationCoverage) runCoverage).see(mutationInstance);
         }
+
+        long completeTime = System.currentTimeMillis() - startTime;
+
+        recentRun.add(run);
+        totalMapTime += trialTime;
+        totalTime += completeTime;
     }
 
     private boolean isExceptionExpected(Class<? extends Throwable> e, List<Class<?>> expectedExceptions) {
@@ -429,6 +462,10 @@ public class MutationGuidance extends ZestGuidance {
                 console.printf("Current parent input: %s\n", currentParentInputDesc);
                 console.printf("Fuzzing Throughput:   %,d/sec now | %,d/sec overall\n", (long) intervalTrialsPerSec, (long) trialsPerSec);
                 console.printf("Execution Speed:      %,d/sec now | %,d/sec overall\n", (long) intervalRunsPerSec, (long) runsPerSec);
+                console.printf("Testing Time:         %s\n", millisToDuration(totalTime));
+                console.printf("Mapping Time:         %s (%.2f%% of total)\n", millisToDuration(totalMapTime), (double) totalMapTime * 100.0 / (double) totalTime);
+                console.printf("Recent Found Mutants: %.2f\n", recentTotal.get());
+                console.printf("Recent Run Mutants:   %.2f (%.2f%% of total)\n", recentRun.get(), recentRun.get() * 100.0 / recentTotal.get());
                 console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
                 console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
                 console.printf("Total coverage:       %,d mutants\n", ((MutationCoverage) totalCoverage).numCaughtMutants());
