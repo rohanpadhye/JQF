@@ -14,5 +14,7 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
-    - name: build and run tests
-      run: ./setup.sh
+    - name: Build AFL proxy
+      run: make
+    - name: Build and test JQF
+      run: mvn install
