@@ -41,6 +41,7 @@ import java.io.File;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Random;
 
 /**
  * CLI for Zest based guidance.
@@ -78,6 +79,14 @@ public class ZestCLI implements Runnable{
     @Option(names = { "-d", "--duration" },
             description = "Total fuzz duration (e.g. PT5s or 5s)")
     private Duration duration;
+
+    @Option(names = { "-t", "--trials" },
+            description = "Total trial duration")
+    private Long trials;
+
+    @Option(names = { "-r", "--deterministic" },
+            description = "Deterministic fuzzing; generate the same inputs each run (default: false)")
+    private boolean det = false;
 
     @Option(names = { "-b", "--blind" },
             description = "Blind fuzzing: do not use coverage feedback (default: false)")
@@ -139,9 +148,11 @@ public class ZestCLI implements Runnable{
 
             // Load the guidance
             String title = this.testClassName+"#"+this.testMethodName;
-            ZestGuidance guidance = seedFiles.length > 0 ?
-                    new ZestGuidance(title, duration, this.outputDirectory, seedFiles) :
-                    new ZestGuidance(title, duration, this.outputDirectory);
+            Random rnd = det ? new Random(0) : new Random(); // TODO: Make seed configurable
+            ZestGuidance guidance =
+                seedFiles.length > 0 ?
+                new ZestGuidance(title, duration, trials, this.outputDirectory, seedFiles, rnd) :
+                new ZestGuidance(title, duration, trials, this.outputDirectory, inputDirectory, rnd);
             guidance.setBlind(blindFuzzing);
             // Run the Junit test
             Result res = GuidedFuzzing.run(testClassName, testMethodName, loader, guidance, System.out);

@@ -30,6 +30,7 @@
 package edu.berkeley.cs.jqf.fuzz.ei;
 
 import java.io.File;
+import java.util.Random;
 
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 
@@ -61,9 +62,10 @@ public class ExecutionIndexingDriver {
         try {
             // Load the guidance
             String title = testClassName+"#"+testMethodName;
+            Random rnd = new Random(); // TODO: Support deterministic fuzzing
             ZestGuidance guidance = seedFiles != null ?
-                    new ExecutionIndexingGuidance(title, null, outputDirectory, seedFiles) :
-                    new ExecutionIndexingGuidance(title, null, outputDirectory, new File[]{});
+                new ExecutionIndexingGuidance(title, null, null, outputDirectory, rnd, seedFiles) :
+                new ExecutionIndexingGuidance(title, null, null, outputDirectory, rnd, new File[]{});
 
             // Ensure that generators are being traced
             System.setProperty("jqf.traceGenerators", "true");

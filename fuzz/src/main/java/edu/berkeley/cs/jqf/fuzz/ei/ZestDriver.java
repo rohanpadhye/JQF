@@ -30,6 +30,7 @@
 package edu.berkeley.cs.jqf.fuzz.ei;
 
 import java.io.File;
+import java.util.Random;
 
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import org.junit.runner.Result;
@@ -63,13 +64,14 @@ public class ZestDriver {
             // Load the guidance
             String title = testClassName+"#"+testMethodName;
             ZestGuidance guidance = null;
+            Random rnd = new Random(); // TODO: Support deterministic PRNG
 
             if (seedFiles == null) {
-                guidance = new ZestGuidance(title, null, outputDirectory);
+                guidance = new ZestGuidance(title, null, null, outputDirectory, rnd);
             } else if (seedFiles.length == 1 && seedFiles[0].isDirectory()) {
-                guidance = new ZestGuidance(title, null, outputDirectory, seedFiles[0]);
+                guidance = new ZestGuidance(title, null, null, outputDirectory, seedFiles[0], rnd);
             } else {
-                guidance = new ZestGuidance(title, null, outputDirectory, seedFiles);
+                guidance = new ZestGuidance(title, null, null, outputDirectory, seedFiles, rnd);
             }
 
 

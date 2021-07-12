@@ -31,6 +31,7 @@ package edu.berkeley.cs.jqf.fuzz.util;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
@@ -210,4 +211,11 @@ public class Coverage implements TraceEventVisitor {
         return counter.getNonZeroIndices().hashCode();
     }
 
+    /**
+     * @return a string representing the counter
+     */
+    @Override
+    public String toString() {
+        return "counter: " + counter.toString();
+    }
 }

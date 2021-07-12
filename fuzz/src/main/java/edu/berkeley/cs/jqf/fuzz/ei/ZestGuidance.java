@@ -34,6 +34,7 @@ import java.io.BufferedOutputStream;
 import java.io.Console;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -76,7 +77,7 @@ import static java.lang.Math.log;
 public class ZestGuidance implements Guidance {
 
     /** A pseudo-random number generator for generating fresh values. */
-    protected Random random = new Random();
+    protected Random random;
 
     /** The name of the test for display purposes. */
     protected final String testName;
@@ -85,6 +86,9 @@ public class ZestGuidance implements Guidance {
 
     /** The max amount of time to run for, in milli-seconds */
     protected final long maxDurationMillis;
+
+    /** The max number of trials to run */
+    protected final long maxTrials;
 
     /** The number of trials completed. */
     protected long numTrials = 0;
@@ -188,6 +192,9 @@ public class ZestGuidance implements Guidance {
     /** The currently executing input (for debugging purposes). */
     protected File currentInputFile;
 
+    /** The file contianing the coverage information */ 
+    protected File coverageFile;
+
     /** Use libFuzzer like output instead of AFL like stats screen (https://llvm.org/docs/LibFuzzer.html#output) **/
     protected final boolean LIBFUZZER_COMPAT_OUTPUT = Boolean.getBoolean("jqf.ei.LIBFUZZER_COMPAT_OUTPUT");
 
@@ -254,12 +261,17 @@ public class ZestGuidance implements Guidance {
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
      *                 {@code null} indicates unlimited time.
+     * @param trials   the number of trials for which to run fuzzing, where
+     *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
+     * @param sourceOfRandomness      a pseudo-random number generator
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, File outputDirectory) throws IOException {
+    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, Random sourceOfRandomness) throws IOException {
+        this.random = sourceOfRandomness;
         this.testName = testName;
         this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
+        this.maxTrials = trials != null ? trials : Long.MAX_VALUE;
         this.outputDirectory = outputDirectory;
         this.blind = Boolean.getBoolean("jqf.ei.TOTALLY_RANDOM");
         this.validityFuzzing = !Boolean.getBoolean("jqf.ei.DISABLE_VALIDITY_FUZZING");
@@ -283,12 +295,15 @@ public class ZestGuidance implements Guidance {
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
      *                 {@code null} indicates unlimited time.
+     * @param trials   the number of trials for which to run fuzzing, where
+     *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
      * @param seedInputFiles one or more input files to be used as initial inputs
+     * @param sourceOfRandomness      a pseudo-random number generator
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, File outputDirectory, File[] seedInputFiles) throws IOException {
-        this(testName, duration, outputDirectory);
+    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, File[] seedInputFiles, Random sourceOfRandomness) throws IOException {
+        this(testName, duration, trials, outputDirectory, sourceOfRandomness);
         if (seedInputFiles != null) {
             for (File seedInputFile : seedInputFiles) {
                 seedInputs.add(new SeedInput(seedInputFile));
@@ -302,16 +317,16 @@ public class ZestGuidance implements Guidance {
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
      *                 {@code null} indicates unlimited time.
+     * @param trials   the number of trials for which to run fuzzing, where
+     *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
      * @param seedInputDir the directory containing one or more input files to be used as initial inputs
+     * @param sourceOfRandomness      a pseudo-random number generator
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir) throws IOException {
-        this(testName, duration, outputDirectory, IOUtils.resolveInputFileOrDirectory(seedInputDir));
+    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, Random sourceOfRandomness) throws IOException {
+        this(testName, duration, trials, outputDirectory, IOUtils.resolveInputFileOrDirectory(seedInputDir), sourceOfRandomness);
     }
-
-
-
 
     private void prepareOutputDirectory() throws IOException {
         // Create the output directory if it does not exist
@@ -329,6 +344,7 @@ public class ZestGuidance implements Guidance {
         this.statsFile = new File(outputDirectory, "plot_data");
         this.logFile = new File(outputDirectory, "fuzz.log");
         this.currentInputFile = new File(outputDirectory, ".cur_input");
+        this.coverageFile = new File(outputDirectory, "coverage_hash");
 
         // Delete everything that we may have created in a previous run.
         // Trying to stay away from recursive delete of parent output directory in case there was a
@@ -336,6 +352,7 @@ public class ZestGuidance implements Guidance {
         // We also do not check if the deletes are actually successful.
         statsFile.delete();
         logFile.delete();
+        coverageFile.delete();
         for (File file : savedCorpusDirectory.listFiles()) {
             file.delete();
         }
@@ -428,10 +445,12 @@ public class ZestGuidance implements Guidance {
                 if (this.testName != null) {
                     console.printf("Test name:            %s\n", this.testName);
                 }
+                    
                 console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
                 console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
                         maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
-                console.printf("Number of executions: %,d\n", numTrials);
+                console.printf("Number of executions: %,d (%s)\n", numTrials,
+                               maxTrials == Long.MAX_VALUE ? "no trial limit" : ("max " + maxTrials));
                 console.printf("Valid inputs:         %,d (%.2f%%)\n", numValid, numValid * 100.0 / numTrials);
                 console.printf("Cycles completed:     %d\n", cyclesCompleted);
                 console.printf("Unique failures:      %,d\n", uniqueFailures.size());
@@ -448,9 +467,19 @@ public class ZestGuidance implements Guidance {
                 numSavedInputs, 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
                 numValid, numTrials-numValid, nonZeroValidFraction);
         appendLineToFile(statsFile, plotData);
-
     }
 
+    /** Updates the data in the coverage file */ 
+    private void updateCoverageFile() {
+        try {
+            PrintWriter pw = new PrintWriter(coverageFile);
+            pw.write(getTotalCoverage().toString());
+            pw.close();
+        } catch (FileNotFoundException ignore) {
+            throw new GuidanceException(ignore);
+        }
+    }
+    
     /* Returns the banner to be displayed on the status screen */
     protected String getTitle() {
         if (blind) {
@@ -620,7 +649,13 @@ public class ZestGuidance implements Guidance {
             // exit
             return false;
         }
-        return elapsedMilliseconds < maxDurationMillis;
+        if(elapsedMilliseconds < maxDurationMillis
+            && numTrials < maxTrials) {
+            return true;
+        } else {
+            displayStats();
+            return false;
+        }
     }
 
     @Override
@@ -716,6 +751,9 @@ public class ZestGuidance implements Guidance {
                     // Save input to queue and to disk
                     final String reason = why;
                     GuidanceException.wrap(() -> saveCurrentInput(responsibilities, reason));
+
+                    // Update coverage information
+                    updateCoverageFile();
                 }
             } else if (result == Result.FAILURE || result == Result.TIMEOUT) {
                 String msg = error.getMessage();

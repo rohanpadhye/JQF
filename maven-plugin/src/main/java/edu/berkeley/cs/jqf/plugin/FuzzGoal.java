@@ -38,6 +38,7 @@ import java.net.URLClassLoader;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Random;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
@@ -125,16 +126,45 @@ public class FuzzGoal extends AbstractMojo {
     /**
      * The duration of time for which to run fuzzing.
      *
-     * <p>If this property is not provided, the fuzzing session is
-     * run for an unlimited time until the process is terminated
-     * by the user (e.g. via kill or CTRL+C).</p>
+     * <p>
+     * If neither this property nor {@code trials} are provided, the fuzzing
+     * session is run for an unlimited time until the process is terminated by the
+     * user (e.g. via kill or CTRL+C).
+     * </p>
      *
-     * <p>Valid time durations are non-empty strings in the format
-     * [Nh][Nm][Ns], such as "60s" or "2h30m".</p>
+     * <p>
+     * Valid time durations are non-empty strings in the format [Nh][Nm][Ns], such
+     * as "60s" or "2h30m".
+     * </p>
      */
     @Parameter(property="time")
     private String time;
 
+    /**
+     * The number of trials for which to run fuzzing.
+     *
+     * <p>
+     * If neither this property nor {@code time} are provided, the fuzzing
+     * session is run for an unlimited time until the process is terminated by the
+     * user (e.g. via kill or CTRL+C).
+     * </p>
+     */ 
+    @Parameter(property="trials")
+    private Long trials;
+
+    /**
+     * A number to seed the source of randomness in the fuzzing algorithm.
+     *
+     * <p>
+     * Setting this to any value will make the result of running the same fuzzer
+     * with on the same input the same. This is useful for testing the fuzzer, but
+     * shouldn't be used on code attempting to find real bugs. By default, the
+     * seed is chosen randomly based on system state.
+     * </p>
+     */
+    @Parameter(property="randomSeed")
+    private Long randomSeed;
+    
     /**
      * Whether to generate inputs blindly without taking into
      * account coverage feedback. Blind input generation is equivalent
@@ -325,15 +355,16 @@ public class FuzzGoal extends AbstractMojo {
         File resultsDir = new File(target, outputDirectory);
         String targetName = testClassName + "#" + testMethod;
         File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
+        Random rnd = randomSeed != null ? new Random(randomSeed) : new Random();
         try {
             switch (engine) {
                 case "zest":
-                    guidance = new ZestGuidance(targetName, duration, resultsDir, seedsDir);
+                    guidance = new ZestGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
                     break;
                 case "zeal":
                     System.setProperty("jqf.tracing.TRACE_GENERATORS", "true");
                     System.setProperty("jqf.tracing.MATCH_CALLEE_NAMES", "true");
-                    guidance = new ExecutionIndexingGuidance(targetName, duration, resultsDir, seedsDir);
+                    guidance = new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
                     break;
                 default:
                     throw new MojoExecutionException("Unknown fuzzing engine: " + engine);
