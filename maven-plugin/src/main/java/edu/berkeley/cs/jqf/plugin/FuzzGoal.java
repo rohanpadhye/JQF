@@ -38,6 +38,7 @@ import java.net.URLClassLoader;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Random;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
@@ -152,17 +153,17 @@ public class FuzzGoal extends AbstractMojo {
     private Long trials;
 
     /**
-     * Whether or not to seed the random fuzzing from a true source of randomness,
-     * or from a constant.
+     * A number to seed the source of randomness in the fuzzing algorithm.
      *
      * <p>
-     * Setting this to {@code true} will make the result of running the same fuzzer
+     * Setting this to any value will make the result of running the same fuzzer
      * with on the same input the same. This is useful for testing the fuzzer, but
-     * shouldn't be used on code attempting to find real bugs.
+     * shouldn't be used on code attempting to find real bugs. By default, the
+     * seed is chosen randomly based on system state.
      * </p>
      */
-    @Parameter(property="deterministic")
-    private boolean deterministic;
+    @Parameter(property="randomSeed")
+    private Long randomSeed;
     
     /**
      * Whether to generate inputs blindly without taking into
@@ -354,15 +355,16 @@ public class FuzzGoal extends AbstractMojo {
         File resultsDir = new File(target, outputDirectory);
         String targetName = testClassName + "#" + testMethod;
         File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
+        Random rnd = randomSeed != null ? new Random(randomSeed) : new Random();
         try {
             switch (engine) {
                 case "zest":
-                    guidance = new ZestGuidance(targetName, duration, trials, resultsDir, seedsDir, this.deterministic);
+                    guidance = new ZestGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
                     break;
                 case "zeal":
                     System.setProperty("jqf.tracing.TRACE_GENERATORS", "true");
                     System.setProperty("jqf.tracing.MATCH_CALLEE_NAMES", "true");
-                    guidance = new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, deterministic);
+                    guidance = new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
                     break;
                 default:
                     throw new MojoExecutionException("Unknown fuzzing engine: " + engine);

@@ -255,12 +255,6 @@ public class ZestGuidance implements Guidance {
     /** Whether to steal responsibility from old inputs (this increases computation cost). */
     protected final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
 
-    /** Whether or not the guidance is deterministic */ 
-    private boolean deterministic;
-
-    /** The inital seed to be used when a running deterministically */ 
-    private static final long DETERMINISTIC_SEED = 0;
-
     /**
      * Creates a new guidance instance.
      *
@@ -270,12 +264,11 @@ public class ZestGuidance implements Guidance {
      * @param trials   the number of trials for which to run fuzzing, where
      *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
-     * @param det      whether the fuzzer is deterministic or not
+     * @param sourceOfRandomness      a pseudo-random number generator
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, boolean det) throws IOException {
-        this.random = det ? new Random(DETERMINISTIC_SEED) : new Random();
-        this.deterministic = det;
+    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, Random sourceOfRandomness) throws IOException {
+        this.random = sourceOfRandomness;
         this.testName = testName;
         this.maxDurationMillis = duration != null ? duration.toMillis() : Long.MAX_VALUE;
         this.maxTrials = trials != null ? trials : Long.MAX_VALUE;
@@ -306,11 +299,11 @@ public class ZestGuidance implements Guidance {
      *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
      * @param seedInputFiles one or more input files to be used as initial inputs
-     * @param det      whether the fuzzer is deterministic or not
+     * @param sourceOfRandomness      a pseudo-random number generator
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, File[] seedInputFiles, boolean det) throws IOException {
-        this(testName, duration, trials, outputDirectory, det);
+    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, File[] seedInputFiles, Random sourceOfRandomness) throws IOException {
+        this(testName, duration, trials, outputDirectory, sourceOfRandomness);
         if (seedInputFiles != null) {
             for (File seedInputFile : seedInputFiles) {
                 seedInputs.add(new SeedInput(seedInputFile));
@@ -328,11 +321,11 @@ public class ZestGuidance implements Guidance {
      *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
      * @param seedInputDir the directory containing one or more input files to be used as initial inputs
-     * @param det      whether the fuzzer is deterministic or not
+     * @param sourceOfRandomness      a pseudo-random number generator
      * @throws IOException if the output directory could not be prepared
      */
-    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, boolean det) throws IOException {
-        this(testName, duration, trials, outputDirectory, IOUtils.resolveInputFileOrDirectory(seedInputDir), det);
+    public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, Random sourceOfRandomness) throws IOException {
+        this(testName, duration, trials, outputDirectory, IOUtils.resolveInputFileOrDirectory(seedInputDir), sourceOfRandomness);
     }
 
     private void prepareOutputDirectory() throws IOException {
@@ -452,8 +445,6 @@ public class ZestGuidance implements Guidance {
                 if (this.testName != null) {
                     console.printf("Test name:            %s\n", this.testName);
                 }
-                if (deterministic)
-                    console.printf("Running deterministically\n");
                     
                 console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
                 console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
@@ -658,8 +649,13 @@ public class ZestGuidance implements Guidance {
             // exit
             return false;
         }
-        return elapsedMilliseconds < maxDurationMillis
-            && numTrials < maxTrials;
+        if(elapsedMilliseconds < maxDurationMillis
+            && numTrials < maxTrials) {
+            return true;
+        } else {
+            displayStats();
+            return false;
+        }
     }
 
     @Override

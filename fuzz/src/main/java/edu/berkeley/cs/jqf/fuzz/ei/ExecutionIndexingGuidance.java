@@ -119,12 +119,12 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
      * @param trials   the number of trials for which to run fuzzing, where
      *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
-     * @param det      Whether or not the fuzzing is deterministic
+     * @param sourceOfRandomness      a pseudo-random number generator
      * @param seedInputFiles one or more input files to be used as initial inputs
      * @throws IOException if the output directory could not be prepared
      */
-    public ExecutionIndexingGuidance(String testName, Duration duration, Long trials, File outputDirectory, boolean det, File... seedInputFiles) throws IOException {
-        super(testName, duration, trials, outputDirectory, det);
+    public ExecutionIndexingGuidance(String testName, Duration duration, Long trials, File outputDirectory, Random sourceOfRandomness, File... seedInputFiles) throws IOException {
+        super(testName, duration, trials, outputDirectory, sourceOfRandomness);
         if (seedInputFiles != null) {
             for (File seedInputFile : seedInputFiles) {
                 seedInputs.add(new MappedSeedInput(seedInputFile));
@@ -142,11 +142,11 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
      *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
      * @param seedInputDir the directory containing one or more input files to be used as initial inputs
-     * @param det      Whether or not the fuzzing is deterministic
+     * @param sourceOfRandomness      a pseudo-random number generator
      * @throws IOException if the output directory could not be prepared
      */
-    public ExecutionIndexingGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, boolean det) throws IOException {
-        this(testName, duration, trials, outputDirectory, det, IOUtils.resolveInputFileOrDirectory(seedInputDir));
+    public ExecutionIndexingGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, Random sourceOfRandomness) throws IOException {
+        this(testName, duration, trials, outputDirectory, sourceOfRandomness, IOUtils.resolveInputFileOrDirectory(seedInputDir));
     }
 
         /** Returns the banner to be displayed on the status screen */

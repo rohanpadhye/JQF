@@ -70,7 +70,7 @@ public class ExecutionIndexingGuidanceTest {
 
     @Before
     public void createGuidanceInstance() throws IOException {
-        g = new ExecutionIndexingGuidance("test", null, null, Files.createTempDirectory("fuzz-out").toFile(), false);
+        g = new ExecutionIndexingGuidance("test", null, null, Files.createTempDirectory("fuzz-out").toFile(), r);
     }
 
     @Test
