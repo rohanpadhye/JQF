@@ -1,4 +1,4 @@
-name: JQF CI
+name: Build
 on:
   push:
     branches: [ master ]
