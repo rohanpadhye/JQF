@@ -17,4 +17,4 @@ jobs:
     - name: Build AFL proxy
       run: make
     - name: Build and test JQF
-      run: mvn install
+      run: mvn -B install
