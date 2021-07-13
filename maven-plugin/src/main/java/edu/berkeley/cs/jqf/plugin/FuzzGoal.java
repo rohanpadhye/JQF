@@ -336,9 +336,9 @@ public class FuzzGoal extends AbstractMojo {
             outputDirectory = "fuzz-results" + File.separator + testClassName + File.separator + testMethod;
         }
 
+        File resultsDir = new File(target, outputDirectory);
         try {
             List<String> classpathElements = project.getTestClasspathElements();
-            File resultsDir = new File(target, outputDirectory);
             String targetName = testClassName + "#" + testMethod;
             File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
             Random rnd = randomSeed != null ? new Random(randomSeed) : new Random();
@@ -353,7 +353,7 @@ public class FuzzGoal extends AbstractMojo {
                     guidance = new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
                     break;
                 case "mutation":
-                    guidance = new MutationGuidance(targetName, duration, resultsDir, seedsDir, includes, excludes);
+                    guidance = new MutationGuidance(targetName, duration, trials, resultsDir, seedsDir, includes, excludes, rnd);
                     break;
                 default:
                     throw new MojoExecutionException("Unknown fuzzing engine: " + engine);

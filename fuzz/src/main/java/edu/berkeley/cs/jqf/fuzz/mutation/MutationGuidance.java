@@ -75,9 +75,9 @@ public class MutationGuidance extends ZestGuidance {
     /** The number of runs done in the last interval */ 
     private long lastNumRuns = 0;
 
-    public MutationGuidance(String testName, Duration duration, File outputDirectory, String include, String exclude)
+    public MutationGuidance(String testName, Duration duration, Long trials, File outputDirectory, String include, String exclude, Random rand)
             throws IOException {
-        super(testName, duration, outputDirectory);
+        super(testName, duration, trials, outputDirectory, rand);
         if (include != null && !include.equals("")) {
             mutables = include.split(",");
         } else {
@@ -93,8 +93,8 @@ public class MutationGuidance extends ZestGuidance {
         validCoverage = new MutationCoverage();
     }
 
-    public MutationGuidance(String testName, Duration duration, File outputDirectory, File[] seedInputFiles, String include, String exclude) throws IOException {
-        super(testName, duration, outputDirectory, seedInputFiles);
+    public MutationGuidance(String testName, Duration duration, Long trials, File outputDirectory, File[] seedInputFiles, String include, String exclude, Random rand) throws IOException {
+        super(testName, duration, trials, outputDirectory, seedInputFiles, rand);
         if(include != null && !include.equals("")) {
             mutables = include.split(",");
         } else {
@@ -110,8 +110,8 @@ public class MutationGuidance extends ZestGuidance {
         validCoverage = new MutationCoverage();
     }
 
-    public MutationGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir, String include, String exclude) throws IOException {
-        super(testName, duration, outputDirectory, seedInputDir);
+    public MutationGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, String include, String exclude, Random rand) throws IOException {
+        super(testName, duration, trials, outputDirectory, seedInputDir, rand);
         if(include != null && !include.equals("")) {
             mutables = include.split(",");
         } else {
