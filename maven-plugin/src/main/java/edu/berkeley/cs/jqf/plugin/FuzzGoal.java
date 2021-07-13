@@ -355,8 +355,6 @@ public class FuzzGoal extends AbstractMojo {
                 case "mutation":
                     guidance = new MutationGuidance(targetName, duration, trials, resultsDir, seedsDir, includes, excludes, rnd);
                     break;
-                case "mutation":
-                    guidance = new MutationGuidance(targetName, duration, resultsDir, seedsDir, includes, excludes);
                 default:
                     throw new MojoExecutionException("Unknown fuzzing engine: " + engine);
             }
