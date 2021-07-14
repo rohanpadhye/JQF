@@ -349,7 +349,7 @@ public interface Logger {
 
   public void METHOD_THROW();
 
-  public void INVOKEMETHOD_EXCEPTION();
+  public void INVOKEMETHOD_EXCEPTION(Throwable t);
 
   public void INVOKEMETHOD_END();
 
