@@ -29,14 +29,6 @@ public class Cartographer extends ClassVisitor {
     private String name = null;
 
     /**
-     * Creates a cartographer
-     */
-    public Cartographer() {
-        super(API);
-        init();
-    }
-
-    /**
      * Creates a Cartographer for a specific {@link ClassReader}, which allows for
      * optimization
      * 
