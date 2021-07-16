@@ -13,6 +13,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import janala.instrument.SafeClassWriter;
 /**
  * Classloader that loads test classes and performs exactly one mutation.
  *
@@ -49,8 +50,8 @@ public class MutationClassLoader extends URLClassLoader {
 
         if (name.equals(this.mutationInstance.className)) {
             AtomicLong found = new AtomicLong(0);
-            ClassWriter cw = new SafeClassWriter(this, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
             ClassReader cr = new ClassReader(bytes);
+            ClassWriter cw = new SafeClassWriter(cr, this, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
             cr.accept(new ClassVisitor(Mutator.cvArg, cw) {
                 @Override
                 public MethodVisitor visitMethod(int access, String name, String signature, String superName,
