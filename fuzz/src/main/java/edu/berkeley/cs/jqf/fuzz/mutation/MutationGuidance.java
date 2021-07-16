@@ -92,51 +92,14 @@ public class MutationGuidance extends ZestGuidance {
     /** The number of mutants found in the most recent test runs */ 
     private MovingAverage recentTotal = new MovingAverage(MOVING_AVERAGE_CAP);
 
-    public MutationGuidance(String testName, Duration duration, Long trials, File outputDirectory, String include, String exclude, Random rand)
-
-            throws IOException {
-        super(testName, duration, trials, outputDirectory, rand);
-
-        if (include != null && !include.equals("")) {
-            mutables = include.split(",");
-        } else {
-            mutables = new String[0];
-        }
-        if (exclude != null && !exclude.equals("")) {
-            immutables = exclude.split(",");
-        } else {
-            immutables = new String[0];
-        }
-        totalCoverage = new MutationCoverage();
-        runCoverage = new MutationCoverage();
-        validCoverage = new MutationCoverage();
-    }
-
-    public MutationGuidance(String testName, Duration duration, Long trials, File outputDirectory, File[] seedInputFiles, String include, String exclude, Random rand) throws IOException {
-        super(testName, duration, trials, outputDirectory, seedInputFiles, rand);
-        if(include != null && !include.equals("")) {
-            mutables = include.split(",");
-        } else {
-            mutables = new String[0];
-        }
-        if(exclude != null && !exclude.equals("")) {
-            immutables = exclude.split(",");
-        } else {
-            immutables = new String[0];
-        }
-        totalCoverage = new MutationCoverage();
-        runCoverage = new MutationCoverage();
-        validCoverage = new MutationCoverage();
-    }
-
     public MutationGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, String include, String exclude, Random rand) throws IOException {
         super(testName, duration, trials, outputDirectory, seedInputDir, rand);
-        if(include != null && !include.equals("")) {
+        if(include != null) {
             mutables = include.split(",");
         } else {
             mutables = new String[0];
         }
-        if(exclude != null && !exclude.equals("")) {
+        if(exclude != null) {
             immutables = exclude.split(",");
         } else {
             immutables = new String[0];
