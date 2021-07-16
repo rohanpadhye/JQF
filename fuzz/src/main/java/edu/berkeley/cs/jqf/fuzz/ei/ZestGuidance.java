@@ -470,7 +470,7 @@ public class ZestGuidance implements Guidance {
     }
 
     /** Updates the data in the coverage file */ 
-    private void updateCoverageFile() {
+    protected void updateCoverageFile() {
         try {
             PrintWriter pw = new PrintWriter(coverageFile);
             pw.println(getTotalCoverage().toString());
