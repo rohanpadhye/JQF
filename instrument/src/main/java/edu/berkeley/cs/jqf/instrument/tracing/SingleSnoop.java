@@ -1004,9 +1004,9 @@ public final class SingleSnoop {
         try { intp.METHOD_THROW(); } finally { block.set(false); }
     }
 
-    public static void INVOKEMETHOD_EXCEPTION() {
+    public static void INVOKEMETHOD_EXCEPTION(Throwable err) {
         if (block.get()) return; else block.set(true);
-        try { intp.INVOKEMETHOD_EXCEPTION(); } finally { block.set(false); }
+        try { intp.INVOKEMETHOD_EXCEPTION(err); } finally { block.set(false); }
     }
 
     public static void INVOKEMETHOD_END() {

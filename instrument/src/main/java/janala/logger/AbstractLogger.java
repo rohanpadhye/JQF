@@ -700,8 +700,8 @@ public abstract class AbstractLogger implements Logger {
 
   public void METHOD_THROW() {  log(new METHOD_THROW());  }
 
-  public void INVOKEMETHOD_EXCEPTION() {
-    log(new INVOKEMETHOD_EXCEPTION());
+  public void INVOKEMETHOD_EXCEPTION(Throwable err) {
+    log(new INVOKEMETHOD_EXCEPTION(err));
   }
 
   public void INVOKEMETHOD_END() {
