@@ -35,7 +35,7 @@ public class Cartographer extends ClassVisitor {
      * @param classReader the class which will be instrumented
      */
     public Cartographer(ClassReader classReader) {
-        super(API, new ClassWriter(classReader, 0));
+        super(API, new ClassWriter(classReader, ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES));
         init();
     }
 
