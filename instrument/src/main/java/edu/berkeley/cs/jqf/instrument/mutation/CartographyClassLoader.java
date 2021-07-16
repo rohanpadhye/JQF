@@ -108,7 +108,7 @@ public class CartographyClassLoader extends URLClassLoader {
 
         // Make cartograph
         if (mutable) {
-            Cartographer c = Cartographer.explore(new ClassReader(bytes));
+            Cartographer c = Cartographer.explore(new ClassReader(bytes), this);
 
             for (List<MutationInstance> opportunities : c.getOpportunities().values())
                 for (MutationInstance chance: opportunities)

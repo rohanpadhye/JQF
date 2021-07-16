@@ -49,7 +49,7 @@ public class MutationClassLoader extends URLClassLoader {
 
         if (name.equals(this.mutationInstance.className)) {
             AtomicLong found = new AtomicLong(0);
-            ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+            ClassWriter cw = new SafeClassWriter(this, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
             ClassReader cr = new ClassReader(bytes);
             cr.accept(new ClassVisitor(Mutator.cvArg, cw) {
                 @Override

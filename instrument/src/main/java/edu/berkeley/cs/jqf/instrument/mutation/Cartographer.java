@@ -13,6 +13,8 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import janala.instrument.SafeClassWriter;
+
 /**
  * A {@link ClassWriter} which takes as input a {@link ClassReader},
  * instrumenting it to collect data about what mutation opportunities are
@@ -33,9 +35,13 @@ public class Cartographer extends ClassVisitor {
      * optimization
      * 
      * @param classReader the class which will be instrumented
+     * @param cl the ClassLoader to use for reading comparison classes
+     *
+     * @note {@code cl} should be able to find all the classes that may want to be instrumented.
+     *       They aren't loaded, they're just read.
      */
-    public Cartographer(ClassReader classReader) {
-        super(API, new ClassWriter(classReader, ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES));
+    public Cartographer(ClassReader classReader, ClassLoader cl) {
+        super(API, new SafeClassWriter(classReader, cl, ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES));
         init();
     }
 
@@ -57,8 +63,8 @@ public class Cartographer extends ClassVisitor {
      * @param r a reader for reading the class in question
      * @return the cartographer which has walked the class
      */
-    public static Cartographer explore(ClassReader r) {
-        Cartographer c = new Cartographer(r);
+    public static Cartographer explore(ClassReader r, ClassLoader l) {
+        Cartographer c = new Cartographer(r, l);
         r.accept(c, 0);
         return c;
     }
