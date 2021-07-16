@@ -90,16 +90,18 @@ public class CartographyClassLoader extends URLClassLoader {
         }
 
         // Check includes + excludes
-        boolean mutable = includeClasses.isEmpty();
-        for(String s : includeClasses) {
-            if (name.startsWith(s)) {
-                mutable = true;
-                break;
-            }
-        }
+        boolean mutable = true;
+
         for (String s : excludeClasses) {
             if (name.startsWith(s)) {
                 mutable = false;
+                break;
+            }
+        }
+
+        for(String s : includeClasses) {
+            if (name.startsWith(s)) {
+                mutable = true;
                 break;
             }
         }
