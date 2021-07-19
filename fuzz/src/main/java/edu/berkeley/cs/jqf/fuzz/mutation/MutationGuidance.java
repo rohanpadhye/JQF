@@ -301,6 +301,7 @@ public class MutationGuidance extends ZestGuidance {
 
     @Override
     public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
+        numTrials++;
         numRuns++;
         Set<MutationInstance> runMutants = new HashSet<>();
         MutationSnoop.setMutantCallback(runMutants::add);
@@ -314,7 +315,7 @@ public class MutationGuidance extends ZestGuidance {
         List<Throwable> fails = new ArrayList<>();
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
 
-        int run = 0;
+        int run = 1;
         recentTotal.add(cartographyClassLoader.getCartograph().size());
         
         for (MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
@@ -354,6 +355,7 @@ public class MutationGuidance extends ZestGuidance {
         recentRun.add(run);
         totalMapTime += trialTime;
         totalTime += completeTime;
+        numRuns += run;
     }
 
     private boolean isExceptionExpected(Class<? extends Throwable> e, List<Class<?>> expectedExceptions) {
