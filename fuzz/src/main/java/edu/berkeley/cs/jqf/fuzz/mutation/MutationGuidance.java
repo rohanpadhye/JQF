@@ -316,8 +316,6 @@ public class MutationGuidance extends ZestGuidance {
         List<Class<?>> expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
 
         int run = 1;
-        recentTotal.add(cartographyClassLoader.getCartograph().size());
-        
         for (MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
             if (deadMutants.contains(mutationInstance))
                 continue;
@@ -404,8 +402,10 @@ public class MutationGuidance extends ZestGuidance {
         double nonZeroFraction = nonZeroCount * 100.0 / totalCoverage.size();
         int nonZeroValidCount = validCoverage.getNonZeroCount();
         double nonZeroValidFraction = nonZeroValidCount * 100.0 / validCoverage.size();
+        int totalFound = cartographyClassLoader.getCartograph().size();
 
         if (console != null) {
+                        
             if (LIBFUZZER_COMPAT_OUTPUT) {
                 console.printf("#%,d\tNEW\tcov: %,d exec/s: %,d L: %,d\n", numTrials, nonZeroValidCount, (long) intervalTrialsPerSec, currentInput.size());
             } else if (!QUIET_MODE) {
@@ -429,8 +429,9 @@ public class MutationGuidance extends ZestGuidance {
                 console.printf("Execution Speed:      %,d/sec now | %,d/sec overall\n", (long) intervalRunsPerSec, (long) runsPerSec);
                 console.printf("Testing Time:         %s\n", millisToDuration(totalTime));
                 console.printf("Mapping Time:         %s (%.2f%% of total)\n", millisToDuration(totalMapTime), (double) totalMapTime * 100.0 / (double) totalTime);
-                console.printf("Recent Found Mutants: %.2f\n", recentTotal.get());
-                console.printf("Recent Run Mutants:   %.2f (%.2f%% of total)\n", recentRun.get(), recentRun.get() * 100.0 / recentTotal.get());
+                console.printf("Found Mutants:        %d\n", totalFound);
+                console.printf("Recent Run Mutants:   %.2f (%.2f%% of total)\n", recentRun.get(),
+                        recentRun.get() * 100.0 / totalFound);
                 console.printf("Total coverage:       %,d branches (%.2f%% of map)\n", nonZeroCount, nonZeroFraction);
                 console.printf("Valid coverage:       %,d branches (%.2f%% of map)\n", nonZeroValidCount, nonZeroValidFraction);
                 console.printf("Total coverage:       %,d mutants\n", ((MutationCoverage) totalCoverage).numCaughtMutants());
