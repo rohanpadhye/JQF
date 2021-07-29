@@ -89,9 +89,6 @@ public class MutationGuidance extends ZestGuidance {
     /** The number of mutants run in the most recent test runs */
     private MovingAverage recentRun = new MovingAverage(MOVING_AVERAGE_CAP);
     
-    /** The number of mutants found in the most recent test runs */ 
-    private MovingAverage recentTotal = new MovingAverage(MOVING_AVERAGE_CAP);
-
     public MutationGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, String include, String exclude, Random rand) throws IOException {
         super(testName, duration, trials, outputDirectory, seedInputDir, rand);
         if(include != null) {
@@ -107,6 +104,11 @@ public class MutationGuidance extends ZestGuidance {
         totalCoverage = new MutationCoverage();
         runCoverage = new MutationCoverage();
         validCoverage = new MutationCoverage();
+    }
+
+    @Override
+    protected String getStatNames() {
+        return super.getStatNames() + ", found_muts, dead_muts, caught_muts, run_muts";
     }
 
     @Override
@@ -442,12 +444,12 @@ public class MutationGuidance extends ZestGuidance {
             }
         }
 
-        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%",
-                TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
-                numSavedInputs, 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalTrialsPerSec,
-                numValid, numTrials-numValid, nonZeroValidFraction);
+        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%, %d, %d, %d, %.2f",
+                                        TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
+                                        numSavedInputs, 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalTrialsPerSec,
+                                        numValid, numTrials-numValid, nonZeroValidFraction,
+                                        totalFound, deadMutants.size(), ((MutationCoverage) totalCoverage).numSeenMutants(), recentRun.get());
         appendLineToFile(statsFile, plotData);
-
     }
 
     @Override

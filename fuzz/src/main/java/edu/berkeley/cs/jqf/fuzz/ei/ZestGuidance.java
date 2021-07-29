@@ -360,10 +360,12 @@ public class ZestGuidance implements Guidance {
             file.delete();
         }
 
-        appendLineToFile(statsFile,"# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
-                "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov");
+        appendLineToFile(statsFile, getStatNames());
+    }
 
-
+    protected String getStatNames() {
+        return "# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
+            "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov";
     }
 
     /* Writes a line of text to a given log file. */
