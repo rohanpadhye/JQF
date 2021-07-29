@@ -213,6 +213,9 @@ public class MutationGuidance extends ZestGuidance {
                 responsibilities.addAll(runMutants);
                 GuidanceException.wrap(() -> saveCurrentInput(responsibilities, reason));
 
+                // Save coverage information
+                updateCoverageFile();
+
             }
         } else if (result == Result.FAILURE || result == Result.TIMEOUT) {
             String msg = error.getMessage();
