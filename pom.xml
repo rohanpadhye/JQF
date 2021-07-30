@@ -74,7 +74,6 @@
         <module>instrument</module>
         <module>examples</module>
         <module>maven-plugin</module>
-        <module>integration-tests</module>
     </modules>
 
     <dependencyManagement>
@@ -259,6 +258,12 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>continuous-integration</id>
+            <modules>
+                <module>integration-tests</module>
+            </modules>
         </profile>
     </profiles>
 
