@@ -30,6 +30,9 @@ public class Cartographer extends ClassVisitor {
     /** The name of the class we're visitng */ 
     private String name = null;
 
+    /** Whether or not relevant mutants should be run */
+    private final boolean runRelevant = System.getProperty("runRelevant", "true") == "true";
+
     /**
      * Creates a Cartographer for a specific {@link ClassReader}, which allows for
      * optimization
@@ -100,14 +103,14 @@ public class Cartographer extends ClassVisitor {
                 MutationInstance mi =  new MutationInstance(mut, ops.size(), Cartographer.this.name);
                 ops.add(mi);
 
-                super.visitLdcInsn(mi.id);
-                super.visitMethodInsn(Opcodes.INVOKESTATIC,
-                                      "edu/berkeley/cs/jqf/instrument/mutation/MutationSnoop",
-                                      "logMutant",
-                                      "(I)V",
-                                      false);
-
-
+                if (runRelevant) {
+                    super.visitLdcInsn(mi.id);
+                    super.visitMethodInsn(Opcodes.INVOKESTATIC,
+                                          "edu/berkeley/cs/jqf/instrument/mutation/MutationSnoop",
+                                          "logMutant",
+                                          "(I)V",
+                                          false);
+                }
             }
 
             /**

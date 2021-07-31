@@ -88,7 +88,10 @@ public class MutationGuidance extends ZestGuidance {
     
     /** The number of mutants run in the most recent test runs */
     private MovingAverage recentRun = new MovingAverage(MOVING_AVERAGE_CAP);
-    
+
+    /** Whether or not relevant mutants should be run */
+    private final boolean runRelevant = System.getProperty("runRelevant", "true") == "true";
+
     public MutationGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, String include, String exclude, Random rand) throws IOException {
         super(testName, duration, trials, outputDirectory, seedInputDir, rand);
         if(include != null) {
@@ -324,7 +327,7 @@ public class MutationGuidance extends ZestGuidance {
         for (MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
             if (deadMutants.contains(mutationInstance))
                 continue;
-            if (!runMutants.contains(mutationInstance))
+            if (runRelevant && !runMutants.contains(mutationInstance))
                 continue;
 
             run += 1;
