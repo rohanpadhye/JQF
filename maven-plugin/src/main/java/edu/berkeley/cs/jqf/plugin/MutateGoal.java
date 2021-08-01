@@ -28,10 +28,12 @@
  */
 package edu.berkeley.cs.jqf.plugin;
 
+import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
+import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
 import edu.berkeley.cs.jqf.fuzz.util.IOUtils;
-import edu.berkeley.cs.jqf.fuzz.util.ThrowingRunnable;
 import edu.berkeley.cs.jqf.instrument.mutation.CartographyClassLoader;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationClassLoader;
+import edu.berkeley.cs.jqf.instrument.mutation.MutationClassLoaders;
 import edu.berkeley.cs.jqf.instrument.mutation.MutationInstance;
 import edu.berkeley.cs.jqf.instrument.util.ThrowingFunction;
 
@@ -51,6 +53,7 @@ import org.junit.runner.Runner;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -73,6 +76,12 @@ public class MutateGoal extends AbstractMojo {
     private String outputDirectory;
 
     /**
+     * The corpus to be run against
+     */
+    @Parameter(property="corpus", required=false)
+    private String corpus;
+
+    /**
      * Test class
      */
     @Parameter(property = "class", required=true)
@@ -87,13 +96,13 @@ public class MutateGoal extends AbstractMojo {
     /**
      * classes to be mutated
      */
-    @Parameter(property = "includeClasses")
+    @Parameter(property = "includes")
     String includeRegex;
 
     /**
      * classes to be mutated
      */
-    @Parameter(property = "excludeClasses")
+    @Parameter(property = "excludes")
     String excludeRegex;
 
     private String[] splitRegex(String regex) {
@@ -105,26 +114,30 @@ public class MutateGoal extends AbstractMojo {
         String targetName = testClassName + "#" + testMethod;
         String[] includeArray = splitRegex(includeRegex), excludeArray = splitRegex(excludeRegex);
         if (outputDirectory == null || outputDirectory.equals("")) {
-            outputDirectory = "mutation-results" + File.separator + testClassName;
+            outputDirectory = "fuzz-results" + File.separator + testClassName;
         }
 
-        File resultsDir = new File(target, outputDirectory);
+        File resultsDir = new File(outputDirectory, File.pathSeparator + testClassName);
         try {
             IOUtils.createDirectory(resultsDir);
         } catch (IOException e) {
             throw new MojoExecutionException("Could not create log file", e);
         }
 
-        try (PrintWriter log = new PrintWriter(
-                new FileWriter(new File(resultsDir.getPath() + File.separator + testMethod + ".txt")))) {
-            // Create main classloader
-            ClassLoader papa = getClass().getClassLoader();
+        // Create main classloader
+        ClassLoader papa = getClass().getClassLoader();
 
+        try {
             URL urls[] = project.getTestClasspathElements().stream()
-                    .map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray(URL[]::new);
-
+                .map(ThrowingFunction.wrap(x -> new File(x).toURI().toURL())).toArray(URL[]::new);
+            
+            if (corpus != null)
+                GuidedFuzzing.setGuidance(new ReproGuidance(new File(corpus), null));
+            
+            System.err.println("Starting Initial Run:");
+            
             CartographyClassLoader ccl = new CartographyClassLoader(urls, includeArray, excludeArray, papa);
-
+            
             // Run initial test to compute mutants dynamically
             Result initialResults = runTest(ccl);
             if (!initialResults.wasSuccessful()) {
@@ -132,45 +145,63 @@ public class MutateGoal extends AbstractMojo {
                 System.err.println(initialResults.getFailures());
                 return;
             }
-
-            // Mutants created after initial run
+            
+            if (corpus != null)
+                GuidedFuzzing.unsetGuidance();
+            
             List<MutationInstance> mutationInstances = ccl.getCartograph();
-            System.out.printf("Mutants created: %d\n", mutationInstances.size());
-
-            // Set up stats
-            long totalRun = 0, totalFail = 0, totalIgnore = 0;
-            long runByTest = 0, failByTest = 0;
+            
             List<MutationInstance> killedMutants = new ArrayList<>();
-
-            // Run each mutant
-            for (MutationInstance mutationInstance : mutationInstances) {
-                System.out.println(mutationInstance);
-                log.println(mutationInstance);
-                MutationClassLoader mcl = new MutationClassLoader(mutationInstance, urls, papa);
-                mutationInstance.resetTimer();
-                Result mutantTestResult = runTest(mcl);
-                runByTest++;
-                if (mutantTestResult.getFailureCount() > 0) {
-                    failByTest++;
-                    killedMutants.add(mutationInstance);
-                    log.println(mutantTestResult.getFailures());
-                    Throwable t = mutantTestResult.getFailures().get(0).getException();
-                    if (t instanceof VerifyError) {
-                        log.println(t.getMessage());
+            
+            MutationClassLoaders mcls = new MutationClassLoaders(urls, papa);
+            if (corpus != null) {
+                // Use ReproGuidance
+                for (MutationInstance mutationInstance : mutationInstances) {
+                    System.err.printf("Running Mutant %d\n", mutationInstance.id);
+                    for (File input : new File(corpus).listFiles()) {
+                        ReproGuidance rg = new ReproGuidance(input, null);
+                        MutationClassLoader mcl = mcls.get(mutationInstance);
+                        Result res = GuidedFuzzing.run(testClassName, testMethod, mcl, rg, null);
+                        if (!res.wasSuccessful()) {
+                            killedMutants.add(mutationInstance);
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Run each mutant without input
+                for (MutationInstance mutationInstance : mutationInstances) {
+                    System.out.println(mutationInstance);
+                    MutationClassLoader mcl = new MutationClassLoader(mutationInstance, urls, papa);
+                    mutationInstance.resetTimer();
+                    Result mutantTestResult = runTest(mcl);
+                    if (mutantTestResult.getFailureCount() > 0) {
+                        killedMutants.add(mutationInstance);
+                        Throwable t = mutantTestResult.getFailures().get(0).getException();
                     }
                 }
             }
-
-            System.out.println("Mutants Run: " + runByTest + ", Killed Mutants: " + failByTest);
-            log.println("Mutants Run: " + runByTest + ", Killed Mutants: " + failByTest);
-        } catch (ClassNotFoundException | DependencyResolutionRequiredException e) {
-            throw new MojoFailureException("Bad Request", e);
-        } catch (IOException e) {
-            throw new MojoExecutionException("IO Exception", e);
+            
+            File mutantReport = new File(resultsDir, "mutant-report");
+            
+            try (PrintWriter pw = new PrintWriter(mutantReport)) {
+                for (MutationInstance mi : mutationInstances) {
+                    pw.printf("%s - %s\n",
+                              mi.toString(),
+                              killedMutants.contains(mi) ? "Killed" : "Alive");
+                }
+            }
+            
+            String ls = String.format("Mutants Run: %d, Killed Mutants: %d",
+                                      mutationInstances.size(),
+                                      killedMutants.size());
+            System.err.println(ls);
+        } catch (Exception e) {
+            throw new MojoExecutionException(e.toString());
         }
     }
 
-    public Result runTest(ClassLoader cl) throws ClassNotFoundException {
+    private Result runTest(ClassLoader cl) throws ClassNotFoundException {
         Class<?> clazz = Class.forName(testClassName, true, cl);
         Request testRequest = Request.method(clazz, testMethod);
         Runner testRunner = testRequest.getRunner();
