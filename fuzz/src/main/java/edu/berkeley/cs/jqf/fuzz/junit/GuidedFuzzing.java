@@ -62,7 +62,7 @@ public class GuidedFuzzing {
      * @param g the guidance instance
      * @throws IllegalStateException if a guidance has already been set
      */
-    private static void setGuidance(Guidance g) {
+    public static void setGuidance(Guidance g) {
         if (guidance != null) {
             throw new IllegalStateException("Can only set guided once.");
         }
@@ -89,7 +89,7 @@ public class GuidedFuzzing {
      * This property is ensured by {@link GuidedFuzzing#run(Class, String, Guidance, PrintStream)}.
      *
      */
-    private static void unsetGuidance() {
+    public static void unsetGuidance() {
         guidance = null;
         TraceLogger.get().remove();
     }
