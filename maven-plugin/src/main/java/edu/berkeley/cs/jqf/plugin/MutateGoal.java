@@ -177,7 +177,6 @@ public class MutateGoal extends AbstractMojo {
                     Result mutantTestResult = runTest(mcl);
                     if (mutantTestResult.getFailureCount() > 0) {
                         killedMutants.add(mutationInstance);
-                        Throwable t = mutantTestResult.getFailures().get(0).getException();
                     }
                 }
             }
