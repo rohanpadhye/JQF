@@ -1,6 +1,5 @@
 package edu.berkeley.cs.jqf.fuzz.mutation;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -22,7 +21,7 @@ public class ArraySet {
     }
     
     public boolean contains(int i) {
-        return bs[i];
+        return i < bs.length && bs[i];
     }
 
     private void ensureHas(int i) {
