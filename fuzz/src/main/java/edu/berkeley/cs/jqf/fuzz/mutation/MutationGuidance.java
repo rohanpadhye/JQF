@@ -69,7 +69,7 @@ public class MutationGuidance extends ZestGuidance {
     private MutationClassLoaders mutationClassLoaders;
     
     /** The mutants killed so far */
-    private Set<MutationInstance> deadMutants = new HashSet<>();
+    private ArraySet deadMutants = new ArraySet();
 
     /** The number of actual runs of the test */
     private long numRuns = 0;
@@ -307,12 +307,14 @@ public class MutationGuidance extends ZestGuidance {
         return this.cartographyClassLoader;
     }
 
+    private static ArraySet runMutants = new ArraySet();
+
     @Override
     public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
         numTrials++;
         numRuns++;
-        Set<MutationInstance> runMutants = new HashSet<>();
-        MutationSnoop.setMutantCallback(runMutants::add);
+        runMutants.reset();
+        MutationSnoop.setMutantCallback(m -> runMutants.add(m.id));
 
         long startTime = System.currentTimeMillis();
         
@@ -325,9 +327,9 @@ public class MutationGuidance extends ZestGuidance {
 
         int run = 1;
         for (MutationInstance mutationInstance : cartographyClassLoader.getCartograph()) {
-            if (deadMutants.contains(mutationInstance))
+            if (deadMutants.contains(mutationInstance.id))
                 continue;
-            if (runRelevant && !runMutants.contains(mutationInstance))
+            if (runRelevant && !runMutants.contains(mutationInstance.id))
                 continue;
 
             run += 1;
@@ -347,7 +349,7 @@ public class MutationGuidance extends ZestGuidance {
             } catch (Throwable e) {
                 if (!isExceptionExpected(e.getClass(), expectedExceptions)) {
                     // failed
-                    deadMutants.add(mutationInstance);
+                    deadMutants.add(mutationInstance.id);
                     TraceLogger.get().emit(new KillEvent(0, null, 0, mutationInstance)); // temp 0 values
                     fails.add(e);
                 }
@@ -447,11 +449,11 @@ public class MutationGuidance extends ZestGuidance {
             }
         }
 
-        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%, %d, %d, %d, %.2f",
+        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d",
                                         TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
                                         numSavedInputs, 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalTrialsPerSec,
                                         numValid, numTrials-numValid, nonZeroValidFraction,
-                                        totalFound, deadMutants.size(), ((MutationCoverage) totalCoverage).numSeenMutants(), recentRun.get());
+                                        totalFound, deadMutants.size(), ((MutationCoverage) totalCoverage).numSeenMutants(), recentRun.get(), totalMapTime);
         appendLineToFile(statsFile, plotData);
     }
 
