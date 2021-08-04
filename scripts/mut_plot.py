@@ -1,6 +1,10 @@
 import matplotlib.pyplot as plt
 
 
+TEST_CLASS = "chocopy.fuzz.SemanticAnalysisTarget"
+TEST_METHOD = "differentialTest"
+
+
 def read_value(v):
     return float(v.rstrip("%")) / 100 if v.endswith("%") else float(v)
 
@@ -39,8 +43,7 @@ def bar_plot(data, labels, x_axis, title, xlabel, ylabel):
 def path(k, e, f):
     return '/'.join([e, str(k),
                      "target", "fuzz-results",
-                     "chocopy.fuzz.SemanticAnalysisTarget",
-                     "differentialTest", f])
+                     TEST_CLASS, TEST_METHOD, f])
 
 
 def killed(k, e):
