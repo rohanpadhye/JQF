@@ -78,10 +78,10 @@ public class MutationGuidance extends ZestGuidance {
     private long lastNumRuns = 0;
 
     /** The total time spent in the cartography class loader */ 
-    private long totalMapTime = 0;
+    private long mappingTime = 0;
 
     /** The total time spent running the tests */
-    private long totalTime = 0;
+    private long testingTime = 0;
 
     /** The size of the moving averages */
     private static final int MOVING_AVERAGE_CAP = 10;
@@ -109,9 +109,12 @@ public class MutationGuidance extends ZestGuidance {
         validCoverage = new MutationCoverage();
     }
 
+    /**
+     * The names to be written to the top of the stats file
+     */
     @Override
     protected String getStatNames() {
-        return super.getStatNames() + ", found_muts, dead_muts, caught_muts, run_muts";
+        return super.getStatNames() + ", found_muts, dead_muts, seen_muts, run_muts, total_time, map_time";
     }
 
     @Override
@@ -361,8 +364,8 @@ public class MutationGuidance extends ZestGuidance {
         long completeTime = System.currentTimeMillis() - startTime;
 
         recentRun.add(run);
-        totalMapTime += trialTime;
-        totalTime += completeTime;
+        mappingTime += trialTime;
+        testingTime += completeTime;
         numRuns += run;
     }
 
@@ -438,7 +441,7 @@ public class MutationGuidance extends ZestGuidance {
                 console.printf("Fuzzing Throughput:   %,d/sec now | %,d/sec overall\n", (long) intervalTrialsPerSec, (long) trialsPerSec);
                 console.printf("Execution Speed:      %,d/sec now | %,d/sec overall\n", (long) intervalRunsPerSec, (long) runsPerSec);
                 console.printf("Testing Time:         %s\n", millisToDuration(totalTime));
-                console.printf("Mapping Time:         %s (%.2f%% of total)\n", millisToDuration(totalMapTime), (double) totalMapTime * 100.0 / (double) totalTime);
+                console.printf("Mapping Time:         %s (%.2f%% of total)\n", millisToDuration(mappingTime), (double) mappingTime * 100.0 / (double) totalTime);
                 console.printf("Found Mutants:        %d\n", totalFound);
                 console.printf("Recent Run Mutants:   %.2f (%.2f%% of total)\n", recentRun.get(),
                         recentRun.get() * 100.0 / totalFound);
@@ -449,11 +452,11 @@ public class MutationGuidance extends ZestGuidance {
             }
         }
 
-        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d",
+        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d",
                                         TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
                                         numSavedInputs, 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalTrialsPerSec,
                                         numValid, numTrials-numValid, nonZeroValidFraction,
-                                        totalFound, deadMutants.size(), ((MutationCoverage) totalCoverage).numSeenMutants(), recentRun.get(), totalMapTime);
+                                        totalFound, deadMutants.size(), ((MutationCoverage) totalCoverage).numSeenMutants(), recentRun.get(), testingTime, mappingTime);
         appendLineToFile(statsFile, plotData);
     }
 
