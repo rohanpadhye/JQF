@@ -111,13 +111,12 @@ public class MutateGoal extends AbstractMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        String targetName = testClassName + "#" + testMethod;
         String[] includeArray = splitRegex(includeRegex), excludeArray = splitRegex(excludeRegex);
         if (outputDirectory == null || outputDirectory.equals("")) {
-            outputDirectory = "fuzz-results" + File.separator + testClassName;
+            outputDirectory = "fuzz-results" + File.separator + testClassName + File.separator + testMethod;
         }
 
-        File resultsDir = new File(outputDirectory, File.pathSeparator + testClassName);
+        File resultsDir = new File(target, outputDirectory);
         try {
             IOUtils.createDirectory(resultsDir);
         } catch (IOException e) {
@@ -157,7 +156,7 @@ public class MutateGoal extends AbstractMojo {
             if (corpus != null) {
                 // Use ReproGuidance
                 for (MutationInstance mutationInstance : mutationInstances) {
-                    System.err.printf("Running Mutant %d\n", mutationInstance.id);
+                    System.err.printf("Running Mutant %s:\n", mutationInstance.toString());
                     for (File input : new File(corpus).listFiles()) {
                         ReproGuidance rg = new ReproGuidance(input, null);
                         MutationClassLoader mcl = mcls.get(mutationInstance);
