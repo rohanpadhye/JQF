@@ -15,7 +15,7 @@ public class MutationClassLoaders {
     private Map<MutationInstance, MutationClassLoader> loaders;
 
     /**
-     * Creates an {@code MCLCache}
+     * Creates an {@code MutationClassLoaders}
      * 
      * @param paths  The paths for the {@code MutationClassLoader}
      * @param parent The parent for the {@code MutationClassLoader}
