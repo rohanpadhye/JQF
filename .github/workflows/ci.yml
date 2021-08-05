@@ -4,6 +4,7 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -14,6 +15,13 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
+    - name: Cache Maven dependencies
+      uses: actions/cache@v1
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
     - name: Build AFL proxy
       run: make
     - name: Build and test JQF
