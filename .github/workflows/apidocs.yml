@@ -12,7 +12,7 @@ jobs:
         uses: actions/checkout@v2
       
       - name: Build JavaDoc
-        run: "mvn javadoc:aggregate -pl :jqf-instrument,:jqf-fuzz,:jqf"
+        run: "mvn -B javadoc:aggregate -pl :jqf-instrument,:jqf-fuzz,:jqf"
 
       - name: Deploy to gh-pages
         uses: JamesIves/github-pages-deploy-action@4.1.4
