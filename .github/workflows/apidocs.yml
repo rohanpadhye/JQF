@@ -10,6 +10,14 @@ jobs:
     steps:
       - name: Checkout latest # release or manually selected ref 
         uses: actions/checkout@v2
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
       
       - name: Build JavaDoc
         run: "mvn -B javadoc:aggregate -pl :jqf-instrument,:jqf-fuzz,:jqf"
