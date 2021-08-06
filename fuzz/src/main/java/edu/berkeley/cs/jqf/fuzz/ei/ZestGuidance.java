@@ -360,10 +360,12 @@ public class ZestGuidance implements Guidance {
             file.delete();
         }
 
-        appendLineToFile(statsFile,"# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
-                "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov");
+        appendLineToFile(statsFile, getStatNames());
+    }
 
-
+    protected String getStatNames() {
+        return "# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
+            "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov";
     }
 
     /* Writes a line of text to a given log file. */
@@ -389,7 +391,7 @@ public class ZestGuidance implements Guidance {
         }
     }
 
-    private String millisToDuration(long millis) {
+    protected String millisToDuration(long millis) {
         long seconds = TimeUnit.MILLISECONDS.toSeconds(millis % TimeUnit.MINUTES.toMillis(1));
         long minutes = TimeUnit.MILLISECONDS.toMinutes(millis % TimeUnit.HOURS.toMillis(1));
         long hours = TimeUnit.MILLISECONDS.toHours(millis);
@@ -405,7 +407,7 @@ public class ZestGuidance implements Guidance {
     }
 
     // Call only if console exists
-    private void displayStats() {
+    protected void displayStats() {
         Date now = new Date();
         long intervalMilliseconds = now.getTime() - lastRefreshTime.getTime();
         if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD) {
@@ -470,7 +472,7 @@ public class ZestGuidance implements Guidance {
     }
 
     /** Updates the data in the coverage file */ 
-    private void updateCoverageFile() {
+    protected void updateCoverageFile() {
         try {
             PrintWriter pw = new PrintWriter(coverageFile);
             pw.println(getTotalCoverage().toString());
@@ -496,7 +498,7 @@ public class ZestGuidance implements Guidance {
         this.blind = blind;
     }
 
-    private int getTargetChildrenForParent(Input parentInput) {
+    protected int getTargetChildrenForParent(Input parentInput) {
         // Baseline is a constant
         int target = NUM_CHILDREN_BASELINE;
 
@@ -675,59 +677,20 @@ public class ZestGuidance implements Guidance {
                 numValid++;
             }
 
-            if (result == Result.SUCCESS || (result == Result.INVALID && SAVE_ONLY_VALID == false)) {
+            if (result == Result.SUCCESS || (result == Result.INVALID && !SAVE_ONLY_VALID)) {
 
-                // Coverage before
-                int nonZeroBefore = totalCoverage.getNonZeroCount();
-                int validNonZeroBefore = validCoverage.getNonZeroCount();
-
-                // Compute a list of keys for which this input can assume responsiblity.
+                // Compute a list of keys for which this input can assume responsibility.
                 // Newly covered branches are always included.
                 // Existing branches *may* be included, depending on the heuristics used.
                 // A valid input will steal responsibility from invalid inputs
                 Set<Object> responsibilities = computeResponsibilities(valid);
 
-                // Update total coverage
-                boolean coverageBitsUpdated = totalCoverage.updateBits(runCoverage);
-                if (valid) {
-                    validCoverage.updateBits(runCoverage);
-                }
-
-                // Coverage after
-                int nonZeroAfter = totalCoverage.getNonZeroCount();
-                if (nonZeroAfter > maxCoverage) {
-                    maxCoverage = nonZeroAfter;
-                }
-                int validNonZeroAfter = validCoverage.getNonZeroCount();
-
-                // Possibly save input
-                boolean toSave = false;
-                String why = "";
-
-
-                if (!DISABLE_SAVE_NEW_COUNTS && coverageBitsUpdated) {
-                    toSave = true;
-                    why = why + "+count";
-                }
-
-                // Save if new total coverage found
-                if (nonZeroAfter > nonZeroBefore) {
-                    // Must be responsible for some branch
-                    assert (responsibilities.size() > 0);
-                    toSave = true;
-                    why = why + "+cov";
-                }
-
-                // Save if new valid coverage is found
-                if (this.validityFuzzing && validNonZeroAfter > validNonZeroBefore) {
-                    // Must be responsible for some branch
-                    assert (responsibilities.size() > 0);
-                    currentInput.valid = true;
-                    toSave = true;
-                    why = why + "+valid";
-                }
+                // Determine if this input should be saved
+                List<String> savingCriteriaSatisfied = checkSavingCriteriaSatisfied(result);
+                boolean toSave = savingCriteriaSatisfied.size() > 0;
 
                 if (toSave) {
+                    String why = String.join(" ", savingCriteriaSatisfied);
 
                     // Trim input (remove unused keys)
                     currentInput.gc();
@@ -743,11 +706,11 @@ public class ZestGuidance implements Guidance {
                     infoLog("Saving new input (at run %d): " +
                                     "input #%d " +
                                     "of size %d; " +
-                                    "total coverage = %d",
+                                    "reason = %s",
                             numTrials,
                             savedInputs.size(),
                             currentInput.size(),
-                            nonZeroAfter);
+                            why);
 
                     // Save input to queue and to disk
                     final String reason = why;
@@ -802,7 +765,7 @@ public class ZestGuidance implements Guidance {
             }
 
             // Save input unconditionally if such a setting is enabled
-            if (LOG_ALL_INPUTS && (currentInput.valid || SAVE_ONLY_VALID == false)) {
+            if (LOG_ALL_INPUTS && (SAVE_ONLY_VALID ? valid : true)) {
                 File logDirectory = new File(allInputsDirectory, result.toString().toLowerCase());
                 String saveFileName = String.format("id_%09d", numTrials);
                 File saveFile = new File(logDirectory, saveFileName);
@@ -811,9 +774,49 @@ public class ZestGuidance implements Guidance {
         });
     }
 
+    // Return a list of saving criteria that have been satisfied for a non-failure input
+    protected List<String> checkSavingCriteriaSatisfied(Result result) {
+        // Coverage before
+        int nonZeroBefore = totalCoverage.getNonZeroCount();
+        int validNonZeroBefore = validCoverage.getNonZeroCount();
+
+        // Update total coverage
+        boolean coverageBitsUpdated = totalCoverage.updateBits(runCoverage);
+        if (result == Result.SUCCESS) {
+            validCoverage.updateBits(runCoverage);
+        }
+
+        // Coverage after
+        int nonZeroAfter = totalCoverage.getNonZeroCount();
+        if (nonZeroAfter > maxCoverage) {
+            maxCoverage = nonZeroAfter;
+        }
+        int validNonZeroAfter = validCoverage.getNonZeroCount();
+
+        // Possibly save input
+        List<String> reasonsToSave = new ArrayList<>();
+
+
+        if (!DISABLE_SAVE_NEW_COUNTS && coverageBitsUpdated) {
+            reasonsToSave.add("+count");
+        }
+
+        // Save if new total coverage found
+        if (nonZeroAfter > nonZeroBefore) {
+            reasonsToSave.add("+cov");
+        }
+
+        // Save if new valid coverage is found
+        if (this.validityFuzzing && validNonZeroAfter > validNonZeroBefore) {
+            reasonsToSave.add("+valid");
+        }
+
+        return reasonsToSave;
+    }
+
 
     // Compute a set of branches for which the current input may assume responsibility
-    private Set<Object> computeResponsibilities(boolean valid) {
+    protected Set<Object> computeResponsibilities(boolean valid) {
         Set<Object> result = new HashSet<>();
 
         // This input is responsible for all new coverage
@@ -1034,11 +1037,6 @@ public class ZestGuidance implements Guidance {
         int offspring = -1;
 
         /**
-         * Whether this input resulted in a valid run.
-         */
-        boolean valid = false;
-
-        /**
          * The set of coverage keys for which this input is
          * responsible.
          *
@@ -1050,7 +1048,6 @@ public class ZestGuidance implements Guidance {
          * needs to be kept in-sync with {@link #responsibleInputs}.</p>
          */
         Set<Object> responsibilities = null;
-
 
         /**
          * Create an empty input.
@@ -1073,8 +1070,6 @@ public class ZestGuidance implements Guidance {
         public abstract Input fuzz(Random random);
         public abstract void gc();
 
-
-
         /**
          * Returns whether this input should be favored for fuzzing.
          *
@@ -1086,7 +1081,6 @@ public class ZestGuidance implements Guidance {
         public boolean isFavored() {
             return responsibilities.size() > 0;
         }
-
 
         /**
          * Sample from a geometric distribution with given mean.
