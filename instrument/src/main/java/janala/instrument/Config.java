@@ -42,15 +42,15 @@ class Config {
       instrumentHeapLoad = Boolean.parseBoolean(properties.getProperty("janala.instrumentHeapLoad", "false"));
       instrumentAlloc = Boolean.parseBoolean(properties.getProperty("janala.instrumentAlloc", "false"));
 
-      String excludeInstStr = properties.getProperty("janala.excludes", "");
-      if (excludeInstStr.length() > 0) {
+      String excludeInstStr = properties.getProperty("janala.excludes", null);
+      if (excludeInstStr != null) {
           excludeInst = excludeInstStr.replace('.', '/').split(",");
       } else {
           excludeInst = new String[0];
       }
 
-      String includeInstStr = properties.getProperty("janala.includes", "");
-      if (includeInstStr.length() > 0) {
+      String includeInstStr = properties.getProperty("janala.includes", null);
+      if (includeInstStr != null) {
           includeInst = includeInstStr.replace('.', '/').split(",");
       } else {
           includeInst = new String[0];
