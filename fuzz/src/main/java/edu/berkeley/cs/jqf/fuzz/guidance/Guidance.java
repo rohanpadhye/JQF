@@ -30,11 +30,17 @@ package edu.berkeley.cs.jqf.fuzz.guidance;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.FuzzStatement;
+import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.InitializationError;
+import org.junit.runners.model.TestClass;
 
 /**
  * A front-end for guided fuzzing.
@@ -173,7 +179,7 @@ public interface Guidance {
      * that may be handled by a separate callback method
      * (though it may also be the same callback).
      *
-     * <p>The callback provided by this method will typlically be used
+     * <p>The callback provided by this method will typically be used
      * for collection execution information such as branch coverage,
      * which in turn is used for constructing the next input stream.
      *
@@ -186,7 +192,7 @@ public interface Guidance {
      */
     Consumer<TraceEvent> generateCallBack(Thread thread);
 
-
+    // A utility method to create an input stream given a function that generates bytes when invoked
     static InputStream createInputStream(Supplier<Integer> inputByteSource) {
         return new InputStream() {
             @Override
@@ -200,6 +206,23 @@ public interface Guidance {
         };
     }
 
-
+    /**
+     * Runs a test method with generated arguments as input.
+     *
+     * <p>By default, this method simply runs the test method using a JUnit
+     * {@link TrialRunner}. Guidances can override this method to customize
+     * how test execution should be performed once inputs are generated. For example,
+     * a guidance that supports non-deterministic test code may wish to execute
+     * multiple trials per generated input.</p>
+     *
+     * @param testClass  the test class
+     * @param method     the test method within the test class
+     * @param args       the arguments to the test method (i.e., the test input)
+     *
+     * @throws Throwable any exception that may be thrown during test execution
+     */
+    default void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
+        new TrialRunner(testClass.getJavaClass(), method, args).run();
+    }
 
 }

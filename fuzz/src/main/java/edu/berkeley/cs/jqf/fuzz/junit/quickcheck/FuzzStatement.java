@@ -145,7 +145,7 @@ public class FuzzStatement extends Statement {
                     }
 
                     // Attempt to run the trial
-                    new TrialRunner(testClass.getJavaClass(), method, args).run();
+                    guidance.run(testClass, method, args);
 
                     // If we reached here, then the trial must be a success
                     result = SUCCESS;
