@@ -1,0 +1,29 @@
+# This workflow builds and deploys the JavaDoc API docs for the library modules
+
+name: API Docs
+
+# Run this on releases and on demand (manually)
+on: [release, workflow_dispatch] 
+jobs:
+  build-javadoc-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout latest # release or manually selected ref 
+        uses: actions/checkout@v2
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      
+      - name: Build JavaDoc
+        run: "mvn -B javadoc:aggregate -pl :jqf-instrument,:jqf-fuzz,:jqf"
+
+      - name: Deploy to gh-pages
+        uses: JamesIves/github-pages-deploy-action@4.1.4
+        with:
+          branch: gh-pages
+          folder: target/site

@@ -102,7 +102,7 @@ The [JQF wiki](https://github.com/rohanpadhye/jqf/wiki) contains lots more docum
 - [Using a custom fuzz guidance](https://github.com/rohanpadhye/jqf/wiki/The-Guidance-interface)
 - [Performance Benchmarks](https://github.com/rohanpadhye/jqf/wiki/Performance-benchmarks)
 
-JQF also publishes its [API docs](https://rohanpadhye.github.io/jqf/apidocs).
+JQF also publishes its [API docs](https://rohanpadhye.github.io/JQF/apidocs).
 
 ## Applications based on JQF
 
