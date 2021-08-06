@@ -1,5 +1,5 @@
 # JQF + Zest: Semantic Fuzzing for Java
-[![Build](https://github.com/rohanpadhye/JQF/actions/workflows/build.yml/badge.svg)](https://github.com/rohanpadhye/JQF/actions/workflows/build.yml)
+[![Build](https://github.com/rohanpadhye/JQF/actions/workflows/ci.yml/badge.svg)](https://github.com/rohanpadhye/JQF/actions/workflows/ci.yml)
 
 [ISSTA'19 paper]: https://rohan.padhye.org/files/zest-issta19.pdf
 [ISSTA'18 paper]: https://rohan.padhye.org/files/perffuzz-issta18.pdf
