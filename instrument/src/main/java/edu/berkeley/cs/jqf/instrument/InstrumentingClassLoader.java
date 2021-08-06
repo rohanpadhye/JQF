@@ -29,7 +29,6 @@
 package edu.berkeley.cs.jqf.instrument;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,7 +63,6 @@ public class InstrumentingClassLoader extends URLClassLoader {
         return urls;
     }
 
-
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
         byte[] bytes;
@@ -76,35 +74,20 @@ public class InstrumentingClassLoader extends URLClassLoader {
             if (in == null) {
                 throw new ClassNotFoundException("Cannot find class " + name);
             }
-            BufferedInputStream buf = new BufferedInputStream(in);
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            int b;
-            while ((b = buf.read()) != -1) {
-                baos.write(b);
-            }
-            bytes = baos.toByteArray();
+            bytes = in.readAllBytes();
         } catch (IOException e) {
             throw new ClassNotFoundException("I/O exception while loading class.", e);
         }
 
         assert (bytes != null);
 
-        byte[] transformedBytes;
         try {
-            transformedBytes = transformer.transform(this, internalName, null, null, bytes);
+            bytes = transformer.transform(this, internalName, null, null, bytes);
         } catch (IllegalClassFormatException e) {
             // Just use original bytes
-            transformedBytes = null;
         }
 
-
-        // Load the class with transformed bytes, if possible
-        if (transformedBytes != null) {
-            bytes = transformedBytes;
-        }
-        return defineClass(name, bytes,
-                0, bytes.length);
+        return defineClass(name, bytes, 0, bytes.length);
     }
 
 }
