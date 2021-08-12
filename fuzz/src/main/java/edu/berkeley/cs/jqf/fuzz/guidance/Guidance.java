@@ -30,16 +30,13 @@ package edu.berkeley.cs.jqf.fuzz.guidance;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.FuzzStatement;
-import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.TestClass;
 
 /**
