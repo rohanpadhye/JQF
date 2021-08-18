@@ -256,7 +256,8 @@ public class ZestGuidance implements Guidance {
     protected final boolean STEAL_RESPONSIBILITY = Boolean.getBoolean("jqf.ei.STEAL_RESPONSIBILITY");
 
     /**
-     * Creates a new guidance instance.
+     * Creates a new Zest guidance instance with optional duration,
+     * optional trial limit, and possibly deterministic PRNG.
      *
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
@@ -290,7 +291,8 @@ public class ZestGuidance implements Guidance {
     }
 
     /**
-     * Creates a new guidance instance.
+     * Creates a new Zest guidance instance with seed input files and optional
+     * duration, optional trial limit, an possibly deterministic PRNG.
      *
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
@@ -312,7 +314,8 @@ public class ZestGuidance implements Guidance {
     }
 
     /**
-     * Creates a new guidance instance.
+     * Creates a new Zest guidance instance with seed input directory and optional
+     * duration, optional trial limit, an possibly deterministic PRNG.
      *
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
@@ -326,6 +329,49 @@ public class ZestGuidance implements Guidance {
      */
     public ZestGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, Random sourceOfRandomness) throws IOException {
         this(testName, duration, trials, outputDirectory, IOUtils.resolveInputFileOrDirectory(seedInputDir), sourceOfRandomness);
+    }
+
+    /**
+     * Creates a new Zest guidance instance with seed inputs and
+     * optional duration.
+     *
+     * @param testName the name of test to display on the status screen
+     * @param duration the amount of time to run fuzzing for, where
+     *                 {@code null} indicates unlimited time.
+     * @param outputDirectory the directory where fuzzing results will be written
+     * @param seedInputDir the directory containing one or more input files to be used as initial inputs
+     * @throws IOException if the output directory could not be prepared
+     */
+    public ZestGuidance(String testName, Duration duration, File outputDirectory, File seedInputDir) throws IOException {
+        this(testName, duration, null, outputDirectory, seedInputDir, new Random());
+    }
+
+    /**
+     * Creates a new Zest guidance instance with seed inputs and
+     * optional duration.
+     *
+     * @param testName the name of test to display on the status screen
+     * @param duration the amount of time to run fuzzing for, where
+     *                 {@code null} indicates unlimited time.
+     * @param outputDirectory the directory where fuzzing results will be written
+     * @throws IOException if the output directory could not be prepared
+     */
+    public ZestGuidance(String testName, Duration duration, File outputDirectory) throws IOException {
+        this(testName, duration, null, outputDirectory, new Random());
+    }
+
+    /**
+     * Creates a new Zest guidance instance with seed inputs and
+     * optional duration.
+     *
+     * @param testName the name of test to display on the status screen
+     * @param duration the amount of time to run fuzzing for, where
+     *                 {@code null} indicates unlimited time.
+     * @param outputDirectory the directory where fuzzing results will be written
+     * @throws IOException if the output directory could not be prepared
+     */
+    public ZestGuidance(String testName, Duration duration, File outputDirectory, File[] seedFiles) throws IOException {
+        this(testName, duration, null, outputDirectory, seedFiles, new Random());
     }
 
     private void prepareOutputDirectory() throws IOException {
