@@ -39,6 +39,11 @@
             <groupId>edu.berkeley.cs.jqf</groupId>
             <artifactId>jqf-fuzz</artifactId>
         </dependency>
+        <dependency>
+            <groupId>cmu.pasta</groupId>
+            <artifactId>mu2</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>

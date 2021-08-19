@@ -34,12 +34,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLClassLoader;
 import java.time.Duration;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Random;
 
+import cmu.pasta.mu2.fuzz.MutationGuidance;
+import cmu.pasta.mu2.instrument.MutationClassLoaders;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
@@ -300,6 +303,7 @@ public class FuzzGoal extends AbstractMojo {
         }
         if (includes != null) {
             System.setProperty("janala.includes", includes);
+
         }
 
         // Configure Zest Guidance
@@ -335,41 +339,42 @@ public class FuzzGoal extends AbstractMojo {
             outputDirectory = "fuzz-results" + File.separator + testClassName + File.separator + testMethod;
         }
 
+        File resultsDir = new File(target, outputDirectory);
         try {
             List<String> classpathElements = project.getTestClasspathElements();
+            URL[] classPath = stringsToUrls(classpathElements.toArray(new String[0]));
+            ClassLoader baseClassLoader = getClass().getClassLoader();
+            String targetName = testClassName + "#" + testMethod;
+            File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
+            Random rnd = randomSeed != null ? new Random(randomSeed) : new Random();
 
-            if (disableCoverage) {
-                loader = new URLClassLoader(
-                        stringsToUrls(classpathElements.toArray(new String[0])),
-                        getClass().getClassLoader());
-
-            } else {
-                loader = new InstrumentingClassLoader(
-                        classpathElements.toArray(new String[0]),
-                        getClass().getClassLoader());
-            }
-        } catch (DependencyResolutionRequiredException|MalformedURLException e) {
-            throw new MojoExecutionException("Could not get project classpath", e);
-        }
-
-        File resultsDir = new File(target, outputDirectory);
-        String targetName = testClassName + "#" + testMethod;
-        File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
-        Random rnd = randomSeed != null ? new Random(randomSeed) : new Random();
-        try {
             switch (engine) {
                 case "zest":
+                    loader = new InstrumentingClassLoader(classPath, baseClassLoader);
                     guidance = new ZestGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
                     break;
                 case "zeal":
                     System.setProperty("jqf.tracing.TRACE_GENERATORS", "true");
                     System.setProperty("jqf.tracing.MATCH_CALLEE_NAMES", "true");
+                    loader = new InstrumentingClassLoader(classPath, baseClassLoader);
                     guidance = new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
+                    break;
+                case "mutation":
+                    MutationClassLoaders mcl = new MutationClassLoaders(classPath, includes, excludes, baseClassLoader);
+                    loader = mcl.getCartographyClassLoader();
+                    guidance = new MutationGuidance(targetName, mcl, duration, trials, resultsDir, seedsDir, rnd);
                     break;
                 default:
                     throw new MojoExecutionException("Unknown fuzzing engine: " + engine);
             }
+
+            // TODO: Shouldn't disable coverage imply blind?
+            if (disableCoverage) {
+                loader = new URLClassLoader(classPath, baseClassLoader);
+            }
             guidance.setBlind(blind);
+        } catch (DependencyResolutionRequiredException|MalformedURLException e) {
+            throw new MojoExecutionException("Could not get project classpath", e);
         } catch (FileNotFoundException e) {
             throw new MojoExecutionException("File not found", e);
         } catch (IOException e) {
