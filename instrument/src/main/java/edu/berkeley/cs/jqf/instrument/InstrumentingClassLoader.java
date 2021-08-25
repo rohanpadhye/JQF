@@ -65,7 +65,7 @@ public class InstrumentingClassLoader extends URLClassLoader {
 
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
-        byte[] bytes;
+        byte[] originalBytecode;
 
         // Try to read the class file in as a resource
         String internalName = name.replace('.', '/');
@@ -74,20 +74,26 @@ public class InstrumentingClassLoader extends URLClassLoader {
             if (in == null) {
                 throw new ClassNotFoundException("Cannot find class " + name);
             }
-            bytes = in.readAllBytes();
+            originalBytecode = in.readAllBytes();
         } catch (IOException e) {
             throw new ClassNotFoundException("I/O exception while loading class.", e);
         }
 
-        assert (bytes != null);
+        assert (originalBytecode != null);
 
+        byte[] bytesToLoad;
         try {
-            bytes = transformer.transform(this, internalName, null, null, bytes);
+            byte[] instrumented = transformer.transform(this, internalName, null, null, originalBytecode);
+            if (instrumented != null) {
+                bytesToLoad = instrumented;
+            } else {
+                bytesToLoad = originalBytecode;
+            }
         } catch (IllegalClassFormatException e) {
-            // Just use original bytes
+            bytesToLoad = originalBytecode;
         }
+        return defineClass(name, bytesToLoad, 0, bytesToLoad.length);
 
-        return defineClass(name, bytes, 0, bytes.length);
     }
 
 }
