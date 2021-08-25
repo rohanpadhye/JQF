@@ -25,4 +25,4 @@ jobs:
     - name: Build AFL proxy
       run: make
     - name: Build and test JQF
-      run: mvn -B install -P continuous-integration
+      run: mvn -B verify -P continuous-integration

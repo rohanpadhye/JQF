@@ -28,6 +28,8 @@
  */
 package edu.berkeley.cs.jqf.examples.commons;
 
+import com.pholser.junit.quickcheck.From;
+import edu.berkeley.cs.jqf.examples.common.AsciiStringGenerator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -63,6 +65,17 @@ public class PatriciaTrieTest {
 
     @Fuzz
     public void testCopy(Map<String, Integer> map, String key) {
+        assumeTrue(map.containsKey(key));
+        // Create new trie with input `map`
+        Trie trie = new PatriciaTrie(map);
+        // The key should exist in the trie as well
+        assertTrue(trie.containsKey(key));
+    }
+
+
+    @Fuzz
+    public void testCopyAscii(Map<@From(AsciiStringGenerator.class) String, Integer> map,
+                              @From(AsciiStringGenerator.class) String key) {
         assumeTrue(map.containsKey(key));
         // Create new trie with input `map`
         Trie trie = new PatriciaTrie(map);
