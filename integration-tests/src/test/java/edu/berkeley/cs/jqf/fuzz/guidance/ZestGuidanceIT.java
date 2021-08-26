@@ -18,15 +18,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-public class ZestGuidanceIT {
+public class ZestGuidanceIT extends AbstractGuidanceIT {
 
-    // Temp directory to store fuzz results
-    protected static File resultsDir;
-
-    // Class loader to instrument test
-    protected ClassLoader classLoader;
-
-    static class ProbedZestGuidance extends ZestGuidance {
+    private static class ProbedZestGuidance extends ZestGuidance {
         List<Integer> inputHashes = new ArrayList<>();
 
         ProbedZestGuidance(String name, long trials, Random rnd) throws IOException {
@@ -55,23 +49,6 @@ public class ZestGuidanceIT {
         }
     }
 
-    @Before
-    public void initTempDir() throws IOException {
-        resultsDir = Files.createTempDirectory("fuzz-results").toFile();
-    }
-
-    @Before
-    public void initClassLoader() throws IOException  {
-        // Walk dependency tree of jqf-examples
-        List<String> paths = Files.walk(Paths.get("../examples/target/dependency"))
-                .map(Path::toString).collect(Collectors.toList());
-        paths.add("../examples/target/test-classes/"); // also add fuzz drivers in jqf-examples
-
-        // Create coverage-instrumenting class loader
-        classLoader = new InstrumentingClassLoader(paths.stream().toArray(String[]::new),
-                getClass().getClassLoader());
-    }
-
     @Test
     public void testPatriciaTrieFuzzer() throws Exception {
         // Set up test params
@@ -89,6 +66,5 @@ public class ZestGuidanceIT {
         Assert.assertEquals(-941815396, zest.hashInputHashes());
         Assert.assertEquals(-684278400, zest.hashTotalCoverage());
         Assert.assertEquals(-1096184368, zest.hashValidCoverage());
-
     }
 }
