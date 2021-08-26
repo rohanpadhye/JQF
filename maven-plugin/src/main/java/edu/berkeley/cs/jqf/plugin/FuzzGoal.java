@@ -43,6 +43,7 @@ import java.util.Random;
 
 import cmu.pasta.mu2.fuzz.MutationGuidance;
 import cmu.pasta.mu2.instrument.MutationClassLoaders;
+import cmu.pasta.mu2.instrument.OptLevel;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
@@ -360,7 +361,12 @@ public class FuzzGoal extends AbstractMojo {
                     guidance = new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
                     break;
                 case "mutation":
-                    MutationClassLoaders mcl = new MutationClassLoaders(classPath, includes, excludes, baseClassLoader);
+                    if (excludes != null || includes == null) {
+                        throw new MojoExecutionException("Mutation-based fuzzing requires " +
+                                "`-Dincludes` but not `-Dexcludes");
+                    }
+                    MutationClassLoaders mcl = new MutationClassLoaders(classPath, includes, OptLevel.EXECUTION,
+                            baseClassLoader); // TODO: Should opt level be configurable?
                     loader = mcl.getCartographyClassLoader();
                     guidance = new MutationGuidance(targetName, mcl, duration, trials, resultsDir, seedsDir, rnd);
                     break;

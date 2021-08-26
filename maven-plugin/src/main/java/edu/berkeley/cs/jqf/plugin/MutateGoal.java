@@ -32,6 +32,7 @@ import cmu.pasta.mu2.MutationInstance;
 import cmu.pasta.mu2.instrument.CartographyClassLoader;
 import cmu.pasta.mu2.instrument.MutationClassLoader;
 import cmu.pasta.mu2.instrument.MutationClassLoaders;
+import cmu.pasta.mu2.instrument.OptLevel;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
 import edu.berkeley.cs.jqf.fuzz.util.IOUtils;
@@ -105,11 +106,11 @@ public class MutateGoal extends AbstractMojo {
         try {
             // Get project-specific classpath and output directory
             List<String> classpathElements = project.getTestClasspathElements();
-            URL[] classPath = stringsToUrls(classpathElements.toArray(new String[0]));
+            String[] classPath = classpathElements.toArray(new String[0]);
             IOUtils.createDirectory(resultsDir);
 
             // Create mu2 classloaders from the test classpath
-            MutationClassLoaders mcls = new MutationClassLoaders(classPath, includes, excludes, getClass().getClassLoader());
+            MutationClassLoaders mcls = new MutationClassLoaders(classPath, includes, OptLevel.NONE);
             CartographyClassLoader ccl = mcls.getCartographyClassLoader();
 
             // Run initial test to compute mutants dynamically
