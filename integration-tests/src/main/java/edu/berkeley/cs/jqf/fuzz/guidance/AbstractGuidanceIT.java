@@ -27,10 +27,11 @@ public abstract class AbstractGuidanceIT {
 
     @Before
     public void initClassLoader() throws IOException {
-        // Walk dependency tree of jqf-examples
-        List<String> paths = Files.walk(Paths.get("../examples/target/dependency"))
+        // Walk dependency tree to get all instrumentable JARs, e.g. jqf-examples.
+        // Anything that's in this directory should not actually be on
+        // the test classpath, so it will have to be loaded with the loader defined below
+        List<String> paths = Files.walk(Paths.get("target/instrumentables"))
                 .map(Path::toString).collect(Collectors.toList());
-        paths.add("../examples/target/test-classes/"); // also add fuzz drivers in jqf-examples
 
         // Create coverage-instrumenting class loader
         classLoader = new InstrumentingClassLoader(paths.stream().toArray(String[]::new),
