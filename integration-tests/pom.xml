@@ -15,12 +15,10 @@
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>edu.berkeley.cs.jqf</groupId>
             <artifactId>jqf-fuzz</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>edu.berkeley.cs.jqf</groupId>
