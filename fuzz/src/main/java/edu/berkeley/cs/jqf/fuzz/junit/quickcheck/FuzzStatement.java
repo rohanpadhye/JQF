@@ -85,7 +85,6 @@ public class FuzzStatement extends Statement {
         this.guidance = fuzzGuidance;
     }
 
-
     /**
      * Run the test.
      *
@@ -125,9 +124,8 @@ public class FuzzStatement extends Statement {
                     } catch (IllegalStateException e) {
                         if (e.getCause() instanceof EOFException) {
                             // This happens when we reach EOF before reading all the random values.
-                            // Treat this as an assumption failure, so that the guidance considers the
-                            // generated input as INVALID
-                            throw new AssumptionViolatedException("StreamBackedRandom does not have enough data", e.getCause());
+                            // The only thing we can do is try again
+                            continue;
                         } else {
                             throw e;
                         }
@@ -140,8 +138,6 @@ public class FuzzStatement extends Statement {
                     } catch (Throwable e) {
                         // Throw the guidance exception outside to stop fuzzing
                         throw new GuidanceException(e);
-                    } finally {
-                        // System.out.println(randomFile.getTotalBytesRead() + " random bytes read");
                     }
 
                     // Attempt to run the trial

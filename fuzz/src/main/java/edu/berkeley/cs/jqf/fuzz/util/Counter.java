@@ -231,9 +231,4 @@ public class Counter {
     public void setAtIndex(int idx, int value) {
         this.counts[idx] = value;
     }
-
-    @Override
-    public String toString() {
-        return Arrays.stream(counts).mapToObj(Integer::toString).collect(Collectors.joining(","));
-    }
 }

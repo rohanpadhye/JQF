@@ -216,6 +216,17 @@ public class Coverage implements TraceEventVisitor {
      */
     @Override
     public String toString() {
-        return "counter: " + counter.toString();
+        StringBuffer sb = new StringBuffer();
+        sb.append("Coverage counts: \n");
+        for (int i = 0; i < counter.counts.length; i++) {
+            if (counter.counts[i] == 0) {
+                continue;
+            }
+            sb.append(i);
+            sb.append("->");
+            sb.append(counter.counts[i]);
+            sb.append('\n');
+        }
+        return sb.toString();
     }
 }
