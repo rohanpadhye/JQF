@@ -110,7 +110,6 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
             if (Arrays.equals(cbuf, origBytes)) {
               byte[] instBytes = Files.readAllBytes(cachedFile.toPath());
               println(" Found in disk-cache!");
-              instrumentedBytes.put(cname, instBytes);
               return instBytes;
             }
           } catch (IOException e) {
@@ -139,7 +138,6 @@ public class SnoopInstructionTransformer implements ClassFileTransformer {
       }
 
       println("Done!");
-      instrumentedBytes.put(cname, ret);
 
       if (instDir != null) {
         try {
