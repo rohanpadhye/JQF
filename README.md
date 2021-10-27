@@ -16,7 +16,7 @@ JQF is a modular framework, supporting the following pluggable fuzzing front-end
 * Semantic fuzzing with **[Zest](http://arxiv.org/abs/1812.00078)** [[ISSTA'19 paper]] ([tutorial 1](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest)) ([tutorial 2](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler))
 * Complexity fuzzing with **[PerfFuzz](https://github.com/carolemieux/perffuzz)** [[ISSTA'18 paper]]
 * Reinforcement learning with **[RLCheck](https://github.com/sameerreddy13/rlcheck)** (based on a fork of JQF) [[ICSE'20 paper]]
-* Apache Spark fuzzing with **[BigFuzz](https://github.com/qianzhanghk/BigFuzz)** [[ASE'20 paper]]
+* Apache Spark fuzzing with **[BigFuzz](https://github.com/UCLA-SEAL/BigFuzz)** [[ASE'20 paper]]
 
 JQF has been successful in [discovering a number of bugs in widely used open-source software](#trophies) such as OpenJDK, Apache Maven and the Google Closure Compiler.
 
@@ -107,7 +107,7 @@ JQF also publishes its [API docs](https://rohanpadhye.github.io/JQF/apidocs).
 ## Applications based on JQF
 
 * **[Bonsai Fuzzing](https://github.com/vasumv/bonsai-fuzzing)** [[ICSE'21](https://rohan.padhye.org/files/bonsai-icse21.pdf)]
-* **[BigFuzz](https://github.com/qianzhanghk/BigFuzz)** [[ASE'20 paper]]
+* **[BigFuzz](https://github.com/UCLA-SEAL/BigFuzz)** [[ASE'20 paper]]
 * **[MoFuzz](https://github.com/hub-se/MoFuzz)** [[ASE'20 paper](https://doi.org/10.1145/3324884.3416668)]
 * **[RLCheck](https://github.com/sameerreddy13/rlcheck)** [[ICSE'20 paper]]
 
