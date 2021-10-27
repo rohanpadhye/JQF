@@ -453,10 +453,10 @@ public class ZestGuidance implements Guidance {
     }
 
     // Call only if console exists
-    protected void displayStats() {
+    protected void displayStats(boolean force) {
         Date now = new Date();
         long intervalMilliseconds = now.getTime() - lastRefreshTime.getTime();
-        if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD) {
+        if (intervalMilliseconds < STATS_REFRESH_TIME_PERIOD && !force) {
             return;
         }
         long interlvalTrials = numTrials - lastNumTrials;
@@ -702,7 +702,7 @@ public class ZestGuidance implements Guidance {
             && numTrials < maxTrials) {
             return true;
         } else {
-            displayStats();
+            displayStats(true);
             return false;
         }
     }
@@ -746,7 +746,7 @@ public class ZestGuidance implements Guidance {
 
                     // libFuzzerCompat stats are only displayed when they hit new coverage
                     if (LIBFUZZER_COMPAT_OUTPUT) {
-                        displayStats();
+                        displayStats(false);
                     }
 
                     infoLog("Saving new input (at run %d): " +
@@ -800,14 +800,14 @@ public class ZestGuidance implements Guidance {
 
                     // libFuzzerCompat stats are only displayed when they hit new coverage or crashes
                     if (LIBFUZZER_COMPAT_OUTPUT) {
-                        displayStats();
+                        displayStats(false);
                     }
                 }
             }
 
             // displaying stats on every interval is only enabled for AFL-like stats screen
             if (!LIBFUZZER_COMPAT_OUTPUT) {
-                displayStats();
+                displayStats(false);
             }
 
             // Save input unconditionally if such a setting is enabled
