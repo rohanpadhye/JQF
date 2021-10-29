@@ -289,6 +289,12 @@ public class FuzzGoal extends AbstractMojo {
     @Parameter(property="fixedSize")
     private boolean fixedSizeInputs;
 
+    /**
+     * Allows user to set optimization level for mutation-guided fuzzing.
+     * Does nothing if mutation engine is not used.
+     */
+    @Parameter(property="optLevel", defaultValue = "none")
+    private String optLevel;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -365,8 +371,15 @@ public class FuzzGoal extends AbstractMojo {
                         throw new MojoExecutionException("Mutation-based fuzzing requires " +
                                 "`-Dincludes` but not `-Dexcludes");
                     }
-                    MutationClassLoaders mcl = new MutationClassLoaders(classPath, includes, OptLevel.EXECUTION,
-                            baseClassLoader); // TODO: Should opt level be configurable?
+                    OptLevel ol;
+                    switch(optLevel) {
+                        case "none": ol = OptLevel.NONE; break;
+                        case "execution": ol = OptLevel.EXECUTION; break;
+                        case "infection": ol = OptLevel.INFECTION; break;
+                        case "propagation": ol = OptLevel.PROPAGATION; break;
+                        default: throw new MojoExecutionException("OptLevel must be set to 'none', 'execution', 'infection', or 'propagation'");
+                    }
+                    MutationClassLoaders mcl = new MutationClassLoaders(classPath, includes, ol, baseClassLoader);
                     loader = mcl.getCartographyClassLoader();
                     guidance = new MutationGuidance(targetName, mcl, duration, trials, resultsDir, seedsDir, rnd);
                     break;

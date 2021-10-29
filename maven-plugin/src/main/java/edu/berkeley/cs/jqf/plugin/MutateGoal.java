@@ -99,9 +99,23 @@ public class MutateGoal extends AbstractMojo {
     @Parameter(property = "excludes")
     String excludes;
 
+    /**
+     * Allows user to set optimization level for mutation-guided fuzzing.
+     */
+    @Parameter(property="optLevel", defaultValue = "none")
+    private String optLevel;
+
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         Log log = getLog();
+        OptLevel ol;
+        switch(optLevel) {
+            case "none": ol = OptLevel.NONE; break;
+            case "execution": ol = OptLevel.EXECUTION; break;
+            case "infection": ol = OptLevel.INFECTION; break;
+            case "propagation": ol = OptLevel.PROPAGATION; break;
+            default: throw new MojoExecutionException("OptLevel must be set to 'none', 'execution', 'infection', or 'propagation'");
+        }
 
         try {
             // Get project-specific classpath and output directory
@@ -110,7 +124,7 @@ public class MutateGoal extends AbstractMojo {
             IOUtils.createDirectory(resultsDir);
 
             // Create mu2 classloaders from the test classpath
-            MutationClassLoaders mcls = new MutationClassLoaders(classPath, includes, OptLevel.NONE);
+            MutationClassLoaders mcls = new MutationClassLoaders(classPath, includes, ol);
             CartographyClassLoader ccl = mcls.getCartographyClassLoader();
 
             // Run initial test to compute mutants dynamically
