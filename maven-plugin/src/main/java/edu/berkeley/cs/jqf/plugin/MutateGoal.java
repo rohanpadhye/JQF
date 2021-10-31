@@ -109,12 +109,10 @@ public class MutateGoal extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         Log log = getLog();
         OptLevel ol;
-        switch(optLevel) {
-            case "none": ol = OptLevel.NONE; break;
-            case "execution": ol = OptLevel.EXECUTION; break;
-            case "infection": ol = OptLevel.INFECTION; break;
-            case "propagation": ol = OptLevel.PROPAGATION; break;
-            default: throw new MojoExecutionException("OptLevel must be set to 'none', 'execution', 'infection', or 'propagation'");
+        try {
+            ol = OptLevel.valueOf(optLevel.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new MojoExecutionException("Invalid Mutation OptLevel!");
         }
 
         try {

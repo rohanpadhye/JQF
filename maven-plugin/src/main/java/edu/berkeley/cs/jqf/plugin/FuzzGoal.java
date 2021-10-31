@@ -293,7 +293,7 @@ public class FuzzGoal extends AbstractMojo {
      * Allows user to set optimization level for mutation-guided fuzzing.
      * Does nothing if mutation engine is not used.
      */
-    @Parameter(property="optLevel", defaultValue = "none")
+    @Parameter(property="optLevel", defaultValue = "NONE")
     private String optLevel;
 
     @Override
@@ -303,6 +303,7 @@ public class FuzzGoal extends AbstractMojo {
         Log log = getLog();
         PrintStream out = log.isDebugEnabled() ? System.out : null;
         Result result;
+        OptLevel ol;
 
         // Configure classes to instrument
         if (excludes != null) {
@@ -346,6 +347,12 @@ public class FuzzGoal extends AbstractMojo {
             outputDirectory = "fuzz-results" + File.separator + testClassName + File.separator + testMethod;
         }
 
+        try {
+            ol = OptLevel.valueOf(optLevel.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new MojoExecutionException("Invalid Mutation OptLevel!");
+        }
+
         File resultsDir = new File(target, outputDirectory);
         try {
             List<String> classpathElements = project.getTestClasspathElements();
@@ -370,14 +377,6 @@ public class FuzzGoal extends AbstractMojo {
                     if (excludes != null || includes == null) {
                         throw new MojoExecutionException("Mutation-based fuzzing requires " +
                                 "`-Dincludes` but not `-Dexcludes");
-                    }
-                    OptLevel ol;
-                    switch(optLevel) {
-                        case "none": ol = OptLevel.NONE; break;
-                        case "execution": ol = OptLevel.EXECUTION; break;
-                        case "infection": ol = OptLevel.INFECTION; break;
-                        case "propagation": ol = OptLevel.PROPAGATION; break;
-                        default: throw new MojoExecutionException("OptLevel must be set to 'none', 'execution', 'infection', or 'propagation'");
                     }
                     MutationClassLoaders mcl = new MutationClassLoaders(classPath, includes, ol, baseClassLoader);
                     loader = mcl.getCartographyClassLoader();
