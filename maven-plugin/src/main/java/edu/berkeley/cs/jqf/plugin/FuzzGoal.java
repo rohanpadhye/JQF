@@ -289,6 +289,12 @@ public class FuzzGoal extends AbstractMojo {
     @Parameter(property="fixedSize")
     private boolean fixedSizeInputs;
 
+    /**
+     * Allows user to set optimization level for mutation-guided fuzzing.
+     * Does nothing if mutation engine is not used.
+     */
+    @Parameter(property="optLevel", defaultValue = "NONE")
+    private String optLevel;
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -297,6 +303,7 @@ public class FuzzGoal extends AbstractMojo {
         Log log = getLog();
         PrintStream out = log.isDebugEnabled() ? System.out : null;
         Result result;
+        OptLevel ol;
 
         // Configure classes to instrument
         if (excludes != null) {
@@ -340,6 +347,12 @@ public class FuzzGoal extends AbstractMojo {
             outputDirectory = "fuzz-results" + File.separator + testClassName + File.separator + testMethod;
         }
 
+        try {
+            ol = OptLevel.valueOf(optLevel.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new MojoExecutionException("Invalid Mutation OptLevel!");
+        }
+
         File resultsDir = new File(target, outputDirectory);
         try {
             List<String> classpathElements = project.getTestClasspathElements();
@@ -365,8 +378,7 @@ public class FuzzGoal extends AbstractMojo {
                         throw new MojoExecutionException("Mutation-based fuzzing requires " +
                                 "`-Dincludes` but not `-Dexcludes");
                     }
-                    MutationClassLoaders mcl = new MutationClassLoaders(classPath, includes, OptLevel.EXECUTION,
-                            baseClassLoader); // TODO: Should opt level be configurable?
+                    MutationClassLoaders mcl = new MutationClassLoaders(classPath, includes, ol, baseClassLoader);
                     loader = mcl.getCartographyClassLoader();
                     guidance = new MutationGuidance(targetName, mcl, duration, trials, resultsDir, seedsDir, rnd);
                     break;
