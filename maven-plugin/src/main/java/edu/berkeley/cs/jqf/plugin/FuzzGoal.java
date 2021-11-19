@@ -377,9 +377,12 @@ public class FuzzGoal extends AbstractMojo {
                     guidance = new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
                     break;
                 case "mutation":
-                    if (excludes != null || includes == null || depIncludes == null) {
+                    if(depIncludes == null) {
+                        depIncludes = "";
+                    }
+                    if (excludes != null || includes == null) {
                         throw new MojoExecutionException("Mutation-based fuzzing requires " +
-                                "`-Dincludes` and `-DdepIncludes` but not `-Dexcludes");
+                                "`-Dincludes` but not `-Dexcludes");
                     }
                     MutationClassLoaders mcl = new MutationClassLoaders(classPath, includes, depIncludes, ol, baseClassLoader);
                     loader = mcl.getCartographyClassLoader();

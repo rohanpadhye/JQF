@@ -118,6 +118,10 @@ public class MutateGoal extends AbstractMojo {
             throw new MojoExecutionException("Invalid Mutation OptLevel!");
         }
 
+        if(depIncludes == null) {
+            depIncludes = "";
+        }
+
         try {
             // Get project-specific classpath and output directory
             List<String> classpathElements = project.getTestClasspathElements();
