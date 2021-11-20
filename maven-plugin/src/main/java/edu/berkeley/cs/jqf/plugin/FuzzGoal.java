@@ -294,9 +294,12 @@ public class FuzzGoal extends AbstractMojo {
 
     /**
      * Allows user to set optimization level for mutation-guided fuzzing.
+     * Should be one of {@code NONE}, {@code EXECUTION}, or {@code INFECTION}.
      * Does nothing if mutation engine is not used.
+     * 
+     * <p>If not provided, defaults to {@code EXECUTION}.</p>
      */
-    @Parameter(property="optLevel", defaultValue = "NONE")
+    @Parameter(property="optLevel", defaultValue = "EXECUTION")
     private String optLevel;
 
     @Override
