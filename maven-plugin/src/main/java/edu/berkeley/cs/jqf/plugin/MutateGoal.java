@@ -29,6 +29,7 @@
 package edu.berkeley.cs.jqf.plugin;
 
 import cmu.pasta.mu2.MutationInstance;
+import cmu.pasta.mu2.MutationReproGuidance;
 import cmu.pasta.mu2.instrument.CartographyClassLoader;
 import cmu.pasta.mu2.instrument.MutationClassLoader;
 import cmu.pasta.mu2.instrument.MutationClassLoaders;
@@ -127,7 +128,8 @@ public class MutateGoal extends AbstractMojo {
 
             // Run initial test to compute mutants dynamically
             System.out.println("Starting Initial Run:");
-            Result initialResults = runRepro(ccl);
+            Result initialResults = runMutRepro(ccl, null);
+            List<edu.berkeley.cs.jqf.fuzz.guidance.Result> cclResults = new ArrayList<>(MutationReproGuidance.recentResults);
             if (!initialResults.wasSuccessful()) {
                 throw new MojoFailureException("Initial test run fails",
                         initialResults.getFailures().get(0).getException());
@@ -143,7 +145,7 @@ public class MutateGoal extends AbstractMojo {
             for (MutationInstance mutationInstance : mutationInstances) {
                 log.info("Running Mutant " + mutationInstance.toString());
                 MutationClassLoader mcl = mcls.getMutationClassLoader(mutationInstance);
-                Result res = runRepro(mcl);
+                Result res = runMutRepro(mcl, cclResults);
                 if (!res.wasSuccessful()) {
                     killedMutants.add(mutationInstance);
                 }
@@ -172,6 +174,12 @@ public class MutateGoal extends AbstractMojo {
     // Executes a fresh repro with a given classloader
     private Result runRepro(ClassLoader classLoader) throws ClassNotFoundException, IOException {
         ReproGuidance repro = new ReproGuidance(input, null);
+        repro.setStopOnFailure(true);
+        return GuidedFuzzing.run(testClassName, testMethod, classLoader, repro, null);
+    }
+
+    private Result runMutRepro(ClassLoader classLoader, List<edu.berkeley.cs.jqf.fuzz.guidance.Result> cclResults) throws ClassNotFoundException, IOException {
+        MutationReproGuidance repro = new MutationReproGuidance(input, null, cclResults);
         repro.setStopOnFailure(true);
         return GuidedFuzzing.run(testClassName, testMethod, classLoader, repro, null);
     }
