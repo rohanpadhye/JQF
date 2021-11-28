@@ -127,8 +127,8 @@ public class FuzzGoal extends AbstractMojo {
     @Parameter(property="includes")
     private String includes;
 
-    @Parameter(property="depIncludes")
-    private String depIncludes;
+    @Parameter(property="targetIncludes")
+    private String targetIncludes;
 
     /**
      * The duration of time for which to run fuzzing.
@@ -380,14 +380,14 @@ public class FuzzGoal extends AbstractMojo {
                     guidance = new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
                     break;
                 case "mutation":
-                    if(depIncludes == null) {
-                        depIncludes = "";
+                    if(targetIncludes == null) {
+                        targetIncludes = "";
                     }
                     if (excludes != null || includes == null) {
                         throw new MojoExecutionException("Mutation-based fuzzing requires " +
                                 "`-Dincludes` but not `-Dexcludes");
                     }
-                    MutationClassLoaders mcl = new MutationClassLoaders(classPath, includes, depIncludes, ol, baseClassLoader);
+                    MutationClassLoaders mcl = new MutationClassLoaders(classPath, includes, targetIncludes, ol, baseClassLoader);
                     loader = mcl.getCartographyClassLoader();
                     guidance = new MutationGuidance(targetName, mcl, duration, trials, resultsDir, seedsDir, rnd);
                     break;

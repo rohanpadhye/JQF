@@ -93,8 +93,8 @@ public class MutateGoal extends AbstractMojo {
     @Parameter(property = "includes")
     String includes;
 
-    @Parameter(property="depIncludes")
-    private String depIncludes;
+    @Parameter(property="targetIncludes")
+    private String targetIncludes;
 
     /**
      * classes to be mutated
@@ -118,8 +118,8 @@ public class MutateGoal extends AbstractMojo {
             throw new MojoExecutionException("Invalid Mutation OptLevel!");
         }
 
-        if(depIncludes == null) {
-            depIncludes = "";
+        if(targetIncludes == null) {
+            targetIncludes = "";
         }
 
         try {
@@ -129,7 +129,7 @@ public class MutateGoal extends AbstractMojo {
             IOUtils.createDirectory(resultsDir);
 
             // Create mu2 classloaders from the test classpath
-            MutationClassLoaders mcls = new MutationClassLoaders(classPath, includes, depIncludes, ol);
+            MutationClassLoaders mcls = new MutationClassLoaders(classPath, includes, targetIncludes, ol);
             CartographyClassLoader ccl = mcls.getCartographyClassLoader();
 
             // Run initial test to compute mutants dynamically
