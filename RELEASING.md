@@ -28,14 +28,20 @@ export GPG_TTY=$(tty)
 
 2. Prepare release:
 ```
-mvn release:prepare -P release-profile
+mvn release:prepare -P release-profile -DpushChanges=false
 ```
+
+The `-DpushChanges=false` avoids pushing the new release commits to GitHub, in case there's some problem that requires a rollback.
 
 3. Check if everything went okay, then deploy:
 ```
-mvn release:perform -P release-profile
+mvn release:perform -P release-profile -DlocalCheckout
 ```
+
+The `-DlocalCheckout` is needed if changes were not pushed above. This tells Maven to use the new release from the local repo instead of pulling from GitHub.
 
 4. Update `scripts/jqf-driver.sh` and `scripts/instrument.sh` with new version numbers.
 
-5. Log on to the [Nexus Repository Manager](https://oss.sonatype.org) to close + release. Wait
+5. Log on to the [Nexus Repository Manager](https://oss.sonatype.org) to close + release. Wait.
+
+6. If the release went file and changes were not pushed in step 2, then run `git push`.
