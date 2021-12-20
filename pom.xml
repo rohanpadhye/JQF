@@ -246,6 +246,9 @@
     <profiles>
         <profile>
             <id>release-profile</id>
+            <modules>
+                <module>integration-tests</module>
+            </modules>
             <build>
                 <plugins>
                     <plugin>
