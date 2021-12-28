@@ -37,6 +37,7 @@ import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.junit.Assert;
 import org.junit.runner.RunWith;
 
@@ -68,14 +69,18 @@ public class RedundancyTest {
         Assert.assertTrue(root*root == squareSum);
 
 
-        List<Integer> redundantCounts = new ArrayList<>(root);
+        IntArrayList redundantCounts = new IntArrayList(root);
         for (int i = 0; i < root; i++) {
             redundantCounts.add(root);
         }
-        Assert.assertTrue(sum(redundantCounts) == squareSum);
+        Assert.assertTrue(redundantCounts.sum() == squareSum);
 
+        IntArrayList countsIntArrayList = new IntArrayList(counts.size());
+        for(int i : counts){
+            countsIntArrayList.add(i);
+        }
         // Compute redundancy score for some memory accesses
-        double score = PerfFuzzGuidance.computeRedundancyScore(counts);
+        double score = PerfFuzzGuidance.computeRedundancyScore(countsIntArrayList);
 
         // Ensure that scores are in [0, 1)
         Assert.assertTrue(score >= 0 && score < 1);

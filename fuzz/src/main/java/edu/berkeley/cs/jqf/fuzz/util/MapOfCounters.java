@@ -28,6 +28,9 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -76,11 +79,11 @@ public class MapOfCounters {
         counters[idx].increment(k2);
     }
 
-    public Collection<Integer> nonZeroCountsAtIndex(int idx) {
+    public IntList nonZeroCountsAtIndex(int idx) {
         if (counters[idx] != null) {
             return counters[idx].getNonZeroValues();
         } else {
-            return Collections.emptyList();
+            return new IntArrayList(0);
         }
 
     }

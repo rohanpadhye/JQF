@@ -28,11 +28,14 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.list.primitive.IntList;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -103,14 +106,11 @@ public class CountersTest {
             counter.increment(key, delta);
         }
 
-        Collection<Integer> nonZeroValues = counter.getNonZeroValues();
+        IntList nonZeroValues = counter.getNonZeroValues();
         assertThat(nonZeroValues.size(), lessThanOrEqualTo(keys.length));
 
 
-        int sum = 0;
-        for (int v : nonZeroValues) {
-            sum += v;
-        }
+        int sum = (int) nonZeroValues.sum();
 
         assertEquals(keys.length * delta, sum);
 
@@ -123,8 +123,8 @@ public class CountersTest {
             counter.increment(key, delta);
         }
 
-        Collection<Integer> nonZeroIndices = counter.getNonZeroIndices();
-        Collection<Integer> nonZeroValues = counter.getNonZeroValues();
+        IntList nonZeroIndices = counter.getNonZeroIndices();
+        IntList nonZeroValues = counter.getNonZeroValues();
         assertEquals(nonZeroValues.size(), nonZeroIndices.size());
 
     }
@@ -138,9 +138,18 @@ public class CountersTest {
         }
 
         int nonZeroSize = counter.getNonZeroSize();
-        Collection<Integer> nonZeroValues = counter.getNonZeroValues();
+        IntList nonZeroValues = counter.getNonZeroValues();
         assertEquals(nonZeroValues.size(), nonZeroSize);
 
+    }
+
+    static ArrayList<Integer> toCollection(IntList primIntList){
+        ArrayList<Integer> ret = new ArrayList<>(primIntList.size());
+        IntIterator iter = primIntList.intIterator();
+        while(iter.hasNext()){
+            ret.add(iter.next());
+        }
+        return ret;
     }
 
     @Property
@@ -151,8 +160,8 @@ public class CountersTest {
 
 
         int nonZeroSize = counter.getNonZeroSize();
-        Collection<Integer> nonZeroIndices = counter.getNonZeroIndices();
-        Collection<Integer> nonZeroValues = counter.getNonZeroValues();
+        ArrayList<Integer> nonZeroIndices = toCollection(counter.getNonZeroIndices());
+        ArrayList<Integer> nonZeroValues = toCollection(counter.getNonZeroValues());
         if (value == 0) {
             assertThat(nonZeroSize, is(0));
             assertThat(nonZeroIndices, iterableWithSize(0));
@@ -188,8 +197,8 @@ public class CountersTest {
         }
 
         assertThat(counter.getNonZeroSize(), is(0));
-        assertThat(counter.getNonZeroIndices(), iterableWithSize(0));
-        assertThat(counter.getNonZeroValues(), iterableWithSize(0));
+        assertThat(toCollection(counter.getNonZeroIndices()), iterableWithSize(0));
+        assertThat(toCollection(counter.getNonZeroValues()), iterableWithSize(0));
     }
 
     @Test

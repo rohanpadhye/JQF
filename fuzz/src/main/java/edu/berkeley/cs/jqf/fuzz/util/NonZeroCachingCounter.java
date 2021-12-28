@@ -28,6 +28,10 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -44,21 +48,23 @@ public class NonZeroCachingCounter extends Counter {
 
     private int nonZeroCount;
 
-    private Collection<Integer> nonZeroIndices;
+    private IntArrayList nonZeroIndices;
 
     public NonZeroCachingCounter(int size) {
         super(size);
         this.nonZeroCount = 0;
-        this.nonZeroIndices = new ArrayList<>();
+        this.nonZeroIndices = new IntArrayList();
     }
 
     @Override
     public void clear() {
-        for (int idx : nonZeroIndices) {
+        IntIterator iter = nonZeroIndices.intIterator();
+        while(iter.hasNext()){
+            int idx = iter.next();
             counts[idx] = 0;
         }
         this.nonZeroCount = 0;
-        this.nonZeroIndices.clear();
+        this.nonZeroIndices = new IntArrayList();
     }
 
 
@@ -84,14 +90,16 @@ public class NonZeroCachingCounter extends Counter {
     }
 
     @Override
-    public Collection<Integer> getNonZeroIndices() {
+    public IntList getNonZeroIndices() {
         return nonZeroIndices;
     }
 
     @Override
-    public Collection<Integer> getNonZeroValues() {
-        List<Integer> values = new ArrayList<>(size /2);
-        for (int idx : nonZeroIndices) {
+    public IntList getNonZeroValues() {
+        IntArrayList values = new IntArrayList(this.size / 2);
+        IntIterator iter = nonZeroIndices.intIterator();
+        while(iter.hasNext()){
+            int idx = iter.next();
             int count = counts[idx];
             assert (count != 0);
             values.add(count);

@@ -28,12 +28,16 @@ public class SnoopInstructionClassAdapter extends ClassVisitor {
   }
 
   @Override
-  public MethodVisitor visitMethod(int access, String name, String desc, 
+  public MethodVisitor visitMethod(int access, String name, String desc,
       String signature, String[] exceptions) {
     MethodVisitor mv = cv.visitMethod(access, name, desc, signature, exceptions);
     if (mv != null) {
-      return new SnoopInstructionMethodAdapter(mv, className, name, desc, superName,
-          GlobalStateForInstrumentation.instance);
+      if(Config.instance.useFastCoverageInstrumentation){
+        return new FastCoverageMethodAdapter(mv, className, name, desc, superName, GlobalStateForInstrumentation.instance);
+      }else {
+        return new SnoopInstructionMethodAdapter(mv, className, name, desc, superName,
+                GlobalStateForInstrumentation.instance);
+      }
     }
     return null;
   }

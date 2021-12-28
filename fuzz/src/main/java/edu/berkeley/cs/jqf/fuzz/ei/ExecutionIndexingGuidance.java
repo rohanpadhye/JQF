@@ -54,6 +54,9 @@ import edu.berkeley.cs.jqf.fuzz.util.ProducerHashMap;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 /**
  * A guidance that represents inputs as maps from
@@ -260,7 +263,9 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                         savedInputs.set(otherIdx, currentInput);
 
                         // Second, update responsibilities
-                        for (Object b : otherInput.responsibilities) {
+                        IntIterator otherResponsibilitiesIter = otherInput.responsibilities.intIterator();
+                        while(otherResponsibilitiesIter.hasNext()){
+                            int b = otherResponsibilitiesIter.next();
                             // Subsume responsibility
                             // infoLog("-- Stealing responsibility for %s from old input %d", b, otherIdx);
                             // We are now responsible
@@ -272,7 +277,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                         // Third, store basic book-keeping data
                         currentInput.id = otherIdx;
                         currentInput.saveFile = otherInput.saveFile;
-                        currentInput.coverage = new Coverage(runCoverage);
+                        currentInput.coverage = runCoverage.copy();
                         currentInput.nonZeroCoverage = runCoverage.getNonZeroCount();
                         currentInput.offspring = 0;
                         savedInputs.get(currentParentInputIdx).offspring += 1;
@@ -296,7 +301,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
 
     /** Saves an interesting input to the queue. */
     @Override
-    protected void saveCurrentInput(Set<Object> responsibilities, String why) throws IOException {
+    protected void saveCurrentInput(IntHashSet responsibilities, String why) throws IOException {
         // First, do same as Zest
         super.saveCurrentInput(responsibilities, why);
 

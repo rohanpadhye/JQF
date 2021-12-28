@@ -18,6 +18,7 @@ class Config {
   public final boolean instrumentHeapLoad;
   public final boolean instrumentAlloc;
   public final String instrumentationCacheDir;
+  public final boolean useFastCoverageInstrumentation;
 
   private Config() {
       // Read properties from the conf file
@@ -34,13 +35,23 @@ class Config {
 
       verbose = Boolean.parseBoolean(properties.getProperty("janala.verbose", "false"));
 
-      analysisClass =
-              properties.getProperty("janala.snoopClass", "edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop")
-                      .replace('.', '/');
+      useFastCoverageInstrumentation = Boolean.parseBoolean(properties.getProperty("useFastNonCollidingCoverageInstrumentation", "false"));
+      if(useFastCoverageInstrumentation){
+          analysisClass = "edu/berkeley/cs/jqf/instrument/tracing/FastCoverageSnoop";
+      } else {
+          analysisClass =
+                  properties.getProperty("janala.snoopClass", "edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop")
+                          .replace('.', '/');
+      }
 
 
       instrumentHeapLoad = Boolean.parseBoolean(properties.getProperty("janala.instrumentHeapLoad", "false"));
       instrumentAlloc = Boolean.parseBoolean(properties.getProperty("janala.instrumentAlloc", "false"));
+
+      if((instrumentAlloc || instrumentHeapLoad) && useFastCoverageInstrumentation){
+          throw new UnsupportedOperationException("It is currently not possible to use allocation or heap load tracking in conjunction with fast coverage");
+      }
+
 
       String excludeInstStr = properties.getProperty("janala.excludes", null);
       if (excludeInstStr != null) {
