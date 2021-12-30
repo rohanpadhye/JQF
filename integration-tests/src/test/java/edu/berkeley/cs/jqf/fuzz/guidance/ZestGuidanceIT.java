@@ -2,21 +2,14 @@ package edu.berkeley.cs.jqf.fuzz.guidance;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
-import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
-import java.util.ArrayList;
-import java.util.Arrays;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.stream.Collectors;
 
 public class ZestGuidanceIT extends AbstractGuidanceIT {
 
