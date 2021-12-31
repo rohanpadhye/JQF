@@ -39,3 +39,4 @@ export JVM_OPTS="$JVM_OPTS -Djqf.tracing.MATCH_CALLEE_NAMES=true -Djqf.tracing.T
 
 # Run the execution indexing input driver
 $ROOT_DIR/scripts/jqf-driver.sh edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingDriver $@
+

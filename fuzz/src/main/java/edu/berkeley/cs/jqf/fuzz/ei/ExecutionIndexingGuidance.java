@@ -41,22 +41,27 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Prefix;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Suffix;
+import edu.berkeley.cs.jqf.fuzz.ei.state.AbstractExecutionIndexingState;
+import edu.berkeley.cs.jqf.fuzz.ei.state.FastExecutionIndexingState;
+import edu.berkeley.cs.jqf.fuzz.ei.state.JanalaExecutionIndexingState;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
-import edu.berkeley.cs.jqf.fuzz.util.Coverage;
-import edu.berkeley.cs.jqf.fuzz.util.IOUtils;
+import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.FuzzStatement;
+import edu.berkeley.cs.jqf.fuzz.util.CoverageFactory;
 import edu.berkeley.cs.jqf.fuzz.util.ProducerHashMap;
+import edu.berkeley.cs.jqf.instrument.tracing.FastCoverageSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import janala.instrument.FastCoverageListener;
 import org.eclipse.collections.api.iterator.IntIterator;
-import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.TestClass;
 
 /**
  * A guidance that represents inputs as maps from
@@ -67,7 +72,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 public class ExecutionIndexingGuidance extends ZestGuidance {
 
     /** The execution indexing logic. */
-    protected ExecutionIndexingState eiState;
+    protected AbstractExecutionIndexingState eiState;
 
     /**
      * A map of execution contexts (call stacks) to locations in saved inputs with those contexts.
@@ -85,9 +90,6 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
 
     /** Whether the the entry point has been encountered in the current run. */
     protected boolean testEntered;
-
-    /** The last event handled by this guidance */
-    protected TraceEvent lastEvent;
 
     /** Maps a hash code of coverage bits to an index in savedInputs queue. */
     protected Map<Integer, Integer> coverageHashToSavedInputIdx = new HashMap<>();
@@ -192,7 +194,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
             public int read() throws IOException {
 
                 // lastEvent must not be null
-                if (lastEvent == null) {
+                if (eiState.getLastEventIid() == -1) {
                     throw new GuidanceException("Could not compute execution index; no instrumentation?");
                 }
 
@@ -201,7 +203,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                 MappedInput mappedInput = (MappedInput) currentInput;
 
                 // Get the execution index of the last event
-                ExecutionIndex executionIndex = eiState.getExecutionIndex(lastEvent);
+                ExecutionIndex executionIndex = eiState.getExecutionIndex(eiState.getLastEventIid());
 
                 // Attempt to get a value from the map, or else generate a random value
                 int value = mappedInput.getOrGenerateFresh(executionIndex, random);
@@ -214,13 +216,25 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
     @Override
     public InputStream getInput() throws GuidanceException {
         // First, reset execution indexing state
-        eiState = new ExecutionIndexingState();
+        eiState = CoverageFactory.newEIState();
+        if (eiState instanceof FastExecutionIndexingState) {
+            FastCoverageSnoop.setFastCoverageListener((FastCoverageListener) eiState);
+        }
+
 
         // Unmark "test started"
         testEntered = false;
 
         // Then, do the same logic as ZestGuidance (e.g. returning seeds, mutated inputs, or new input)
         return super.getInput();
+    }
+
+    @Override
+    public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
+        if (this.runCoverage instanceof FastCoverageListener) {
+            FastCoverageSnoop.setFastCoverageListener((FastCoverageListener) this.runCoverage);
+        }
+        super.run(testClass, method, args);
     }
 
     /**
@@ -355,11 +369,10 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
     /** Handles a trace event generated during test execution */
     @Override
     protected void handleEvent(TraceEvent e) {
-        // Set last event to this event
-        lastEvent = e;
-
-        // Update execution indexing logic regardless of whether we are in generator or test method
-        e.applyVisitor(eiState);
+        if (eiState instanceof JanalaExecutionIndexingState) {
+            // Update execution indexing logic regardless of whether we are in generator or test method
+            e.applyVisitor((JanalaExecutionIndexingState) eiState);
+        }
 
         // Do not handle code coverage unless test has been entered
         if (!testEntered) {

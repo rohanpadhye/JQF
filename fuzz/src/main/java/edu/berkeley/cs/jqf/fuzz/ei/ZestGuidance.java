@@ -64,6 +64,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.util.Coverage;
 import edu.berkeley.cs.jqf.fuzz.util.CoverageFactory;
+import edu.berkeley.cs.jqf.fuzz.util.FastNonCollidingCoverage;
 import edu.berkeley.cs.jqf.fuzz.util.ICoverage;
 import edu.berkeley.cs.jqf.fuzz.util.IOUtils;
 import edu.berkeley.cs.jqf.instrument.tracing.FastCoverageSnoop;
@@ -505,7 +506,12 @@ public class ZestGuidance implements Guidance {
                 if (this.testName != null) {
                     console.printf("Test name:            %s\n", this.testName);
                 }
-                    
+
+                String instrumentationType = "Janala";
+                if (this.runCoverage instanceof FastNonCollidingCoverage) {
+                    instrumentationType = "Fast";
+                }
+                console.printf("Instrumentation:      %s\n", instrumentationType);
                 console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
                 console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
                         maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
