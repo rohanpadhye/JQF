@@ -20,7 +20,7 @@ import org.objectweb.asm.ClassWriter;
 public class SnoopInstructionTransformer implements ClassFileTransformer {
   private static final String instDir = Config.instance.instrumentationCacheDir;
   private static final boolean verbose = Config.instance.verbose;
-  private static String[] banned = {"[", "java/lang", "org/eclipse/collections", "janala", "org/objectweb/asm", "sun", "jdk", "java/util/function"};
+  private static String[] banned = {"[", "java/lang", "org/eclipse/collections", "edu/berkeley/cs/jqf/fuzz/util", "janala", "org/objectweb/asm", "sun", "jdk", "java/util/function"};
   private static String[] excludes = Config.instance.excludeInst;
   private static String[] includes = Config.instance.includeInst;
   public static void premain(String agentArgs, Instrumentation inst) throws ClassNotFoundException {
