@@ -40,6 +40,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -164,7 +166,7 @@ public class ZestGuidance implements Guidance {
     protected Map<Object, Input> responsibleInputs = new HashMap<>(totalCoverage.size());
 
     /** The set of unique failures found so far. */
-    protected Set<List<StackTraceElement>> uniqueFailures = new HashSet<>();
+    protected Set<String> uniqueFailures = new HashSet<>();
 
     /** save crash to specific location (should be used with EXIT_ON_CRASH) **/
     protected final String EXACT_CRASH_PATH = System.getProperty("jqf.ei.EXACT_CRASH_PATH");
@@ -785,7 +787,7 @@ public class ZestGuidance implements Guidance {
                 }
 
                 // Attempt to add this to the set of unique failures
-                if (uniqueFailures.add(Arrays.asList(rootCause.getStackTrace()))) {
+                if (uniqueFailures.add(failureDigest(rootCause.getStackTrace()))) {
 
                     // Trim input (remove unused keys)
                     currentInput.gc();
@@ -1045,6 +1047,25 @@ public class ZestGuidance implements Guidance {
         } else {
             task.run();
         }
+    }
+
+    private static MessageDigest sha1;
+
+    private static String failureDigest(StackTraceElement[] stackTrace) {
+        if (sha1 == null) {
+            try {
+                sha1 = MessageDigest.getInstance("SHA-1");
+            } catch (NoSuchAlgorithmException e) {
+                throw new GuidanceException(e);
+            }
+        }
+        byte[] bytes = sha1.digest(Arrays.deepToString(stackTrace).getBytes());
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < bytes.length; i++) {
+            sb.append(Integer.toString((bytes[i] & 0xff) + 0x100, 16)
+                    .substring(1));
+        }
+        return sb.toString();
     }
 
     /**

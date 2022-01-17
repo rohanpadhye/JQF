@@ -33,6 +33,11 @@ public class FastCoverageMethodAdapter extends MethodVisitor implements Opcodes 
 
   @Override
   public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
+    int iid = instrumentationState.incAndGetFastCoverageId();
+    addBipushInsn(mv, iid);
+    mv.visitInsn(ICONST_0);
+    mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "LOGJUMP", "(II)V", false);
+
     if (opcode == INVOKESPECIAL && name.equals("<init>")) {
 
 
@@ -69,10 +74,6 @@ public class FastCoverageMethodAdapter extends MethodVisitor implements Opcodes 
   @Override
   public void visitCode() {
     super.visitCode();
-    int iid = instrumentationState.incAndGetFastCoverageId();
-    addBipushInsn(mv, iid);
-    mv.visitInsn(ICONST_0);
-    mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "LOGJUMP", "(II)V", false);
   }
 
   private void addConditionalJumpInstrumentation(int opcode, Label finalBranchTarget,
