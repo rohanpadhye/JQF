@@ -411,7 +411,7 @@ public class ZestGuidance implements Guidance {
 
     protected String getStatNames() {
         return "# unix_time, cycles_done, cur_path, paths_total, pending_total, " +
-            "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov";
+            "pending_favs, map_size, unique_crashes, unique_hangs, max_depth, execs_per_sec, valid_inputs, invalid_inputs, valid_cov, all_covered_probes, valid_covered_probes";
     }
 
     /* Writes a line of text to a given log file. */
@@ -510,10 +510,10 @@ public class ZestGuidance implements Guidance {
             }
         }
 
-        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%",
+        String plotData = String.format("%d, %d, %d, %d, %d, %d, %.2f%%, %d, %d, %d, %.2f, %d, %d, %.2f%%, %d, %d",
                 TimeUnit.MILLISECONDS.toSeconds(now.getTime()), cyclesCompleted, currentParentInputIdx,
                 numSavedInputs, 0, 0, nonZeroFraction, uniqueFailures.size(), 0, 0, intervalExecsPerSecDouble,
-                numValid, numTrials-numValid, nonZeroValidFraction);
+                numValid, numTrials-numValid, nonZeroValidFraction, nonZeroCount, nonZeroValidCount);
         appendLineToFile(statsFile, plotData);
     }
 
