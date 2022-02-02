@@ -958,6 +958,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
   @Override
   public void visitLineNumber(int lineNumber, Label label) {
     lastLineNumber = lineNumber;
+    super.visitLineNumber(lineNumber, label);
   }
 
 
