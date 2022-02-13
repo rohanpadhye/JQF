@@ -103,7 +103,8 @@ public class JQF extends JUnitQuickcheck {
             // Check for @Fuzz(repro=)
             String repro = method.getAnnotation(Fuzz.class).repro();
             if (repro.isEmpty()) {
-                guidance = new NoGuidance(GuidedFuzzing.DEFAULT_MAX_TRIALS, System.err);
+                long maxTrials = Long.getLong("jqf.quickcheck.trials", GuidedFuzzing.DEFAULT_MAX_TRIALS);
+                guidance = new NoGuidance(maxTrials, System.err);
             } else {
                 String reproPath;
                 // Check if repro path is variable (e.g. `${foo}`)
