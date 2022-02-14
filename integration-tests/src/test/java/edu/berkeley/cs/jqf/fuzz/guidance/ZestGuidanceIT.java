@@ -60,4 +60,23 @@ public class ZestGuidanceIT extends AbstractGuidanceIT {
         Assert.assertEquals(-684278400, zest.hashTotalCoverage());
         Assert.assertEquals(-1096184368, zest.hashValidCoverage());
     }
+
+
+    // This function tests if the instrumentation framework of Zest handles
+    // branch instructions in the target program properly.
+    @Test
+    public void testSimpleTestCoverage() throws Exception {
+        String clazz = "edu.berkeley.cs.jqf.examples.simple.SimpleClassTest";
+        String method = "testWithGenerator";
+
+        long trials = 5000;
+        Random rnd = new Random(42);
+
+        ProbedZestGuidance zest = new ProbedZestGuidance("SimpleClassTest", trials, rnd);
+        GuidedFuzzing.run(clazz, method, classLoader, zest, null);
+
+        // Validate result
+        Assert.assertEquals(7, zest.getTotalCoverage().getNonZeroCount());
+
+    }
 }
