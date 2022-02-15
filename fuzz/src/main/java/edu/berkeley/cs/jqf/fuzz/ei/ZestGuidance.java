@@ -192,7 +192,7 @@ public class ZestGuidance implements Guidance {
     /** The currently executing input (for debugging purposes). */
     protected File currentInputFile;
 
-    /** The file contianing the coverage information */ 
+    /** The file contianing the coverage information */
     protected File coverageFile;
 
     /** Use libFuzzer like output instead of AFL like stats screen (https://llvm.org/docs/LibFuzzer.html#output) **/
@@ -493,7 +493,7 @@ public class ZestGuidance implements Guidance {
                 if (this.testName != null) {
                     console.printf("Test name:            %s\n", this.testName);
                 }
-                    
+
                 console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
                 console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
                         maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
@@ -517,7 +517,7 @@ public class ZestGuidance implements Guidance {
         appendLineToFile(statsFile, plotData);
     }
 
-    /** Updates the data in the coverage file */ 
+    /** Updates the data in the coverage file */
     protected void updateCoverageFile() {
         try {
             PrintWriter pw = new PrintWriter(coverageFile);
@@ -528,7 +528,7 @@ public class ZestGuidance implements Guidance {
             throw new GuidanceException(ignore);
         }
     }
-    
+
     /* Returns the banner to be displayed on the status screen */
     protected String getTitle() {
         if (blind) {
@@ -941,6 +941,10 @@ public class ZestGuidance implements Guidance {
         File saveFile = new File(savedCorpusDirectory, saveFileName);
         writeCurrentInputToFile(saveFile);
         infoLog("Saved - %s %s %s", saveFile.getPath(), how, why);
+
+        if (why.contains("mutants") && !(why.contains("+cov") || why.contains("+count") || why.contains("+valid"))) {
+            return;
+        }
 
         // If not using guidance, do nothing else
         if (blind) {
