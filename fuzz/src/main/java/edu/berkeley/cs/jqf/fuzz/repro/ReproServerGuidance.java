@@ -105,7 +105,7 @@ public class ReproServerGuidance implements Guidance {
 
         // Print coverage
         try (PrintWriter out = new PrintWriter(coverageFile)) {
-            coverage.getCovered().stream().sorted().forEach((i) ->
+            coverage.getCovered().toSortedList().forEach((i) ->
                 out.println(String.format("%05d", i))
             );
             out.println(result.toString()); // EOF marker for tools to realize that repro is done

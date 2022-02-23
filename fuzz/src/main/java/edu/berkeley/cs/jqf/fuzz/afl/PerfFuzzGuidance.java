@@ -49,6 +49,7 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
+import org.eclipse.collections.api.list.primitive.IntList;
 
 /**
  * A front-end that uses AFL for increasing performance counters
@@ -303,15 +304,13 @@ public class PerfFuzzGuidance extends AFLGuidance {
      *                     one positive integer for each memory access
      * @return     the redundancy score
      */
-    public static double computeRedundancyScore(Collection<Integer> accessCounts) {
+    public static double computeRedundancyScore(IntList accessCounts) {
         double numCounts = accessCounts.size();
         if (numCounts == 0) {
             return 0.0;
         }
         double sumCounts = 0.0;
-        for (int count : accessCounts) {
-            sumCounts += count;
-        }
+        sumCounts = accessCounts.sum();
         double averageCounts = sumCounts / numCounts;
         double score = (averageCounts - 1)*(numCounts - 1)/sumCounts;
 

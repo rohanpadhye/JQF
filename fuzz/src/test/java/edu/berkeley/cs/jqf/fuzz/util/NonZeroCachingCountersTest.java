@@ -28,12 +28,17 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.runner.RunWith;
 
 import static org.hamcrest.Matchers.*;
@@ -104,9 +109,9 @@ public class NonZeroCachingCountersTest {
             counter2.increment(key, delta);
         }
 
-        Collection<Integer> nonZeroValues1 = counter1.getNonZeroValues();
-        Collection<Integer> nonZeroValues2 = counter2.getNonZeroValues();
-        assertEquals(new HashSet<>(nonZeroValues1), new HashSet<>(nonZeroValues2));
+        IntList nonZeroValues1 = counter1.getNonZeroValues();
+        IntList nonZeroValues2 = counter2.getNonZeroValues();
+        assertEquals(IntHashSet.newSet(nonZeroValues1), IntHashSet.newSet(nonZeroValues2));
 
     }
 
@@ -119,9 +124,9 @@ public class NonZeroCachingCountersTest {
             counter2.increment(key, delta);
         }
 
-        Collection<Integer> nonZeroIndices1 = counter1.getNonZeroIndices();
-        Collection<Integer> nonZeroIndices2 = counter2.getNonZeroIndices();
-        assertEquals(new HashSet<>(nonZeroIndices1), new HashSet<>(nonZeroIndices2));
+        IntList nonZeroIndices1 = counter1.getNonZeroIndices();
+        IntList nonZeroIndices2 = counter2.getNonZeroIndices();
+        assertEquals(IntHashSet.newSet(nonZeroIndices1), IntHashSet.newSet(nonZeroIndices2));
 
     }
 
@@ -141,6 +146,14 @@ public class NonZeroCachingCountersTest {
 
     }
 
+    static ArrayList<Integer> toJavaArrayList(IntList primitiveList){
+        ArrayList<Integer> ret = new ArrayList<>(primitiveList.size());
+        IntIterator iter = primitiveList.intIterator();
+        while(iter.hasNext()){
+            ret.add(iter.next());
+        }
+        return ret;
+    }
     @Property
     public void setAtIndexWorks(@InRange(minInt=0, maxInt=COUNTER_SIZE-1) int index, int value) {
         Counter counter = new NonZeroCachingCounter(COUNTER_SIZE);
@@ -149,8 +162,8 @@ public class NonZeroCachingCountersTest {
 
 
         int nonZeroSize = counter.getNonZeroSize();
-        Collection<Integer> nonZeroIndices = counter.getNonZeroIndices();
-        Collection<Integer> nonZeroValues = counter.getNonZeroValues();
+        Collection<Integer> nonZeroIndices = toJavaArrayList(counter.getNonZeroIndices());
+        Collection<Integer> nonZeroValues = toJavaArrayList(counter.getNonZeroValues());
         if (value == 0) {
             assertThat(nonZeroSize, is(0));
             assertThat(nonZeroIndices, iterableWithSize(0));
@@ -186,7 +199,7 @@ public class NonZeroCachingCountersTest {
         }
 
         assertThat(counter.getNonZeroSize(), is(0));
-        assertThat(counter.getNonZeroIndices(), iterableWithSize(0));
-        assertThat(counter.getNonZeroValues(), iterableWithSize(0));
+        assertThat(toJavaArrayList(counter.getNonZeroIndices()), iterableWithSize(0));
+        assertThat(toJavaArrayList(counter.getNonZeroValues()), iterableWithSize(0));
     }
 }

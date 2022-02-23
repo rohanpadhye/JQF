@@ -28,46 +28,44 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Collectors;
-
 import edu.berkeley.cs.jqf.instrument.tracing.events.BranchEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
-import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEventVisitor;
+import janala.instrument.FastCoverageListener;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.api.tuple.primitive.IntIntPair;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Utility class to collect branch and function coverage
  *
- * @author Rohan Padhye
+ * @author Jonathan Bell
  */
-public class Coverage implements TraceEventVisitor, ICoverage<Counter> {
+public class FastNonCollidingCoverage implements FastCoverageListener, ICoverage<FastNonCollidingCounter> {
 
-    /** The size of the coverage map. */
-    private final int COVERAGE_MAP_SIZE = (1 << 16) - 1; // Minus one to reduce collisions
+    /** The starting size of the coverage map. */
+    private final int COVERAGE_MAP_SIZE = (1 << 8);
 
-    /** The coverage counts for each edge. */
-    private final Counter counter = new NonZeroCachingCounter(COVERAGE_MAP_SIZE);
+    private final FastNonCollidingCounter counter = new FastNonCollidingCounter(COVERAGE_MAP_SIZE);
 
     /** Creates a new coverage map. */
-    public Coverage() {
+    public FastNonCollidingCoverage() {
 
     }
 
     /**
-     * Creates a copy of an this coverage map.
+     * Creates a copy of an existing coverage map.
      *
      */
-    public Coverage copy() {
-        Coverage ret = new Coverage();
-        for (int idx = 0; idx < COVERAGE_MAP_SIZE; idx++) {
-            ret.counter.setAtIndex(idx, this.counter.getAtIndex(idx));
-        }
+    public FastNonCollidingCoverage copy() {
+        FastNonCollidingCoverage ret = new FastNonCollidingCoverage();
+        ret.counter.copyFrom(this.counter);
         return ret;
     }
 
@@ -76,31 +74,8 @@ public class Coverage implements TraceEventVisitor, ICoverage<Counter> {
      *
      * @return the size of the coverage map
      */
-    @Override
     public int size() {
         return COVERAGE_MAP_SIZE;
-    }
-
-    /**
-     * Updates coverage information based on emitted event.
-     *
-     * <p>This method updates its internal counters for branch and
-     * call events.</p>
-     *
-     * @param e the event to be processed
-     */
-    public void handleEvent(TraceEvent e) {
-        e.applyVisitor(this);
-    }
-
-    @Override
-    public void visitBranchEvent(BranchEvent b) {
-        counter.increment1(b.getIid(), b.getArm());
-    }
-
-    @Override
-    public void visitCallEvent(CallEvent e) {
-        counter.increment(e.getIid());
     }
 
     /**
@@ -108,7 +83,6 @@ public class Coverage implements TraceEventVisitor, ICoverage<Counter> {
      *
      * @return the number of edges with non-zero counts
      */
-    @Override
     public int getNonZeroCount() {
         return counter.getNonZeroSize();
     }
@@ -118,7 +92,6 @@ public class Coverage implements TraceEventVisitor, ICoverage<Counter> {
      *
      * @return a collection of keys that are covered
      */
-    @Override
     public IntList getCovered() {
         return counter.getNonZeroIndices();
     }
@@ -129,15 +102,14 @@ public class Coverage implements TraceEventVisitor, ICoverage<Counter> {
      * @param baseline the baseline coverage
      * @return the set of edges that do not exist in {@code baseline}
      */
-    @Override
     public IntList computeNewCoverage(ICoverage baseline) {
         IntArrayList newCoverage = new IntArrayList();
 
-        IntList baseNonZero = this.counter.getNonZeroIndices();
+        IntList baseNonZero = this.counter.getNonZeroKeys();
         IntIterator iter = baseNonZero.intIterator();
         while (iter.hasNext()) {
             int idx = iter.next();
-            if (baseline.getCounter().getAtIndex(idx) == 0) {
+            if (baseline.getCounter().get(idx) == 0) {
                 newCoverage.add(idx);
             }
         }
@@ -147,7 +119,6 @@ public class Coverage implements TraceEventVisitor, ICoverage<Counter> {
     /**
      * Clears the coverage map.
      */
-    @Override
     public void clear() {
         this.counter.clear();
     }
@@ -193,16 +164,24 @@ public class Coverage implements TraceEventVisitor, ICoverage<Counter> {
      * @return <code>true</code> iff <code>that</code> is not a subset
      *         of <code>this</code>, causing <code>this</code> to change.
      */
-    @Override
     public boolean updateBits(ICoverage that) {
         boolean changed = false;
-        if (that.getCounter().hasNonZeros()) {
-            for (int idx = 0; idx < COVERAGE_MAP_SIZE; idx++) {
-                int before = this.counter.getAtIndex(idx);
-                int after = before | hob(that.getCounter().getAtIndex(idx));
-                if (after != before) {
-                    this.counter.setAtIndex(idx, after);
-                    changed = true;
+        synchronized (this.counter){
+            synchronized (that.getCounter()){
+                FastNonCollidingCounter thatCounter = (FastNonCollidingCounter) that.getCounter();
+                Iterator<IntIntPair> thatIter = thatCounter.counts.keyValuesView().iterator();
+
+                while(thatIter.hasNext()){
+                    IntIntPair coverageEntry = thatIter.next();
+                    int before = this.counter.counts.get(coverageEntry.getOne());
+                    int after = before | hob(coverageEntry.getTwo());
+                    if(after != before){
+                        this.counter.counts.put(coverageEntry.getOne(), after);
+                        changed = true;
+                    }
+                    if(before == 0){
+                        this.counter.nonZeroKeys.add(coverageEntry.getOne());
+                    }
                 }
             }
         }
@@ -212,7 +191,7 @@ public class Coverage implements TraceEventVisitor, ICoverage<Counter> {
     /** Returns a hash code of the edge counts in the coverage map. */
     @Override
     public int hashCode() {
-        return Arrays.hashCode(counter.counts);
+        return counter.counts.hashCode();
     }
 
     /**
@@ -220,9 +199,13 @@ public class Coverage implements TraceEventVisitor, ICoverage<Counter> {
      *
      * @return a hash of non-zero entries
      */
-    @Override
     public int nonZeroHashCode() {
         return counter.getNonZeroIndices().hashCode();
+    }
+
+    @Override
+    public Counter getCounter() {
+        return this.counter;
     }
 
     /**
@@ -232,20 +215,20 @@ public class Coverage implements TraceEventVisitor, ICoverage<Counter> {
     public String toString() {
         StringBuffer sb = new StringBuffer();
         sb.append("Coverage counts: \n");
-        for (int i = 0; i < counter.counts.length; i++) {
-            if (counter.counts[i] == 0) {
+        for (int i = 0; i < counter.counts.size(); i++) {
+            if (counter.counts.get(i) == 0) {
                 continue;
             }
             sb.append(i);
             sb.append("->");
-            sb.append(counter.counts[i]);
+            sb.append(counter.counts.get(i));
             sb.append('\n');
         }
         return sb.toString();
     }
 
     @Override
-    public Counter getCounter() {
-        return counter;
+    public void logCoverage(int iid, int arm) {
+        counter.increment(iid + arm);
     }
 }

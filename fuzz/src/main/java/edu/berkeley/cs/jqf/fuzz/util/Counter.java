@@ -28,6 +28,9 @@
  */
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -183,8 +186,8 @@ public class Counter {
      *
      * @return a set of indices at which the count is non-zero
      */
-    public Collection<Integer> getNonZeroIndices() {
-        List<Integer> indices = new ArrayList<>(size /2);
+    public IntList getNonZeroIndices() {
+        IntArrayList indices = new IntArrayList(size /2);
         for (int i = 0; i < counts.length; i++) {
             int count = counts[i];
             if (count != 0) {
@@ -199,8 +202,8 @@ public class Counter {
      *
      * @return a set of non-zero count values in this counter.
      */
-    public Collection<Integer> getNonZeroValues() {
-        List<Integer> values = new ArrayList<>(size /2);
+    public IntList getNonZeroValues() {
+        IntArrayList values = new IntArrayList(size /2);
         for (int i = 0; i < counts.length; i++) {
             int count = counts[i];
             if (count != 0) {
