@@ -110,6 +110,8 @@ JQF also publishes its [API docs](https://rohanpadhye.github.io/JQF/apidocs).
 * **[BigFuzz](https://github.com/UCLA-SEAL/BigFuzz)** [[ASE'20 paper]]
 * **[MoFuzz](https://github.com/hub-se/MoFuzz)** [[ASE'20 paper](https://doi.org/10.1145/3324884.3416668)]
 * **[RLCheck](https://github.com/sameerreddy13/rlcheck)** [[ICSE'20 paper]]
+* **[Confetti](https://github.com/neu-se/CONFETTI)** [[ICSE'22 paper]](https://www.jonbell.net/preprint/confetti.pdf)
+* **BeDivFuzz** [[ICSE'22 paper]](https://conf.researchr.org/details/icse-2022/icse-2022-papers/144/BeDivFuzz-Integrating-Behavioral-Diversity-into-Generator-based-Fuzzing)
 
 ## Contact the developers
 
