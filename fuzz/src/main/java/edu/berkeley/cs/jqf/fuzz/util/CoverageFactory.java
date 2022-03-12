@@ -1,5 +1,9 @@
 package edu.berkeley.cs.jqf.fuzz.util;
 
+import edu.berkeley.cs.jqf.fuzz.ei.state.AbstractExecutionIndexingState;
+import edu.berkeley.cs.jqf.fuzz.ei.state.FastExecutionIndexingState;
+import edu.berkeley.cs.jqf.fuzz.ei.state.JanalaExecutionIndexingState;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +32,14 @@ public class CoverageFactory {
             return new FastNonCollidingCoverage();
         } else {
             return new Coverage();
+        }
+    }
+
+    public static AbstractExecutionIndexingState newEIState() {
+        if (FAST_NON_COLLIDING_COVERAGE_ENABLED) {
+            return new FastExecutionIndexingState();
+        } else {
+            return new JanalaExecutionIndexingState();
         }
     }
 }

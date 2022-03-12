@@ -47,7 +47,7 @@ import java.util.Iterator;
  *
  * @author Jonathan Bell
  */
-public class FastNonCollidingCoverage implements FastCoverageListener, ICoverage<FastNonCollidingCounter> {
+public class FastNonCollidingCoverage extends FastCoverageListener.Default implements ICoverage<FastNonCollidingCounter> {
 
     /** The starting size of the coverage map. */
     private final int COVERAGE_MAP_SIZE = (1 << 8);
@@ -227,8 +227,42 @@ public class FastNonCollidingCoverage implements FastCoverageListener, ICoverage
         return sb.toString();
     }
 
+
     @Override
-    public void logCoverage(int iid, int arm) {
+    public void logMethodBegin(int iid) {
+        logCoverage(iid, 0);
+    }
+
+    @Override
+    public void logJump(int iid, int branch) {
+        logCoverage(iid, branch);
+    }
+
+    @Override
+    public void logLookUpSwitch(int value, int iid, int dflt, int[] cases) {
+        // Compute arm index or else default
+        int arm = cases.length;
+        for (int i = 0; i < cases.length; i++) {
+            if (value == cases[i]) {
+                arm = i;
+                break;
+            }
+        }
+        arm++;
+        logCoverage(iid, arm);
+    }
+
+    @Override
+    public void logTableSwitch(int value, int iid, int min, int max, int dflt) {
+        int arm = 1 + max - min;
+        if (value >= min && value <= max) {
+            arm = value - min;
+        }
+        arm++;
+        logCoverage(iid, arm);
+    }
+
+    private void logCoverage(int iid, int arm) {
         counter.increment(iid + arm);
     }
 }

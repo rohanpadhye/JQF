@@ -14,6 +14,7 @@ public class FastCoverageMethodAdapter extends MethodVisitor implements Opcodes 
 
   private final GlobalStateForInstrumentation instrumentationState;
 
+  private final int methodIID;
   public FastCoverageMethodAdapter(MethodVisitor mv, String className,
                                    String methodName, String descriptor, String superName,
                                    GlobalStateForInstrumentation instrumentationState) {
@@ -24,6 +25,7 @@ public class FastCoverageMethodAdapter extends MethodVisitor implements Opcodes 
     this.superName = superName;
 
     this.instrumentationState = instrumentationState;
+    this.methodIID = instrumentationState.incAndGetFastCoverageId();
   }
 
   /** Push a value onto the stack. */
@@ -74,6 +76,8 @@ public class FastCoverageMethodAdapter extends MethodVisitor implements Opcodes 
   @Override
   public void visitCode() {
     super.visitCode();
+    addBipushInsn(mv, methodIID);
+    mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "LOGMETHODBEGIN", "(I)V", false);
   }
 
   private void addConditionalJumpInstrumentation(int opcode, Label finalBranchTarget,
@@ -138,6 +142,21 @@ public class FastCoverageMethodAdapter extends MethodVisitor implements Opcodes 
       default:
         throw new RuntimeException("Unknown jump opcode " + opcode);
     }
+  }
+
+  @Override
+  public void visitInsn(int opcode) {
+    switch (opcode) {
+      case IRETURN:
+      case LRETURN:
+      case FRETURN:
+      case DRETURN:
+      case ARETURN:
+      case RETURN:
+        addBipushInsn(mv, methodIID);
+        mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "LOGMETHODEND", "(I)V", false);
+    }
+    super.visitInsn(opcode);
   }
 
   private Integer lastLineNumber = 0;

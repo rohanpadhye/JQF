@@ -34,6 +34,8 @@ import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.generator.Size;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
+import edu.berkeley.cs.jqf.fuzz.ei.state.FastExecutionIndexingState;
+import edu.berkeley.cs.jqf.fuzz.ei.state.JanalaExecutionIndexingState;
 import edu.berkeley.cs.jqf.instrument.tracing.events.CallEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReadEvent;
 import edu.berkeley.cs.jqf.instrument.tracing.events.ReturnEvent;
@@ -64,8 +66,8 @@ public class ExecutionIndexingTest {
 
     @Test
     public void testDepth0() {
-        ExecutionIndexingState e = new ExecutionIndexingState();
-        int[] ei = e.getExecutionIndex(readEvent(42)).ei;
+        JanalaExecutionIndexingState e = new JanalaExecutionIndexingState();
+        int[] ei = e.getExecutionIndex(42).ei;
 
         int[] expected = {42, 1};
         assertArrayEquals(expected, ei);
@@ -73,10 +75,10 @@ public class ExecutionIndexingTest {
 
     @Test
     public void testDepth1() {
-        ExecutionIndexingState e = new ExecutionIndexingState();
-        e.pushCall(callEvent(4));
-        int[] ei = e.getExecutionIndex(readEvent(42)).ei;
-        e.popReturn(returnEvent(-1));
+        JanalaExecutionIndexingState e = new JanalaExecutionIndexingState();
+        e.pushCall(4);
+        int[] ei = e.getExecutionIndex(42).ei;
+        e.popReturn(4);
 
         int[] expected = {4, 1, 42, 1};
         assertArrayEquals(expected, ei);
@@ -85,13 +87,13 @@ public class ExecutionIndexingTest {
 
     @Test
     public void testDepth1withRepeat() {
-        ExecutionIndexingState e = new ExecutionIndexingState();
-        e.pushCall(callEvent(4));
-        e.getExecutionIndex(readEvent(42));
-        e.getExecutionIndex(readEvent(41));
-        e.getExecutionIndex(readEvent(42));
-        int[] ei = e.getExecutionIndex(readEvent(42)).ei;
-        e.popReturn(returnEvent(-1));
+        JanalaExecutionIndexingState e = new JanalaExecutionIndexingState();
+        e.pushCall(4);
+        e.getExecutionIndex(42);
+        e.getExecutionIndex(41);
+        e.getExecutionIndex(42);
+        int[] ei = e.getExecutionIndex(42).ei;
+        e.popReturn(4);
 
         int[] expected = {4, 1, 42, 3};
         assertArrayEquals(expected, ei);
@@ -100,69 +102,111 @@ public class ExecutionIndexingTest {
 
     @Test
     public void testDepth2withRepeat() {
-        ExecutionIndexingState e = new ExecutionIndexingState();
+        JanalaExecutionIndexingState e = new JanalaExecutionIndexingState();
         int[] ei;
-        e.pushCall(callEvent(4));
-        e.popReturn(returnEvent(-1));
+        e.pushCall(4);
+        e.popReturn(4);
 
-        e.pushCall(callEvent(4));
+        e.pushCall(4);
         {
-            e.pushCall(callEvent(5));
-            e.getExecutionIndex(readEvent(42));
-            e.popReturn(returnEvent(-1));
+            e.pushCall(5);
+            e.getExecutionIndex(42);
+            e.popReturn(5);
         }
-        e.popReturn(returnEvent(-1));
+        e.popReturn(4);
 
-        e.pushCall(callEvent(3));
+        e.pushCall(3);
         {
-            e.pushCall(callEvent(5));
-            e.popReturn(returnEvent(-1));
-            e.pushCall(callEvent(5));
-            e.popReturn(returnEvent(-1));
-            e.pushCall(callEvent(5));
-            e.popReturn(returnEvent(-1));
-            e.pushCall(callEvent(5));
-            e.popReturn(returnEvent(-1));
+            e.pushCall(5);
+            e.popReturn(5);
+            e.pushCall(5);
+            e.popReturn(5);
+            e.pushCall(5);
+            e.popReturn(5);
+            e.pushCall(5);
+            e.popReturn(5);
         }
-        e.popReturn(returnEvent(-1));
+        e.popReturn(3);
 
-        e.pushCall(callEvent(4));
+        e.pushCall(4);
         {
-            e.pushCall(callEvent(5));
-            e.popReturn(returnEvent(-1));
-            e.pushCall(callEvent(5));
-            e.getExecutionIndex(readEvent(41));
-            e.getExecutionIndex(readEvent(42));
-            ei = e.getExecutionIndex(readEvent(42)).ei;
+            e.pushCall(5);
+            e.popReturn(5);
+            e.pushCall(5);
+            e.getExecutionIndex(41);
+            e.getExecutionIndex(42);
+            ei = e.getExecutionIndex(42).ei;
 
-            e.popReturn(returnEvent(-1));
+            e.popReturn(5);
         }
-        e.popReturn(returnEvent(-1));
+        e.popReturn(4);
 
 
         int[] expected = {4, 3, 5, 2, 42, 2};
         assertArrayEquals(expected, ei);
     }
 
+    @Test
+    public void testCallReturnMismatch() {
+        FastExecutionIndexingState e = new FastExecutionIndexingState();
+        int[] ei;
+        e.pushCall(4);
+        e.popReturn(4);
+
+        e.pushCall(4);
+        {
+            e.pushCall(5);
+            e.getExecutionIndex(42);
+        }
+        e.popReturn(4);
+
+        e.pushCall(3);
+        {
+            e.pushCall(5);
+            e.pushCall(5);
+            e.pushCall(5);
+            e.pushCall(5);
+        }
+        e.popReturn(3);
+
+        e.pushCall(4);
+        {
+            e.pushCall(5);
+            e.popReturn(5);
+            e.pushCall(5);
+            e.getExecutionIndex(41);
+            e.getExecutionIndex(42);
+            ei = e.getExecutionIndex(42).ei;
+
+            e.popReturn(5);
+        }
+        e.popReturn(4);
+
+
+        int[] expected = {4, 3, 5, 2, 42, 2};
+        assertArrayEquals(expected, ei);
+
+    }
+
     @Property
     public void validExecutionIndex(@InRange(minInt=1, maxInt=32) int @Size(min=2, max=48)[] expected) {
         assumeTrue(expected.length % 2 == 0);
-        ExecutionIndexingState e = new ExecutionIndexingState();
+        JanalaExecutionIndexingState e = new JanalaExecutionIndexingState();
         int i;
         int[] ei = null;
         for (i = 0; i < expected.length-2; i+= 2) {
             int iid = expected[i];
             int times = expected[i+1];
             for (int j = 0; j < times-1; j++) {
-                e.pushCall(callEvent(iid));
-                e.popReturn(returnEvent(-1));
+                e.pushCall(iid);
+                e.popReturn(iid);
             }
-            e.pushCall(callEvent(iid));
+            e.pushCall(iid);
         }
         int iid = expected[i];
         int times = expected[i+1];
         for (int j = 0; j < times; j++) {
-            ei = e.getExecutionIndex(readEvent(iid)).ei;
+            ei = e.getExecutionIndex(iid).ei;
         }
 
         assertArrayEquals(expected, ei);
