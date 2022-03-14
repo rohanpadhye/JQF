@@ -104,14 +104,15 @@ The [JQF wiki](https://github.com/rohanpadhye/jqf/wiki) contains lots more docum
 
 JQF also publishes its [API docs](https://rohanpadhye.github.io/JQF/apidocs).
 
-## Applications based on JQF
+## Research and Tools based on JQF
 
-* **[Bonsai Fuzzing](https://github.com/vasumv/bonsai-fuzzing)** [[ICSE'21](https://rohan.padhye.org/files/bonsai-icse21.pdf)]
+* **[Zest](https://github.com/rohanpadhye/jqf-zest-example)** [[ISSTA'19 paper]]
 * **[BigFuzz](https://github.com/UCLA-SEAL/BigFuzz)** [[ASE'20 paper]]
 * **[MoFuzz](https://github.com/hub-se/MoFuzz)** [[ASE'20 paper](https://doi.org/10.1145/3324884.3416668)]
 * **[RLCheck](https://github.com/sameerreddy13/rlcheck)** [[ICSE'20 paper]]
+* **[Bonsai Fuzzing](https://github.com/vasumv/bonsai-fuzzing)** [[ICSE'21 paper](https://rohan.padhye.org/files/bonsai-icse21.pdf)]
 * **[Confetti](https://github.com/neu-se/CONFETTI)** [[ICSE'22 paper]](https://www.jonbell.net/preprint/confetti.pdf)
-* **BeDivFuzz** [[ICSE'22 paper]](https://conf.researchr.org/details/icse-2022/icse-2022-papers/144/BeDivFuzz-Integrating-Behavioral-Diversity-into-Generator-based-Fuzzing)
+* **[BeDivFuzz](https://github.com/hub-se/BeDivFuzz)** [[ICSE'22 paper]](https://arxiv.org/pdf/2202.13114.pdf)
 
 ## Contact the developers
 
