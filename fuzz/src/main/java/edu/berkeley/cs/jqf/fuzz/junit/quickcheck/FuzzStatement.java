@@ -95,7 +95,7 @@ public class FuzzStatement extends Statement {
         // Construct generators for each parameter
         List<Generator<?>> generators = Arrays.stream(method.getMethod().getParameters())
                 .map(this::createParameterTypeContext)
-                .map(this::produceGenerator)
+                .map(generatorRepository::produceGenerator)
                 .collect(Collectors.toList());
 
         // Keep fuzzing until no more input or I/O error with guidance
@@ -216,14 +216,5 @@ public class FuzzStatement extends Statement {
 
     private ParameterTypeContext createParameterTypeContext(Parameter parameter) {
         return ParameterTypeContext.forParameter(parameter, generics).annotate(parameter);
-    }
-
-    private Generator<?> produceGenerator(ParameterTypeContext parameter) {
-        Generator<?> generator = generatorRepository.generatorFor(parameter);
-        generator.provide(generatorRepository);
-        generator.configure(parameter.annotatedType());
-        if (parameter.topLevel())
-            generator.configure(parameter.annotatedElement());
-        return generator;
     }
 }
