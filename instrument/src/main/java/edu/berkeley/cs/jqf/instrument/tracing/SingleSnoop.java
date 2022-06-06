@@ -43,16 +43,13 @@ import edu.berkeley.cs.jqf.instrument.util.DoublyLinkedList;
 @SuppressWarnings("unused") // Dynamically loaded
 public final class SingleSnoop {
 
-
     static DoublyLinkedList<Thread> threadsToUnblock = new DoublyLinkedList<>();
 
     private static ThreadLocal<Boolean> block = new ThreadLocal<Boolean>() {
         @Override
         public Boolean initialValue() {
         String threadName = Thread.currentThread().getName();
-            if (threadName.startsWith("__JWIG_TRACER__")) {
-                return true; // Always block snooping on the tracing thread to prevent cycles
-            } else if (threadsToUnblock.synchronizedRemove(Thread.currentThread())){
+            if (threadsToUnblock.synchronizedRemove(Thread.currentThread())){
                 return false; // Snoop on threads that were added to the queue explicitly
             } else {
                 return true; // Block all other threads (e.g. JVM cleanup threads)
@@ -107,26 +104,28 @@ public final class SingleSnoop {
     }
 
     public static void REGISTER_THREAD(Thread thread) {
-        // Mark entry point as run()
-        try {
-            // Get a reference to the Thread's Runnable if it exists
-            Field targetField = Thread.class.getDeclaredField("target");
-            targetField.setAccessible(true);
-            Object target =  targetField.get(thread);
-            if (target == null) {
-                // If the Runnable is not provided explicitly,
-                // it is likely a sub-class of Thread with an overriden run() method
-                target = thread;
-            }
-            Method runMethod = target.getClass().getMethod("run");
-            String entryPoint = runMethod.getDeclaringClass().getName() + "#run";
-            entryPoints.put(thread, entryPoint);
-            // Mark thread for unblocking when we snoop its first instruction
-            threadsToUnblock.synchronizedAddFirst(thread);
-        } catch (NoSuchMethodException | NoSuchFieldException | IllegalAccessException e) {
-            // Print error and keep going
-            e.printStackTrace();
-        }
+        // Mark the Thread subclass's run() method as entry point for this Thread object
+        String runMethod = thread.getClass().getName() + "#run";
+        entryPoints.put(thread, runMethod);
+
+        // XXX: The above logic will not work for objects of type java.lang.Thread
+        // (that is, not a subclass with an overridden `run` method) which use a custom
+        // `Runnable` object in their constructor. For such threads, the entry point
+        // will simply be `java.lang.Thread#run`, which is never instrumented and so
+        // never observed by JQF. However, entry points only matter when
+        // MATCH_CALLEE_NAMES is turned on (e.g. for JDK fuzzing or for EI guidance).
+        // In those cases, we simply do not support threads with custom Runnables,
+        // which is fine because those use cases are mostly single-threaded anyway.
+        // This will not affect the default mode of fuzzing with Zest via Maven.
+        // Previous attempts at tracking the Runnable object inside java.lang.Thread
+        // instances via reflection failed after the Java 9 modules system was
+        // created; we cannot export the `java.lang` package from the `java.base` module
+        // without having control of the JVM start-up initialization flags.
+
+        // Mark thread for unblocking when we snoop its first instruction
+        threadsToUnblock.synchronizedAddFirst(thread);
+        // XXX: Could this cause a memory leak if threads are added but not removed?
+
     }
 
     public static void LDC(int iid, int mid, int c) {
