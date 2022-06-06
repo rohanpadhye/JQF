@@ -241,7 +241,7 @@ public class ThreadTracer {
         @Override
         public void visitINVOKEMETHOD_EXCEPTION(INVOKEMETHOD_EXCEPTION ins) {
             if (this.invokeTarget == null) {
-                throw new InstrumentationException("Unexpected INVOKEMETHOD_EXCEPTION");
+                throw new InstrumentationException("Unexpected INVOKEMETHOD_EXCEPTION", ins.getException());
             } else {
                 // Unset the invocation target for the rest of the instruction stream
                 this.invokeTarget = null;
