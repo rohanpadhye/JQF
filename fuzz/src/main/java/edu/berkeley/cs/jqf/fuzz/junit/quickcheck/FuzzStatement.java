@@ -73,6 +73,7 @@ public class FuzzStatement extends Statement {
     private final List<Class<?>> expectedExceptions;
     private final List<Throwable> failures = new ArrayList<>();
     private final Guidance guidance;
+    private boolean skipExceptionSwallow;
 
     public FuzzStatement(FrameworkMethod method, TestClass testClass,
                          GeneratorRepository generatorRepository, Guidance fuzzGuidance) {
@@ -83,6 +84,7 @@ public class FuzzStatement extends Statement {
         this.generatorRepository = generatorRepository;
         this.expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         this.guidance = fuzzGuidance;
+        this.skipExceptionSwallow = Boolean.getBoolean("jqf.failOnDeclaredExceptions");
     }
 
     /**
@@ -206,6 +208,9 @@ public class FuzzStatement extends Statement {
      * in the <code>throws</code> clause of the trial method.
      */
     private boolean isExceptionExpected(Class<? extends Throwable> e) {
+        if (skipExceptionSwallow) {
+            return false;
+        }
         for (Class<?> expectedException : expectedExceptions) {
             if (expectedException.isAssignableFrom(e)) {
                 return true;
