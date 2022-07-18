@@ -84,7 +84,7 @@ public class FuzzStatement extends Statement {
         this.generatorRepository = generatorRepository;
         this.expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         this.guidance = fuzzGuidance;
-        this.skipExceptionSwallow = Boolean.getBoolean("skipExceptionSwallow");
+        this.skipExceptionSwallow = Boolean.getBoolean("jqf.failOnDeclaredExceptions");
     }
 
     /**
