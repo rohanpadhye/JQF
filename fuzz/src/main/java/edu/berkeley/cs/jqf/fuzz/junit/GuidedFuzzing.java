@@ -148,6 +148,11 @@ public class GuidedFuzzing {
     public synchronized static Result run(String testClassName, String testMethod,
                                         ClassLoader loader,
                                         Guidance guidance, PrintStream out) throws ClassNotFoundException, IllegalStateException {
+        // Set the given classloader as the thread's context class loader,
+        // so that applications that use this API can still find test-classes
+        Thread.currentThread().setContextClassLoader(loader);
+
+        // Load the application class using the provided class loader
         Class<?> testClass =
                 java.lang.Class.forName(testClassName, true, loader);
 
