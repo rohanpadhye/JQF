@@ -192,7 +192,7 @@ public class ZestGuidance implements Guidance {
     /** The currently executing input (for debugging purposes). */
     protected File currentInputFile;
 
-    /** The file contianing the coverage information */ 
+    /** The file contianing the coverage information */
     protected File coverageFile;
 
     /** Use libFuzzer like output instead of AFL like stats screen (https://llvm.org/docs/LibFuzzer.html#output) **/
@@ -493,7 +493,7 @@ public class ZestGuidance implements Guidance {
                 if (this.testName != null) {
                     console.printf("Test name:            %s\n", this.testName);
                 }
-                    
+
                 console.printf("Results directory:    %s\n", this.outputDirectory.getAbsolutePath());
                 console.printf("Elapsed time:         %s (%s)\n", millisToDuration(elapsedMilliseconds),
                         maxDurationMillis == Long.MAX_VALUE ? "no time limit" : ("max " + millisToDuration(maxDurationMillis)));
@@ -517,7 +517,7 @@ public class ZestGuidance implements Guidance {
         appendLineToFile(statsFile, plotData);
     }
 
-    /** Updates the data in the coverage file */ 
+    /** Updates the data in the coverage file */
     protected void updateCoverageFile() {
         try {
             PrintWriter pw = new PrintWriter(coverageFile);
@@ -528,7 +528,7 @@ public class ZestGuidance implements Guidance {
             throw new GuidanceException(ignore);
         }
     }
-    
+
     /* Returns the banner to be displayed on the status screen */
     protected String getTitle() {
         if (blind) {
@@ -737,6 +737,7 @@ public class ZestGuidance implements Guidance {
 
                 if (toSave) {
                     String why = String.join(" ", savingCriteriaSatisfied);
+                    currentInput.savingCriteria = why;
 
                     // Trim input (remove unused keys)
                     currentInput.gc();
@@ -1056,6 +1057,8 @@ public class ZestGuidance implements Guidance {
          */
         String desc;
 
+        String savingCriteria;
+
         /**
          * The run coverage for this input, if the input is saved.
          *
@@ -1125,7 +1128,7 @@ public class ZestGuidance implements Guidance {
          * @return whether or not this input is favored
          */
         public boolean isFavored() {
-            return responsibilities.size() > 0;
+            return responsibilities.size() > 0 || savingCriteria.contains("mutant");
         }
 
         /**
