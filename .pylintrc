@@ -1,0 +1,3 @@
+[MASTER]
+disable=
+  C0116, C0114 
