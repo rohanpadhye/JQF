@@ -177,6 +177,14 @@ public class ThreadTracer {
     }
     
     private static boolean sameNameDesc(MemberRef m1, MemberRef m2) {
+        // Bypass checks for all function calls from java/util/function
+        // which are used by lambda function calls.
+        if ((m2 != null && m2.getOwner().contains("java/util/function")) ||
+                (m1 != null && m1.getName().startsWith("lambda$")) ||
+                (m2 != null && m2.getOwner().startsWith("java/util/stream"))
+        ) {
+            return true;
+        }
         return m1 != null && m2 != null &&
                 m1.getName().equals(m2.getName()) &&
                 m1.getDesc().equals(m2.getDesc());

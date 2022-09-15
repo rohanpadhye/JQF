@@ -42,6 +42,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Prefix;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Suffix;
@@ -95,7 +96,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
     protected Map<Integer, Integer> coverageHashToSavedInputIdx = new HashMap<>();
 
     /** Mean number of mutations to perform in each round. */
-    protected final double MEAN_MUTATION_COUNT = 2.0;
+    protected final double MEAN_MUTATION_COUNT = 8.0;
 
     /** Mean number of contiguous bytes to mutate in each mutation. */
     protected final double MEAN_MUTATION_SIZE = 4.0; // Bytes
@@ -110,7 +111,7 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
     protected final boolean SPLICE_SUBTREE = Boolean.getBoolean("jqf.ei.SPLICE_SUBTREE");
 
     /** Probability of splicing in {@link MappedInput#fuzz(Random, Map)} */
-    protected final double STANDARD_SPLICING_PROBABILITY = 0.0;
+    protected final double STANDARD_SPLICING_PROBABILITY = 0.5;
 
     /** Probability of splicing in {@link MappedInput#getOrGenerateFresh(ExecutionIndex, Random)}  */
     protected final double DEMAND_DRIVEN_SPLICING_PROBABILITY = 0.0;
@@ -704,8 +705,10 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                         ExecutionContext targetEc = new ExecutionContext(targetEi);
                         int valueAtTarget = this.getValueAtOffset(targetOffset);
 
-                        // Find a suitable input location to splice from
-                        ArrayList<InputLocation> inputLocations = ecToInputLoc.get(targetEc);
+                        // Find a suitable input location to splice from and ignore locations from the same source
+                        List<InputLocation> inputLocations = ecToInputLoc
+                                .get(targetEc).stream().filter(it -> it.input != this).collect(Collectors.toList());
+
 
                         // If this was a bad choice of target, try again without penalty if possible
                         if (inputLocations.size() == 0) {
@@ -748,6 +751,8 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
                                 Prefix sourcePrefix = sourceEi.getPrefixOfSuffix(suffix);
                                 Prefix targetPrefix = targetEi.getPrefixOfSuffix(suffix);
                                 assert (sourcePrefix.size() == targetPrefix.size());
+                                demandDrivenSpliceMap.add(
+                                        new InputPrefixMapping(sourceInput, sourcePrefix, targetPrefix));
 
                                 // OK, this looks good. Let's splice!
                                 int srcIdx = sourceOffset;
