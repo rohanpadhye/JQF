@@ -11,7 +11,7 @@ pushd `dirname $0` > /dev/null
 SCRIPT_DIR=$( dirname "$0" )
 popd > /dev/null
 
-JQF_DIR="$SCRIPT_DIR/../.."
+JQF_DIR="$SCRIPT_DIR/../../../"
 JQF_EI="$JQF_DIR/bin/jqf-ei"
 JQF_ZEST="$JQF_DIR/bin/jqf-zest"
 NAME=$1
@@ -24,9 +24,9 @@ SEEDS_DIR=$(dirname "$SEEDS")
 
 e=$IDX
 
-EI_OUT_DIR="$NAME-ei-results-$e"
+EI_NO_COUNT_OUT_DIR="$NAME-ei-no-count-results-$e"
 EI_FAST_OUT_DIR="$NAME-ei-fast-results-$e"
-ZEST_OUT_DIR="$NAME-zest-results-$e"
+ZEST_NO_COUNT_OUT_DIR="$NAME-zest-no-count-results-$e"
 ZEST_FAST_OUT_DIR="$NAME-zest-fast-results-$e"
 
 if [ -d "$JQF_OUT_DIR" ]; then
@@ -35,18 +35,19 @@ if [ -d "$JQF_OUT_DIR" ]; then
 fi
 
 # Do not let GC mess with fuzzing
-export JVM_OPTS="$JVM_OPTS -XX:-UseGCOverheadLimit"
+export JVM_OPTS="$JVM_OPTS -XX:-UseGCOverheadLimit -Xmx16g"
 
 
 SNAME="$NAME-$e"
-
-screen -S "$SNAME" -dm -t ei_$e
-screen -S "$SNAME" -X screen -t zest_$e
-screen -S "$SNAME" -p ei_$e -X stuff "timeout $TIME $JQF_EI -c \$($JQF_DIR/scripts/examples_classpath.sh) $TEST_CLASS testWithGenerator $EI_OUT_DIR^M"
-screen -S "$SNAME" -p zest_$e -X stuff "timeout $TIME $JQF_ZEST -c \$($JQF_DIR/scripts/examples_classpath.sh) $TEST_CLASS testWithGenerator $ZEST_OUT_DIR^M"
 
 FAST_ENV="\"$JVM_OPTS -DuseFastNonCollidingCoverageInstrumentation=true\""
 screen -S "$SNAME" -X screen -t ei_fast_$e
 screen -S "$SNAME" -X screen -t zest_fast_$e
 screen -S "$SNAME" -p ei_fast_$e -X stuff "JVM_OPTS=$FAST_ENV timeout $TIME $JQF_EI -c \$($JQF_DIR/scripts/examples_classpath.sh) -D-DuseFastNonCollidingCoverageInstrumentation=true $TEST_CLASS testWithGenerator $EI_FAST_OUT_DIR^M"
 screen -S "$SNAME" -p zest_fast_$e -X stuff "JVM_OPTS=$FAST_ENV timeout $TIME $JQF_ZEST -c \$($JQF_DIR/scripts/examples_classpath.sh) $TEST_CLASS testWithGenerator $ZEST_FAST_OUT_DIR^M"
+
+COUNT_ENV="\"$JVM_OPTS -DuseFastNonCollidingCoverageInstrumentation=true -Djqf.ei.DISABLE_SAVE_NEW_COUNTS=true\""
+screen -S "$SNAME" -X screen -t ei_fast_no_count_save_$e
+screen -S "$SNAME" -X screen -t zest_fast_no_count_save_$e
+screen -S "$SNAME" -p ei_fast_no_count_save_$e -X stuff "JVM_OPTS=$COUNT_ENV timeout $TIME $JQF_EI -c \$($JQF_DIR/scripts/examples_classpath.sh) -D-DuseFastNonCollidingCoverageInstrumentation=true $TEST_CLASS testWithGenerator $EI_NO_COUNT_OUT_DIR^M"
+screen -S "$SNAME" -p zest_fast_no_count_save_$e -X stuff "JVM_OPTS=$COUNT_ENV timeout $TIME $JQF_ZEST -c \$($JQF_DIR/scripts/examples_classpath.sh) $TEST_CLASS testWithGenerator $ZEST_NO_COUNT_OUT_DIR^M"
