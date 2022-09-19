@@ -7,9 +7,7 @@ import pandas as pd
 from visualize import *
 
 
-# DATASET = ["ant", "maven", "bcel", "rhino", "closure"]
-DATASET = ["closure"]
-# DATASET = ["rhino"]
+DATASET = ["ant", "maven", "bcel", "rhino", "closure"]
 
 ALGORITHM = ["zest-fast", "ei-fast"]
 

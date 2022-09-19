@@ -21,8 +21,8 @@ RUNS="$3"
 export JVM_OPTS="$JVM_OPTS -Djqf.repro.logUniqueBranches=true"
 
 for e in $(seq 0 $RUNS); do
-  ZEST_OUT_DIR="$NAME-zest-results-$e"
-  EI_OUT_DIR="$NAME-ei-results-$e"
+  ZEST_OUT_DIR="$NAME-zest-no-count-results-$e"
+  EI_OUT_DIR="$NAME-ei-no-count-results-$e"
   ZEST_FAST_OUT_DIR="$NAME-zest-fast-results-$e"
   EI_FAST_OUT_DIR="$NAME-ei-fast-results-$e"
 
@@ -42,8 +42,8 @@ done
 export JVM_OPTS="$JVM_OPTS -Djqf.repro.ignoreInvalidCoverage=true"
 
 for e in $(seq 0 $RUNS); do
-  ZEST_OUT_DIR="$NAME-zest-results-$e"
-  EI_OUT_DIR="$NAME-ei-results-$e"
+  ZEST_OUT_DIR="$NAME-zest-no-count-results-$e"
+  EI_OUT_DIR="$NAME-ei-no-count-results-$e"
   ZEST_FAST_OUT_DIR="$NAME-zest-fast-results-$e"
   EI_FAST_OUT_DIR="$NAME-ei-fast-results-$e"
 
