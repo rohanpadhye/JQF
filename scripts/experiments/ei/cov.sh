@@ -18,7 +18,7 @@ TEST_CLASS="edu.berkeley.cs.jqf.examples.$2"
 RUNS="$3"
 
 
-export JVM_OPTS="$JVM_OPTS -Djqf.repro.logUniqueBranches=true"
+export JVM_OPTS="$JVM_OPTS -Djqf.repro.logUniqueBranches=true -Xmx16g"
 
 for e in $(seq 0 $RUNS); do
   ZEST_OUT_DIR="$NAME-zest-no-count-results-$e"
