@@ -35,7 +35,7 @@ if [ -d "$JQF_OUT_DIR" ]; then
 fi
 
 # Do not let GC mess with fuzzing
-export JVM_OPTS="$JVM_OPTS -XX:-UseGCOverheadLimit -Xmx16g"
+export JVM_OPTS="$JVM_OPTS -XX:-UseGCOverheadLimit -Xmx16g -Djqf.tracing.MATCH_CALLEE_NAMES=true"
 
 
 SNAME="$NAME-$e"

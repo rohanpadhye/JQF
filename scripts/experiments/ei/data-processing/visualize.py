@@ -17,9 +17,8 @@ def process_plot_data(path: str) -> pd.DataFrame:
     data['total_inputs'] = data['valid_inputs'] + data['invalid_inputs']
     data['total_inputs'] -= data["total_inputs"][0]
     x_axis = "total_inputs"
-    algorithm = os.path.basename(path).split('-')[1]
-    if "fast" in os.path.basename(path):
-        algorithm += "-fast"
+    experiment_name = os.path.basename(path)
+    algorithm = "-".join(experiment_name.split('-')[1:-2])
 
     x_axis = "# unix_time"
     time_based_data = data.copy().drop_duplicates(
@@ -70,8 +69,8 @@ def show_values_on_bars(axs):
     def _show_on_single_plot(ax):
         for p in ax.patches:
             _x = p.get_x() + p.get_width() / 2
-            _y = p.get_y() + p.get_height()
-            value = '{:.2f}'.format(p.get_height())
+            _y = p.get_y() + p.get_height() + 10
+            value = str(int(p.get_height()))
             ax.text(_x, _y, value, ha="center")
 
     if isinstance(axs, np.ndarray):
