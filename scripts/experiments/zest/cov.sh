@@ -11,7 +11,7 @@ pushd `dirname $0` > /dev/null
 SCRIPT_DIR=`pwd`
 popd > /dev/null
 
-JQF_DIR="$SCRIPT_DIR/.."
+JQF_DIR="$SCRIPT_DIR/../../.."
 JQF_REPRO="$JQF_DIR/bin/jqf-repro -i"
 NAME=$1
 TEST_CLASS="edu.berkeley.cs.jqf.examples.$2"
