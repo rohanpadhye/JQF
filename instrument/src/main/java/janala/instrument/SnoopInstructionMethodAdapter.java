@@ -53,7 +53,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     mv.visitLdcInsn(className);
     mv.visitLdcInsn(methodName);
     mv.visitLdcInsn(descriptor);
-    if(isInit || isStatic || !Config.instance.analysisClass.equals("edu/berkeley/cs/jqf/instrument/tracing/SingleSnoop")) {
+    if(isInit || isStatic) {
       mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "METHOD_BEGIN",
               "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
     } else {
