@@ -45,6 +45,14 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEventVisitor;
  * @author Rohan Padhye
  */
 public class JanalaExecutionIndexingState extends AbstractExecutionIndexingState implements TraceEventVisitor {
+    public JanalaExecutionIndexingState() {
+        super();
+    }
+
+    public JanalaExecutionIndexingState(JanalaExecutionIndexingState eis) {
+        super(eis);
+    }
+
     @Override
     public void visitCallEvent(CallEvent c) {
         setLastEventIid(c.getIid());
