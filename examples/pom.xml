@@ -19,8 +19,9 @@
             <url>https://raw.githubusercontent.com/ornicar/lila-maven/master</url>
         </repository>
         <repository>
-          <id>github</id>
-          <url>https://maven.pkg.github.com/chocopy/artifacts</url>
+          <id>chocopy-artifacts</id>
+          <name>chocopy/chocopy artifacts</name>
+          <url>https://raw.githubusercontent.com/chocopy/artifacts/main</url>
         </repository>
     </repositories>
 
