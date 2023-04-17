@@ -14,6 +14,10 @@
 
     <repositories>
         <repository>
+          <id>central</id>
+          <url>https://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
             <id>lila-maven</id>
             <name>lichess/scalachess artifacts</name>
             <url>https://raw.githubusercontent.com/ornicar/lila-maven/master</url>
