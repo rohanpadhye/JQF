@@ -14,11 +14,10 @@ import org.junit.runner.RunWith;
 @RunWith(JQF.class)
 public class JsonTest {
 
+    private Gson gson = new Gson();
 
     @Fuzz
     public void fuzzJSONParser(@From(AsciiStringGenerator.class) String input) {
-        GsonBuilder builder = new GsonBuilder();
-        Gson gson = builder.setLenient().create();
         try {
             gson.fromJson(input, Object.class);
         } catch (JsonSyntaxException e) {
