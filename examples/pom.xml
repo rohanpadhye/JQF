@@ -14,9 +14,18 @@
 
     <repositories>
         <repository>
+          <id>central</id>
+          <url>https://repo1.maven.org/maven2</url>
+        </repository>
+        <repository>
             <id>lila-maven</id>
             <name>lichess/scalachess artifacts</name>
             <url>https://raw.githubusercontent.com/ornicar/lila-maven/master</url>
+        </repository>
+        <repository>
+          <id>chocopy-artifacts</id>
+          <name>chocopy/chocopy artifacts</name>
+          <url>https://raw.githubusercontent.com/chocopy/artifacts/main</url>
         </repository>
     </repositories>
 
@@ -156,6 +165,34 @@
             <version>1.18</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.9</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.13.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.13.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.13.0</version>
+        </dependency>
+        <dependency>
+          <groupId>org.chocopy</groupId>
+          <artifactId>chocopy-artifacts</artifactId>
+          <version>2.2</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -216,5 +253,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
