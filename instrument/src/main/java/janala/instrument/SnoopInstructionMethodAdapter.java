@@ -24,8 +24,8 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
   private final GlobalStateForInstrumentation instrumentationState;
 
   public SnoopInstructionMethodAdapter(MethodVisitor mv, String className,
-      String methodName, String descriptor, String superName,
-      GlobalStateForInstrumentation instrumentationState) {
+                                       String methodName, String descriptor, String superName,
+                                       GlobalStateForInstrumentation instrumentationState, boolean isStatic) {
     super(ASM8, mv);
     this.isInit = methodName.equals("<init>");
     this.isSuperInitCalled = false;
@@ -34,16 +34,7 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     this.descriptor = descriptor;
     this.superName = superName;
     tryCatchBlocks = new LinkedList<>();
-
     this.instrumentationState = instrumentationState;
-
-    isStatic = true; //assume static by default
-  }
-
-  public SnoopInstructionMethodAdapter(MethodVisitor mv, String className,
-                                       String methodName, String descriptor, String superName,
-                                       GlobalStateForInstrumentation instrumentationState, boolean isStatic) {
-    this(mv, className, methodName, descriptor, superName, instrumentationState);
     this.isStatic = isStatic;
   }
 
