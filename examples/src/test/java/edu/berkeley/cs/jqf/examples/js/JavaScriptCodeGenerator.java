@@ -259,7 +259,7 @@ public class JavaScriptCodeGenerator extends Generator<String> {
         return "if (" +
                 generateExpression(random) + ") " +
                 generateBlock(random) +
-                (random.nextBoolean() ? generateBlock(random) : "");
+                (random.nextBoolean() ? " else " + generateBlock(random) : "");
     }
 
     private String generateIndexNode(SourceOfRandomness random) {
