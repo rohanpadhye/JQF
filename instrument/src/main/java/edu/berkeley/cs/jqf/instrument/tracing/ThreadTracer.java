@@ -236,7 +236,7 @@ public class ThreadTracer {
                 // Trace continues with callee
                 int invokerIid = invokeTarget != null ? ((Instruction) invokeTarget).iid : -1;
                 int invokerMid = invokeTarget != null ? ((Instruction) invokeTarget).mid : -1;
-                emit(new CallEvent(invokerIid, this.method, invokerMid, begin));
+                emit(new CallEvent(invokerIid, this.method, invokerMid, begin, begin.getObject()));
                 handlers.push(new TraceEventGeneratingHandler(begin, depth+1));
             } else {
                 // Class loading or static initializer

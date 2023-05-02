@@ -36,7 +36,7 @@ public class SnoopInstructionClassAdapter extends ClassVisitor {
         return new FastCoverageMethodAdapter(mv, className, name, desc, superName, GlobalStateForInstrumentation.instance);
       }else {
         return new SnoopInstructionMethodAdapter(mv, className, name, desc, superName,
-                GlobalStateForInstrumentation.instance);
+                GlobalStateForInstrumentation.instance, (access & Opcodes.ACC_STATIC) != 0);
       }
     }
     return null;

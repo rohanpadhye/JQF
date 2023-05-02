@@ -33,6 +33,15 @@ public abstract class AbstractExecutionIndexingState {
         stackOfCounters.add(new NonZeroCachingCounter(COUNTER_SIZE));
     }
 
+    public AbstractExecutionIndexingState(AbstractExecutionIndexingState eis) {
+        depth = eis.depth;
+        lastEventIid = eis.lastEventIid;
+        for(Counter c : eis.stackOfCounters) {
+            stackOfCounters.add(new Counter(c));
+        }
+        System.arraycopy(eis.rollingIndex, 0, rollingIndex, 0, eis.rollingIndex.length);
+    }
+
     protected void setLastEventIid(int iid) {
         lastEventIid = iid;
     }
@@ -96,6 +105,15 @@ public abstract class AbstractExecutionIndexingState {
 
         // Snapshot the rolling index
         int size = 2*(depth+1); // 2 integers for each depth value
+        int[] ei = Arrays.copyOf(rollingIndex, size);
+
+        // Create an execution index
+        return new ExecutionIndex(ei);
+    }
+
+    public ExecutionIndex getExecutionIndex() {
+        // Snapshot the rolling index
+        int size = 2*(depth); // 2 integers for each depth value
         int[] ei = Arrays.copyOf(rollingIndex, size);
 
         // Create an execution index

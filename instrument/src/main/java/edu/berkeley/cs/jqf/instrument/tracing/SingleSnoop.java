@@ -998,6 +998,11 @@ public final class SingleSnoop {
         try { intp.METHOD_BEGIN(className, methodName, desc); } finally { block.set(false); }
     }
 
+    public static void METHOD_BEGIN(String className, String methodName, String desc, Object obj) {
+        if (block.get()) return; else block.set(true);
+        try { intp.METHOD_BEGIN(className, methodName, desc, obj); } finally { block.set(false); }
+    }
+
     public static void METHOD_THROW() {
         if (block.get()) return; else block.set(true);
         try { intp.METHOD_THROW(); } finally { block.set(false); }

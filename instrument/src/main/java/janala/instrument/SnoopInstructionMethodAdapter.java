@@ -9,6 +9,7 @@ import org.objectweb.asm.Opcodes;
 
 public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opcodes {
   boolean isInit;
+  boolean isStatic;
   boolean isSuperInitCalled; // Used to keep track of calls to super()/this() in <init>()
   int newStack = 0; // Used to keep-track of NEW instructions in <init>()
   LinkedList<TryCatchBlock> tryCatchBlocks;
@@ -23,8 +24,8 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
   private final GlobalStateForInstrumentation instrumentationState;
 
   public SnoopInstructionMethodAdapter(MethodVisitor mv, String className,
-      String methodName, String descriptor, String superName,
-      GlobalStateForInstrumentation instrumentationState) {
+                                       String methodName, String descriptor, String superName,
+                                       GlobalStateForInstrumentation instrumentationState, boolean isStatic) {
     super(ASM8, mv);
     this.isInit = methodName.equals("<init>");
     this.isSuperInitCalled = false;
@@ -33,8 +34,8 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     this.descriptor = descriptor;
     this.superName = superName;
     tryCatchBlocks = new LinkedList<>();
-
     this.instrumentationState = instrumentationState;
+    this.isStatic = isStatic;
   }
 
   @Override
@@ -43,8 +44,14 @@ public class SnoopInstructionMethodAdapter extends MethodVisitor implements Opco
     mv.visitLdcInsn(className);
     mv.visitLdcInsn(methodName);
     mv.visitLdcInsn(descriptor);
-    mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "METHOD_BEGIN", 
-        "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
+    if(isInit || isStatic) {
+      mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "METHOD_BEGIN",
+              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V", false);
+    } else {
+      mv.visitVarInsn(ALOAD, 0);
+      mv.visitMethodInsn(INVOKESTATIC, Config.instance.analysisClass, "METHOD_BEGIN",
+              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V", false);
+    }
     if (isInit == false) {
       // For non-constructor methods, the outer try-catch blocks wraps around the entire code
       mv.visitLabel(methodBeginLabel);

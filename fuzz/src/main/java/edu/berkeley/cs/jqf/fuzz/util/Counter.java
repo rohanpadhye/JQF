@@ -68,6 +68,12 @@ public class Counter {
         this.counts = new int[size];
     }
 
+    public Counter(Counter counter) {
+        this.size = counter.size;
+        this.counts = new int[size];
+        System.arraycopy(counter.counts, 0, counts, 0, size);
+    }
+
     /**
      * Returns the size of this counter.
      *
