@@ -139,12 +139,8 @@ public class JQF extends JUnitQuickcheck {
     }
 
     @Override public Statement methodBlock(FrameworkMethod method) {
-        // JQF only needs special handling for @Fuzz-annotated test methods
-        if (method.getAnnotation(DiffFuzz.class) == null) {
-            if (method.getAnnotation(Fuzz.class) == null) {
-                return super.methodBlock(method);
-            }
-
+        // JQF needs special handling for @Fuzz or @DiffFuzz test methods
+        if (method.getAnnotation(Fuzz.class) != null) {
             // Get currently set fuzzing guidance
             Guidance guidance = GuidedFuzzing.getCurrentGuidance();
 
@@ -189,24 +185,29 @@ public class JQF extends JUnitQuickcheck {
             }
 
             return new FuzzStatement(method, getTestClass(), generatorRepository, guidance);
+
+        } else if (method.getAnnotation(DiffFuzz.class) != null) {
+            // Get currently set fuzzing guidance
+            Guidance guidance = GuidedFuzzing.getCurrentGuidance();
+            DiffFuzzGuidance diffGuidance;
+
+            if (guidance == null) {
+                guidance = new DiffFuzzNoGuidance(GuidedFuzzing.DEFAULT_MAX_TRIALS, System.err);
+            }
+
+            if (!(guidance instanceof DiffFuzzGuidance)) {
+                throw new IllegalStateException("@DiffFuzz methods cannot be fuzzed with a " +
+                        guidance.getClass().getName());
+            }
+            diffGuidance = (DiffFuzzGuidance) guidance;
+
+            if (method.getAnnotation(DiffFuzz.class).cmp().isEmpty() == false) {
+                diffGuidance.setCompare(cmpNames.get(method.getAnnotation(DiffFuzz.class).cmp()).getMethod());
+            }
+
+            return new FuzzStatement(method, getTestClass(), generatorRepository, diffGuidance);
+        } else {
+            return super.methodBlock(method);
         }
-
-        // Get currently set fuzzing guidance
-        Guidance guidance = GuidedFuzzing.getCurrentGuidance();
-        DiffFuzzGuidance diffGuidance;
-
-
-        if(guidance == null) {
-            guidance = new DiffFuzzNoGuidance(GuidedFuzzing.DEFAULT_MAX_TRIALS, System.err);
-        }
-
-        assert (guidance instanceof DiffFuzzGuidance);
-        diffGuidance = (DiffFuzzGuidance) guidance;
-
-        if(!method.getAnnotation(DiffFuzz.class).cmp().equals("")) {
-            diffGuidance.setCompare(cmpNames.get(method.getAnnotation(DiffFuzz.class).cmp()).getMethod());
-        }
-
-        return new FuzzStatement(method, getTestClass(), generatorRepository, diffGuidance);
     }
 }
