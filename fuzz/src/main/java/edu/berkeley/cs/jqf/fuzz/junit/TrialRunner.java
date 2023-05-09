@@ -28,9 +28,11 @@
  */
 package edu.berkeley.cs.jqf.fuzz.junit;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import edu.berkeley.cs.jqf.fuzz.Fuzz;
+import edu.berkeley.cs.jqf.fuzz.difffuzz.DiffFuzz;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
@@ -40,6 +42,9 @@ public class TrialRunner extends BlockJUnit4ClassRunner {
     private final FrameworkMethod method;
     protected final Object[] args;
 
+    /** output of most recent trial */
+    private Object output;
+
     public TrialRunner(Class<?> testClass, FrameworkMethod method, Object[] args) throws InitializationError {
         super(testClass);
         this.method = method;
@@ -47,7 +52,12 @@ public class TrialRunner extends BlockJUnit4ClassRunner {
     }
 
     @Override protected List<FrameworkMethod> computeTestMethods() {
-        return getTestClass().getAnnotatedMethods(Fuzz.class);
+        List<FrameworkMethod> diffMethods = getTestClass().getAnnotatedMethods(DiffFuzz.class);
+        List<FrameworkMethod> fuzzMethods = getTestClass().getAnnotatedMethods(Fuzz.class);
+        List<FrameworkMethod> testMethods = new ArrayList<>();
+        if(diffMethods.size() > 0) testMethods.addAll(diffMethods);
+        if(fuzzMethods.size() > 0) testMethods.addAll(fuzzMethods);
+        return testMethods;
     }
 
     @Override protected Statement methodInvoker(
@@ -56,7 +66,7 @@ public class TrialRunner extends BlockJUnit4ClassRunner {
         assert(this.method == frameworkMethod);
         return new Statement() {
             @Override public void evaluate() throws Throwable {
-                frameworkMethod.invokeExplosively(test, args);
+                output = frameworkMethod.invokeExplosively(test, args);
             }
         };
     }
@@ -65,6 +75,7 @@ public class TrialRunner extends BlockJUnit4ClassRunner {
         this.methodBlock(method).evaluate();
     }
 
-
-
+    public Object getOutput() {
+        return output;
+    }
 }
