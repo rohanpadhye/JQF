@@ -30,6 +30,7 @@ public abstract class AbstractGuidanceIT {
         // Walk dependency tree of jqf-examples
         List<String> paths = Files.walk(Paths.get("../examples/target/dependency"))
                 .map(Path::toString).collect(Collectors.toList());
+        paths.add("../examples/target/classes/"); // add sources from jqf-examples
         paths.add("../examples/target/test-classes/"); // also add fuzz drivers in jqf-examples
 
         // Create coverage-instrumenting class loader
