@@ -20,11 +20,6 @@
             <artifactId>jqf-fuzz</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>edu.berkeley.cs.jqf</groupId>
-            <artifactId>jqf-examples</artifactId>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <build>
