@@ -48,9 +48,9 @@ Binary fuzzing tools like [AFL](http://lcamtuf.coredump.cx/afl) and [libFuzzer](
 Structure-aware fuzzing tools need a way to understand the input structure. Some other tools use declarative specifications of the input format such as [context-free grammars](https://embed.cs.utah.edu/csmith/) or [protocol buffers](https://github.com/google/libprotobuf-mutator). **JQF** uses QuickCheck's imperative approach for specifying the space of inputs: arbitrary ***generator*** programs whose job is to generate a single random input. 
 
 A `Generator<T>` provides a method for producing random instances of type `T`. For example, a generator for type `Calendar` returns randomly-generated `Calendar` objects. One can easily write generators for more complex types, such as 
-[XML documents](examples/src/test/java/edu/berkeley/cs/jqf/examples/xml/XmlDocumentGenerator.java), 
-[JavaScript programs](examples/src/test/java/edu/berkeley/cs/jqf/examples/js/JavaScriptCodeGenerator.java), 
-[JVM class files](examples/src/test/java/edu/berkeley/cs/jqf/examples/bcel/JavaClassGenerator.java), SQL queries, HTTP requests, and [many more](https://github.com/pholser/junit-quickcheck/tree/master/examples/src/test/java/com/pholser/junit/quickcheck/examples) -- this is **generator-based fuzzing**. However, simply sampling random inputs of type `T` is not usually very effective, since the generator does not know if the inputs that it produces are any good.
+[XML documents](examples/src/main/java/edu/berkeley/cs/jqf/examples/xml/XmlDocumentGenerator.java), 
+[JavaScript programs](examples/src/main/java/edu/berkeley/cs/jqf/examples/js/JavaScriptCodeGenerator.java), 
+[JVM class files](examples/src/main/java/edu/berkeley/cs/jqf/examples/bcel/JavaClassGenerator.java), SQL queries, HTTP requests, and [many more](https://github.com/pholser/junit-quickcheck/tree/master/examples/src/test/java/com/pholser/junit/quickcheck/examples) -- this is **generator-based fuzzing**. However, simply sampling random inputs of type `T` is not usually very effective, since the generator does not know if the inputs that it produces are any good.
 
 
 ### What is *semantic fuzzing* (Zest)?
