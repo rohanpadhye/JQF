@@ -21,13 +21,13 @@
         <developer>
             <name>Rohan Padhye</name>
             <email>rohanpadhye@cs.berkeley.edu</email>
-            <organization>University of California, Berkeley</organization>
-            <url>https://people.eecs.berkeley.edu/~rohanpadhye</url>
+            <organization>Carnegie Mellon University</organization>
+            <url>https://rohan.padhye.org</url>
         </developer>
         <developer>
             <name>Caroline Lemieux</name>
-            <email>clemieux@cs.berkeley.edu</email>
-            <organization>University of California, Berkeley</organization>
+            <email>clemieux@cs.ubc.ca</email>
+            <organization>University of British Columbia</organization>
             <url>http://www.carolemieux.com</url>
         </developer>
     </developers>
@@ -37,7 +37,6 @@
             <name>Koushik Sen</name>
             <email>ksen@cs.berkeley.edu</email>
             <organization>University of California, Berkeley</organization>
-            <url>https://people.eecs.berkeley.edu/~rohanpadhye/</url>
         </contributor>
         <contributor>
             <name>Tobias Ospelt</name>
@@ -46,23 +45,31 @@
         <contributor>
             <name>Yevgeny Pats</name>
             <email>yp@fuzzit.dev</email>
-            <url>https://fuzzit.dev</url>
         </contributor>
         <contributor>
             <name>Vasudev Vikram</name>
             <email>vasumv@cmu.edu</email>
+            <organization>Carnegie Mellon University</organization>
         </contributor>
         <contributor>
             <name>Ao Li</name>
             <email>aoli@cs.cmu.edu</email>
+            <organization>Carnegie Mellon University</organization>
         </contributor>
         <contributor>
             <name>Isabella Laybourn</name>
             <email>ilaybour@andrew.cmu.edu</email>
+            <organization>Carnegie Mellon University</organization>
         </contributor>
         <contributor>
             <name>Jonathan Bell</name>
             <email>jon@jonbell.net</email>
+            <organization>Northeastern University</organization>
+        </contributor>
+        <contributor>
+            <name>Katharine Hough</name>
+            <email>hough.k@northeastern.edu</email>
+            <organization>Northeastern University</organization>
         </contributor>
     </contributors>
 
