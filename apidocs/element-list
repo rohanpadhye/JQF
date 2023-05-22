@@ -1,6 +1,8 @@
 edu.berkeley.cs.jqf.fuzz
 edu.berkeley.cs.jqf.fuzz.afl
+edu.berkeley.cs.jqf.fuzz.difffuzz
 edu.berkeley.cs.jqf.fuzz.ei
+edu.berkeley.cs.jqf.fuzz.ei.state
 edu.berkeley.cs.jqf.fuzz.guidance
 edu.berkeley.cs.jqf.fuzz.junit
 edu.berkeley.cs.jqf.fuzz.junit.quickcheck
