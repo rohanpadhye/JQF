@@ -105,20 +105,20 @@ In the above example, the generators for `Map` and `String` were synthesized aut
 
 ## Research and Tools based on JQF
 
-* **[Zest](https://github.com/rohanpadhye/jqf-zest-example)** 🍝 [[ISSTA'19 paper]] 
-* **[BigFuzz](https://github.com/UCLA-SEAL/BigFuzz)** 🍝 [[ASE'20 paper]]
-* **[MoFuzz](https://github.com/hub-se/MoFuzz)** [[ASE'20 paper](https://doi.org/10.1145/3324884.3416668)]
-* **[RLCheck](https://github.com/sameerreddy13/rlcheck)** 🍝 [[ICSE'20 paper]]
-* **[Bonsai Fuzzing](https://github.com/vasumv/bonsai-fuzzing)** 🍝 [[ICSE'21 paper]]
-* **[Confetti](https://github.com/neu-se/CONFETTI)** [[ICSE'22 paper](https://doi.org/10.1145/3510003.3510628)]
-* **[BeDivFuzz](https://github.com/hub-se/BeDivFuzz)** [[ICSE'22 paper](https://doi.org/10.1145/3510003.3510182)]
-* **[ODDFuzz](https://github.com/ODDFuzz/ODDFuzz)** [[IEEE S&P'23 paper](https://arxiv.org/pdf/2304.04233.pdf)]
-* **[GCMiner](https://github.com/GCMiner/GCMiner)** [[ICSE'23 paper](https://arxiv.org/pdf/2303.07593.pdf)]
-* **[Intender](https://github.com/purseclab/intender)** [[USENIX Security'23 paper](https://www.usenix.org/system/files/sec23fall-prepub-285_kim-jiwon.pdf)]
-* **[Mu2](https://github.com/cmu-pasta/mu2)** 🍝 [[ISSTA'23 paper]]
-* **[TOAST](http://dx.doi.org/10.1007/s11390-021-1693-1)** [[JCST paper](https://link.springer.com/article/10.1007/s11390-021-1693-1)]
-* **[SPIDER](https://arxiv.org/abs/2209.04026)** 🍝 [[arxiv preprint](https://arxiv.org/abs/2209.04026)]
-* **[FuzzDiff](https://github.com/akashpatil7/FuzzDiff)** [[Dissertation](https://www.scss.tcd.ie/publications/theses/diss/2022/TCD-SCSS-DISSERTATION-2022-134.pdf)]
+* **[Zest](https://github.com/rohanpadhye/jqf-zest-example)** 🍝 [[ISSTA'19 paper]] - Semantic Fuzzing 
+* **[BigFuzz](https://github.com/UCLA-SEAL/BigFuzz)** 🍝 [[ASE'20 paper]] - Spark Fuzzing
+* **[MoFuzz](https://github.com/hub-se/MoFuzz)** [[ASE'20 paper](https://doi.org/10.1145/3324884.3416668)] - Model-driven software
+* **[RLCheck](https://github.com/sameerreddy13/rlcheck)** 🍝 [[ICSE'20 paper]] - Reinforcement learning 
+* **[Bonsai](https://github.com/vasumv/bonsai-fuzzing)** 🍝 [[ICSE'21 paper]] - Concise test generation
+* **[Confetti](https://github.com/neu-se/CONFETTI)** [[ICSE'22 paper](https://doi.org/10.1145/3510003.3510628)] - Concolic / taint tracking with global hinting
+* **[BeDivFuzz](https://github.com/hub-se/BeDivFuzz)**  [[ICSE'22 paper](https://doi.org/10.1145/3510003.3510182)]- Behaviorial diversity
+* **[ODDFuzz](https://github.com/ODDFuzz/ODDFuzz)** [[IEEE S&P'23 paper](https://arxiv.org/pdf/2304.04233.pdf)]  - Deserialization vulnerabilities
+* **[GCMiner](https://github.com/GCMiner/GCMiner)** [[ICSE'23 paper](https://arxiv.org/pdf/2303.07593.pdf)] - Gadget chain mining
+* **[Intender](https://github.com/purseclab/intender)** [[USENIX Security'23 paper](https://www.usenix.org/system/files/sec23fall-prepub-285_kim-jiwon.pdf)] - Intent-based networking
+* **[Mu2](https://github.com/cmu-pasta/mu2)** 🍝 [[ISSTA'23 paper]] - Mutation testing as guidance
+* **[TOAST](http://dx.doi.org/10.1007/s11390-021-1693-1)** [[JCST paper](https://link.springer.com/article/10.1007/s11390-021-1693-1)] - Testing dynamic software updates
+* **[SPIDER](https://arxiv.org/abs/2209.04026)** 🍝 [[arxiv preprint](https://arxiv.org/abs/2209.04026)] - Stateful performance issues in SDN
+* **[FuzzDiff](https://github.com/akashpatil7/FuzzDiff)** [[Dissertation](https://www.scss.tcd.ie/publications/theses/diss/2022/TCD-SCSS-DISSERTATION-2022-134.pdf)] - Dynamic program equivalence checking
 
 🍝 = Involves at least one of the original JQF authors.
 
