@@ -7,6 +7,7 @@
 [ICSE'20 paper]: https://rohan.padhye.org/files/rlcheck-icse20.pdf
 [ASE'20 paper]: https://rohan.padhye.org/files/bigfuzz-ase20.pdf
 [ICSE'21 paper]: https://rohan.padhye.org/files/bonsai-icse21.pdf
+[ISSTA'23 paper]: https://dx.doi.org/10.1145/3597926.3598107
 
 JQF is a feedback-directed fuzz testing platform for Java (think: AFL/LibFuzzer but for JVM bytecode). JQF uses the abstraction of *property-based testing*, which makes it nice to write fuzz drivers as parameteric JUnit test methods. JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck). JQF enables running junit-quickcheck style parameterized unit tests with the power of **coverage-guided** fuzzing algorithms such as **Zest**.
 
@@ -17,7 +18,7 @@ JQF is a modular framework, supporting the following pluggable fuzzing front-end
 * Semantic fuzzing with **[Zest](http://arxiv.org/abs/1812.00078)** [[ISSTA'19 paper]] ([tutorial 1](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-with-Zest)) ([tutorial 2](https://github.com/rohanpadhye/jqf/wiki/Fuzzing-a-Compiler))
 * Complexity fuzzing with **[PerfFuzz](https://github.com/carolemieux/perffuzz)** [[ISSTA'18 paper]]
 * Reinforcement learning with **[RLCheck](https://github.com/sameerreddy13/rlcheck)** (based on a fork of JQF) [[ICSE'20 paper]]
-* Apache Spark fuzzing with **[BigFuzz](https://github.com/UCLA-SEAL/BigFuzz)** [[ASE'20 paper]]
+* Mutation-analysis-guided fuzzing with **[Mu2](https://github.com/cmu-pasta/mu2)** [[ISSTA'23 paper]]
 
 JQF has been successful in [discovering a number of bugs in widely used open-source software](#trophies) such as OpenJDK, Apache Maven and the Google Closure Compiler.
 
@@ -86,8 +87,10 @@ In the above example, the generators for `Map` and `String` were synthesized aut
 
 ## Documentation
 
-* The [JQF Maven Plugin](https://github.com/rohanpadhye/JQF/wiki/JQF-Maven-Plugin) documentation shows how to run `mvn jqf:fuzz`.
+* The [JQF Maven Plugin](https://github.com/rohanpadhye/JQF/wiki/JQF-Maven-Plugin) documentation shows how to run `mvn jqf:fuzz` and `mvn jqf:repro`.
 * [Writing a JQF Test](https://github.com/rohanpadhye/JQF/wiki/Writing-a-JQF-test) demonstrates the creation of a JUnit-based parameterized test method for JQF.
+* [The Guidance interface](https://github.com/rohanpadhye/jqf/wiki/The-Guidance-interface) docs show how JQF works internally, which is useful for researchers wishing to build custom guidance algorithms on top of JQF.
+* [API docs](https://rohanpadhye.github.io/JQF/apidocs) are published at every major release, which is again useful for researchers wishing to extend JQF.
 
 ### Tutorials
 
@@ -98,25 +101,26 @@ In the above example, the generators for `Map` and `String` were synthesized aut
 
 ### Continuous Fuzzing
 
-[GitLab](https://docs.gitlab.com/ee/user/application_security/coverage_fuzzing/) supports running JQF in CI/CD ([tutorial](https://gitlab.com/gitlab-org/security-products/demos/coverage-fuzzing/java-fuzzing-example)).
-
-### Additional Details
-
-The [JQF wiki](https://github.com/rohanpadhye/jqf/wiki) contains lots more documentation including:
-- [Using a custom fuzz guidance](https://github.com/rohanpadhye/jqf/wiki/The-Guidance-interface)
-- [Performance Benchmarks](https://github.com/rohanpadhye/jqf/wiki/Performance-benchmarks)
-
-JQF also publishes its [API docs](https://rohanpadhye.github.io/JQF/apidocs).
+[GitLab](https://docs.gitlab.com/ee/user/application_security/coverage_fuzzing/) supports running JQF in CI/CD ([tutorial](https://gitlab.com/gitlab-org/security-products/demos/coverage-fuzzing/java-fuzzing-example)), though they have recently rolled out their own custom Java fuzzer for this purpose.
 
 ## Research and Tools based on JQF
 
-* **[Zest](https://github.com/rohanpadhye/jqf-zest-example)** [[ISSTA'19 paper]]
-* **[BigFuzz](https://github.com/UCLA-SEAL/BigFuzz)** [[ASE'20 paper]]
+* **[Zest](https://github.com/rohanpadhye/jqf-zest-example)** 🍝 [[ISSTA'19 paper]] 
+* **[BigFuzz](https://github.com/UCLA-SEAL/BigFuzz)** 🍝 [[ASE'20 paper]]
 * **[MoFuzz](https://github.com/hub-se/MoFuzz)** [[ASE'20 paper](https://doi.org/10.1145/3324884.3416668)]
-* **[RLCheck](https://github.com/sameerreddy13/rlcheck)** [[ICSE'20 paper]]
-* **[Bonsai Fuzzing](https://github.com/vasumv/bonsai-fuzzing)** [[ICSE'21 paper]]
+* **[RLCheck](https://github.com/sameerreddy13/rlcheck)** 🍝 [[ICSE'20 paper]]
+* **[Bonsai Fuzzing](https://github.com/vasumv/bonsai-fuzzing)** 🍝 [[ICSE'21 paper]]
 * **[Confetti](https://github.com/neu-se/CONFETTI)** [[ICSE'22 paper](https://doi.org/10.1145/3510003.3510628)]
 * **[BeDivFuzz](https://github.com/hub-se/BeDivFuzz)** [[ICSE'22 paper](https://doi.org/10.1145/3510003.3510182)]
+* **[ODDFuzz](https://github.com/ODDFuzz/ODDFuzz)** [[IEEE S&P'23 paper](https://arxiv.org/pdf/2304.04233.pdf)]
+* **[GCMiner](https://github.com/GCMiner/GCMiner)** [[ICSE'23 paper](https://arxiv.org/pdf/2303.07593.pdf)]
+* **[Intender](https://github.com/purseclab/intender)** [[USENIX Security'23 paper](https://www.usenix.org/system/files/sec23fall-prepub-285_kim-jiwon.pdf)]
+* **[Mu2](https://github.com/cmu-pasta/mu2)** 🍝 [[ISSTA'23 paper]]
+* **[TOAST](http://dx.doi.org/10.1007/s11390-021-1693-1)** [[JCST paper](https://link.springer.com/article/10.1007/s11390-021-1693-1)]
+* **[SPIDER](https://arxiv.org/abs/2209.04026)** 🍝 [[arxiv preprint](https://arxiv.org/abs/2209.04026)]
+* **[FuzzDiff](https://github.com/akashpatil7/FuzzDiff)** [[Dissertation](https://www.scss.tcd.ie/publications/theses/diss/2022/TCD-SCSS-DISSERTATION-2022-134.pdf)]
+
+🍝 = Involves at least one of the original JQF authors.
 
 ## Contact the developers
 
