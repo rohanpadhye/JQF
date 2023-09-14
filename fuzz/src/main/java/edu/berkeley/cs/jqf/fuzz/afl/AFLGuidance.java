@@ -398,8 +398,9 @@ public class AFLGuidance implements Guidance {
     }
 
     protected void checkForTimeouts() throws TimeoutException {
+        ++this.branchCount;
         if (this.singleRunTimeoutMillis > 0 &&
-                this.runStart != null && (++this.branchCount) % 10_000 == 0) {
+                this.runStart != null && (this.branchCount) % 10_000 == 0) {
             long elapsed = new Date().getTime() - runStart.getTime();
             if (elapsed > this.singleRunTimeoutMillis) {
                 timeoutHasOccurred = true;

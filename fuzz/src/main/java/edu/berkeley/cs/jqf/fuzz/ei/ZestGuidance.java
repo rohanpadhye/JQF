@@ -1031,8 +1031,9 @@ public class ZestGuidance implements Guidance {
             // Collect totalCoverage
             ((Coverage) runCoverage).handleEvent(e);
             // Check for possible timeouts every so often
+            ++this.branchCount;
             if (this.singleRunTimeoutMillis > 0 &&
-                    this.runStart != null && (++this.branchCount) % 10_000 == 0) {
+                    this.runStart != null && (this.branchCount) % 10_000 == 0) {
                 long elapsed = new Date().getTime() - runStart.getTime();
                 if (elapsed > this.singleRunTimeoutMillis) {
                     throw new TimeoutException(elapsed, this.singleRunTimeoutMillis);
