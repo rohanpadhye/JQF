@@ -116,7 +116,8 @@ In the above example, the generators for `Map` and `String` were synthesized aut
 * **[GCMiner](https://github.com/GCMiner/GCMiner)** [[ICSE'23 paper](https://arxiv.org/pdf/2303.07593.pdf)] - Gadget chain mining
 * **[Intender](https://github.com/purseclab/intender)** [[USENIX Security'23 paper](https://www.usenix.org/system/files/sec23fall-prepub-285_kim-jiwon.pdf)] - Intent-based networking
 * **[Mu2](https://github.com/cmu-pasta/mu2)** 🍝 [[ISSTA'23 paper]] - Mutation testing as guidance
-* **[TOAST](http://dx.doi.org/10.1007/s11390-021-1693-1)** [[JCST paper](https://link.springer.com/article/10.1007/s11390-021-1693-1)] - Testing dynamic software updates
+* **[TOAST](http://dx.doi.org/10.1007/s11390-021-1693-1)** [[JCST'22 paper](https://link.springer.com/article/10.1007/s11390-021-1693-1)] - Testing dynamic software updates
+* **[Poracle](https://github.com/PLaSE-UNIST/poracle-tool)** [[TOSEM'23 paper](http://www.jooyongyi.com/papers/TOSEM23.pdf)] - Patch testing using differential fuzzing
 * **[SPIDER](https://arxiv.org/abs/2209.04026)** 🍝 [[arxiv preprint](https://arxiv.org/abs/2209.04026)] - Stateful performance issues in SDN
 * **[FuzzDiff](https://github.com/akashpatil7/FuzzDiff)** [[Dissertation](https://www.scss.tcd.ie/publications/theses/diss/2022/TCD-SCSS-DISSERTATION-2022-134.pdf)] - Dynamic program equivalence checking
 
