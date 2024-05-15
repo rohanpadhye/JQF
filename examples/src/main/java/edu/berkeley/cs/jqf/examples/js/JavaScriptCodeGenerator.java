@@ -340,7 +340,12 @@ public class JavaScriptCodeGenerator extends Generator<String> {
 
     private String generateAssignmentNode(SourceOfRandomness random) {
         String token = random.choose(ASSIGNMENT_TOKENS);
-        String lhs = generateIdentNode(random);
+        List<Function<SourceOfRandomness, String>> lhsGenerators = Arrays.asList(
+                this::generateIdentNode,
+                this::generateIndexNode,
+                this::generatePropertyNode
+        );
+        String lhs = random.choose(lhsGenerators).apply(random);
         String rhs = generateExpression(random);
         return lhs + " " + token + " " + rhs + ";";
     }
