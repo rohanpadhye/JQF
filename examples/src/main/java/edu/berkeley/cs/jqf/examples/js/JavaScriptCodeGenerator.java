@@ -68,11 +68,17 @@ public class JavaScriptCodeGenerator extends Generator<String> {
     };
 
     private static final String[] BINARY_TOKENS = {
-            "!=", "!==", "%", "%=", "&", "&&", "&=", "*", "*=", "+", "+=", ",",
-            "-", "-=", "/", "/=", "<", "<<", ">>=", "<=", "=", "==", "===",
-            ">", ">=", ">>", ">>=", ">>>", ">>>=", "^", "^=", "|", "|=", "||",
+            "!=", "!==", "%", "&", "&&", "*", "+", ",",
+            "-", "/", "<", "<<", "<=", "=", "==", "===",
+            ">", ">=", ">>", ">>>", "^", "|", "||",
             "in", "instanceof"
     };
+
+    private static final String[] ASSIGNMENT_TOKENS = {
+            "=", "+=", "-=", "*=", "/=", "%=", "**=", "<<=", ">>=", ">>>=", "&=", "^=", "|=", "&&=",
+            "||=", "??=",
+    };
+
 
     @Override
     public String generate(SourceOfRandomness random, GenerationStatus status) {
@@ -117,7 +123,8 @@ public class JavaScriptCodeGenerator extends Generator<String> {
                     this::generateFunctionNode,
                     this::generatePropertyNode,
                     this::generateIndexNode,
-                    this::generateArrowFunctionNode
+                    this::generateArrowFunctionNode,
+                    this::generateAssignmentNode
             )).apply(random);
         }
         expressionDepth--;
@@ -329,5 +336,16 @@ public class JavaScriptCodeGenerator extends Generator<String> {
 
     private String generateWhileNode(SourceOfRandomness random) {
         return "while (" + generateExpression(random) + ")" + generateBlock(random);
+    }
+
+    private String generateAssignmentNode(SourceOfRandomness random) {
+        String token = random.choose(ASSIGNMENT_TOKENS);
+        String lhs = random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
+                this::generateIdentNode,
+                this::generateIndexNode,
+                this::generatePropertyNode
+        )).apply(random);
+        String rhs = generateExpression(random);
+        return lhs + " " + token + " " + rhs + ";";
     }
 }
