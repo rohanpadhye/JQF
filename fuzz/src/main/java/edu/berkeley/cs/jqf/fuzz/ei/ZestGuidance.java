@@ -43,6 +43,9 @@ import java.io.PrintWriter;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -589,7 +592,8 @@ public class ZestGuidance implements Guidance {
     protected void completeCycle() {
         // Increment cycle count
         cyclesCompleted++;
-        infoLog("\n# Cycle " + cyclesCompleted + " completed.");
+        final String now = DateTimeFormatter.ISO_DATE_TIME.format(LocalDateTime.now());
+        infoLog("\n# Cycle " + cyclesCompleted + " completed at " + now);
 
         // Go over all inputs and do a sanity check (plus log)
         infoLog("Here is a list of favored inputs:");
