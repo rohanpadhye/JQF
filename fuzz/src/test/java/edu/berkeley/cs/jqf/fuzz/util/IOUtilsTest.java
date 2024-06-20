@@ -33,4 +33,25 @@ public class IOUtilsTest {
         Assert.assertEquals(a, resolved[0]);
         Assert.assertEquals(b, resolved[1]);
     }
+
+    @Test
+    public void shouldResolveFilesInSubdirectories() throws IOException {
+        final File dir = temp.newFolder();
+        final File a = dir.toPath().resolve("a").toFile();
+        Assume.assumeTrue(a.createNewFile());
+        final File b = dir.toPath().resolve("b").toFile();
+        Assume.assumeTrue(b.createNewFile());
+        final File sub = dir.toPath().resolve("sub").toFile();
+        Assume.assumeTrue(sub.mkdir());
+        final File subA = dir.toPath().resolve("a").toFile();
+        Assume.assumeTrue(subA.createNewFile());
+        final File subB = dir.toPath().resolve("b").toFile();
+        Assume.assumeTrue(subB.createNewFile());
+        final File[] resolved = IOUtils.resolveInputFileOrDirectory(dir);
+        Assert.assertEquals(4, resolved.length);
+        Assert.assertEquals(a, resolved[0]);
+        Assert.assertEquals(b, resolved[1]);
+        Assert.assertEquals(subA, resolved[2]);
+        Assert.assertEquals(subB, resolved[3]);
+    }
 }

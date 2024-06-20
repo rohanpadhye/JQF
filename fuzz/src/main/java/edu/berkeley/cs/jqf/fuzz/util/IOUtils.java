@@ -31,8 +31,13 @@ package edu.berkeley.cs.jqf.fuzz.util;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Utility class containing static methods for common I/O operations
@@ -53,13 +58,17 @@ public class IOUtils {
      *         `null` if `file` is also `null`
      * @throws FileNotFoundException if {@code file} does not exist
      */
-    public static File[] resolveInputFileOrDirectory(File file) throws FileNotFoundException {
+    public static File[] resolveInputFileOrDirectory(File file) throws IOException {
         if (file == null) {
             return null;
         } else if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            Arrays.sort(files, Comparator.comparing(File::getName));
-            return files;
+            try (final Stream<Path> pathStream = Files.walk(file.toPath())) {
+                return pathStream
+                    .map(Path::toFile)
+                    .filter(File::isFile)
+                    .sorted(Comparator.comparing(File::getName))
+                    .toArray(File[]::new);
+            }
         } else if (file.isFile()) {
             return new File[]{file};
         } else {
