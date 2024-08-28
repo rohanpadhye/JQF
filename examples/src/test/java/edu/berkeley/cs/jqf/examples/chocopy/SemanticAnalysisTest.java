@@ -9,6 +9,7 @@ import edu.berkeley.cs.jqf.fuzz.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.JQF;
 import org.junit.runner.RunWith;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
@@ -17,9 +18,10 @@ public class SemanticAnalysisTest {
 
     /** Entry point for fuzzing reference ChocoPy semantic analysis with ChocoPy code generator */
     @Fuzz
-    public void fuzzSemanticAnalysis(@From(ChocoPySemanticGenerator.class) String code) {
+    public void fuzzSemanticAnalysis(@From(ChocoPySemanticGeneratorTypeDirected.class) String code) {
         Program program = RefParser.process(code, false);
         assumeTrue(!program.hasErrors());
-        RefAnalysis.process(program);
+        Program typedProgram = RefAnalysis.process(program);
+        assertFalse(typedProgram.hasErrors());
     }
 }
