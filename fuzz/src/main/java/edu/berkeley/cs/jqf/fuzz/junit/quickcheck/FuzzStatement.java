@@ -30,21 +30,12 @@
 package edu.berkeley.cs.jqf.fuzz.junit.quickcheck;
 
 import java.io.EOFException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.lang.reflect.Parameter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.internal.ParameterTypeContext;
@@ -127,7 +118,7 @@ public class FuzzStatement extends Statement {
                 long startTrialTime = System.currentTimeMillis();
 
                 // Initialize guided fuzzing using a file-backed random number source
-                Object [] args = null;
+                Object [] args = {};
                 try {
                     try {
 
@@ -191,17 +182,12 @@ public class FuzzStatement extends Statement {
                 }
                 long endTrialTime = System.currentTimeMillis();
                 if (System.getProperty("jqfObservability") != null) {
-
-
-                    // - "status": "passed", "failed", or "gave_up"
                     observability.addStatus(result);
                     if (result == SUCCESS) {
                         observability.addTiming(startTrialTime, endGenerationTime, endTrialTime);
                     }
                     observability.add("representation", Arrays.toString(args));
-                    // - "status_reason": If non-empty, the reason for which the test failed or was abandoned.
 
-                    // - "how_generated": "Zest", "blind", or "repro"
                     if (guidance instanceof ZestGuidance) {
                         observability.add("how_generated", "Zest");
                     } else if (guidance instanceof NoGuidance) {
@@ -213,8 +199,6 @@ public class FuzzStatement extends Statement {
                     }
 
                     observability.writeToFile();
-
-
                 }
 
                 // Inform guidance about the outcome of this trial
