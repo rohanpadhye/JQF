@@ -30,24 +30,37 @@
 package edu.berkeley.cs.jqf.fuzz.junit.quickcheck;
 
 import java.io.EOFException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.Parameter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.internal.ParameterTypeContext;
 import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.StreamBackedRandom;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
+import edu.berkeley.cs.jqf.fuzz.random.NoGuidance;
+import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
+import edu.berkeley.cs.jqf.fuzz.util.Observability;
 import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.MultipleFailureException;
@@ -73,6 +86,7 @@ public class FuzzStatement extends Statement {
     private final List<Class<?>> expectedExceptions;
     private final List<Throwable> failures = new ArrayList<>();
     private final Guidance guidance;
+    private final Observability observability;
     private boolean skipExceptionSwallow;
 
     public FuzzStatement(FrameworkMethod method, TestClass testClass,
@@ -85,6 +99,7 @@ public class FuzzStatement extends Statement {
         this.expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         this.guidance = fuzzGuidance;
         this.skipExceptionSwallow = Boolean.getBoolean("jqf.failOnDeclaredExceptions");
+        this.observability = new Observability(testClass.getName(), method.getName(), System.currentTimeMillis());
     }
 
     /**
@@ -101,16 +116,19 @@ public class FuzzStatement extends Statement {
                 .collect(Collectors.toList());
 
         // Keep fuzzing until no more input or I/O error with guidance
+        // Get current time in unix timestamp
+        long endGenerationTime = 0;
         try {
 
             // Keep fuzzing as long as guidance wants to
             while (guidance.hasInput()) {
                 Result result = INVALID;
                 Throwable error = null;
+                long startTrialTime = System.currentTimeMillis();
 
                 // Initialize guided fuzzing using a file-backed random number source
+                Object [] args = null;
                 try {
-                    Object[] args;
                     try {
 
                         // Generate input values
@@ -142,6 +160,7 @@ public class FuzzStatement extends Statement {
                         throw new GuidanceException(e);
                     }
 
+                    endGenerationTime = System.currentTimeMillis();
                     // Attempt to run the trial
                     guidance.run(testClass, method, args);
 
@@ -170,6 +189,33 @@ public class FuzzStatement extends Statement {
                         failures.add(e);
                     }
                 }
+                long endTrialTime = System.currentTimeMillis();
+                if (System.getProperty("jqfObservability") != null) {
+
+
+                    // - "status": "passed", "failed", or "gave_up"
+                    observability.addStatus(result);
+                    if (result == SUCCESS) {
+                        observability.addTiming(startTrialTime, endGenerationTime, endTrialTime);
+                    }
+                    observability.add("representation", Arrays.toString(args));
+                    // - "status_reason": If non-empty, the reason for which the test failed or was abandoned.
+
+                    // - "how_generated": "Zest", "blind", or "repro"
+                    if (guidance instanceof ZestGuidance) {
+                        observability.add("how_generated", "Zest");
+                    } else if (guidance instanceof NoGuidance) {
+                        observability.add("how_generated", "random");
+                    } else if (guidance instanceof ReproGuidance) {
+                        observability.add("how_generated", "repro");
+                    } else {
+                        observability.add("how_generated", "unknown");
+                    }
+
+                    observability.writeToFile();
+
+
+                }
 
                 // Inform guidance about the outcome of this trial
                 try {
@@ -180,8 +226,6 @@ public class FuzzStatement extends Statement {
                     // Anything else thrown from handleResult is an internal error, so wrap
                     throw new GuidanceException(e);
                 }
-
-
             }
         } catch (GuidanceException e) {
             System.err.println("Fuzzing stopped due to guidance exception: " + e.getMessage());
@@ -197,6 +241,7 @@ public class FuzzStatement extends Statement {
                 throw new MultipleFailureException(failures);
             }
         }
+
 
     }
 
