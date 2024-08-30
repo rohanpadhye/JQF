@@ -241,9 +241,9 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
     }
 
     private String generateIndexExprOfType(SourceOfRandomness random, Type type) {
-        System.out.println("Generating index expr of type: " + type);
+//        System.out.println("Generating index expr of type: " + type);
         Type listType = new ListValueType(type);
-        System.out.println("Generating list expr of type: " + listType);
+//        System.out.println("Generating list expr of type: " + listType);
         String result = "";
         result = generateListExprOfType(random, listType);
         String index = generateExpressionOfType(random, Type.INT_TYPE);
@@ -273,7 +273,7 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
     }
 
     private String generateBinaryExprOfType(SourceOfRandomness random, Type type) {
-        System.out.println("Generating binary expr of type: " + type);
+//        System.out.println("Generating binary expr of type: " + type);
         Type operandType = null;
         String token = "";
         if (type == Type.INT_TYPE) {
