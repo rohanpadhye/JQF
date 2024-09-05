@@ -167,6 +167,11 @@ public class AFLGuidance implements Guidance {
         }
     }
 
+    @Override
+    public String observeGuidance() {
+        return "AFL";
+    }
+
 
     /**
      * Returns an input stream containing the bytes that AFL
