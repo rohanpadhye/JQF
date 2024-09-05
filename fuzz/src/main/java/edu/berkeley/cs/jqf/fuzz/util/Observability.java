@@ -8,6 +8,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import java.io.FileWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 import static edu.berkeley.cs.jqf.fuzz.guidance.Result.FAILURE;
 import static edu.berkeley.cs.jqf.fuzz.guidance.Result.INVALID;
@@ -79,6 +80,15 @@ public class Observability {
         ObjectNode timingObject = (ObjectNode) timingNode;
         timingObject.put("generation", endGenerationTime - startTime);
         timingObject.put("execution", endExecutionTime - endGenerationTime);
+    }
+
+    public void addArgs(Object[] args) {
+        JsonNode argsNode = testCaseJsonObject.get("args");
+        ObjectNode argsObject = (ObjectNode) argsNode;
+        for (int i = 0; i < args.length; i++) {
+            argsObject.put("arg" + i, args[i].toString());
+        }
+        add("representation", Arrays.toString(args));
     }
 
     public void add(String key, String value) {

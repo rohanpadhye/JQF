@@ -186,7 +186,7 @@ public class FuzzStatement extends Statement {
                     if (result == SUCCESS) {
                         observability.addTiming(startTrialTime, endGenerationTime, endTrialTime);
                     }
-                    observability.add("representation", Arrays.toString(args));
+                    observability.addArgs(args);
 
                     if (guidance instanceof ZestGuidance) {
                         observability.add("how_generated", "Zest");
