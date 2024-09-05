@@ -187,16 +187,7 @@ public class FuzzStatement extends Statement {
                         observability.addTiming(startTrialTime, endGenerationTime, endTrialTime);
                     }
                     observability.addArgs(args);
-
-                    if (guidance instanceof ZestGuidance) {
-                        observability.add("how_generated", "Zest");
-                    } else if (guidance instanceof NoGuidance) {
-                        observability.add("how_generated", "random");
-                    } else if (guidance instanceof ReproGuidance) {
-                        observability.add("how_generated", "repro");
-                    } else {
-                        observability.add("how_generated", "unknown");
-                    }
+                    observability.add("how_generated", guidance.observeGuidance());
 
                     observability.writeToFile();
                 }

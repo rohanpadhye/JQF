@@ -437,6 +437,14 @@ public class ZestGuidance implements Guidance {
 
     }
 
+    @Override
+    public String observeGuidance() {
+        if (blind) {
+            return "Random";
+        }
+        return "Zest";
+    }
+
     /* Writes a line of text to the log file. */
     protected void infoLog(String str, Object... args) {
         if (verbose) {

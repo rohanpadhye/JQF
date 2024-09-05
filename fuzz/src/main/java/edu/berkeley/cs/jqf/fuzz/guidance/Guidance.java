@@ -133,6 +133,14 @@ public interface Guidance {
     }
 
     /**
+     * <p>This method is only invoked during optional observability
+     * logging to provide the type of guidance used for input generation.</p>
+     */
+    default String observeGuidance() {
+        return "";
+    }
+
+    /**
      * Handles the end of a fuzzing trial.
      *
      * <p>This method is guaranteed to be invoked by JQF
