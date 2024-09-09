@@ -41,13 +41,17 @@ import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.internal.ParameterTypeContext;
 import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
+import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.guidance.StreamBackedRandom;
 import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
+import edu.berkeley.cs.jqf.fuzz.random.NoGuidance;
+import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
 import edu.berkeley.cs.jqf.instrument.InstrumentationException;
+import edu.berkeley.cs.jqf.fuzz.util.Observability;
 import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.MultipleFailureException;
@@ -73,6 +77,7 @@ public class FuzzStatement extends Statement {
     private final List<Class<?>> expectedExceptions;
     private final List<Throwable> failures = new ArrayList<>();
     private final Guidance guidance;
+    private final Observability observability;
     private boolean skipExceptionSwallow;
 
     public FuzzStatement(FrameworkMethod method, TestClass testClass,
@@ -85,6 +90,7 @@ public class FuzzStatement extends Statement {
         this.expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         this.guidance = fuzzGuidance;
         this.skipExceptionSwallow = Boolean.getBoolean("jqf.failOnDeclaredExceptions");
+        this.observability = new Observability(testClass.getName(), method.getName(), System.currentTimeMillis());
     }
 
     /**
@@ -101,16 +107,19 @@ public class FuzzStatement extends Statement {
                 .collect(Collectors.toList());
 
         // Keep fuzzing until no more input or I/O error with guidance
+        // Get current time in unix timestamp
+        long endGenerationTime = 0;
         try {
 
             // Keep fuzzing as long as guidance wants to
             while (guidance.hasInput()) {
                 Result result = INVALID;
                 Throwable error = null;
+                long startTrialTime = System.currentTimeMillis();
 
                 // Initialize guided fuzzing using a file-backed random number source
+                Object [] args = {};
                 try {
-                    Object[] args;
                     try {
 
                         // Generate input values
@@ -142,6 +151,7 @@ public class FuzzStatement extends Statement {
                         throw new GuidanceException(e);
                     }
 
+                    endGenerationTime = System.currentTimeMillis();
                     // Attempt to run the trial
                     guidance.run(testClass, method, args);
 
@@ -170,6 +180,17 @@ public class FuzzStatement extends Statement {
                         failures.add(e);
                     }
                 }
+                long endTrialTime = System.currentTimeMillis();
+                if (System.getProperty("jqfObservability") != null) {
+                    observability.addStatus(result);
+                    if (result == SUCCESS) {
+                        observability.addTiming(startTrialTime, endGenerationTime, endTrialTime);
+                    }
+                    observability.addArgs(args);
+                    observability.add("how_generated", guidance.observeGuidance());
+
+                    observability.writeToFile();
+                }
 
                 // Inform guidance about the outcome of this trial
                 try {
@@ -180,8 +201,6 @@ public class FuzzStatement extends Statement {
                     // Anything else thrown from handleResult is an internal error, so wrap
                     throw new GuidanceException(e);
                 }
-
-
             }
         } catch (GuidanceException e) {
             System.err.println("Fuzzing stopped due to guidance exception: " + e.getMessage());
@@ -197,6 +216,7 @@ public class FuzzStatement extends Statement {
                 throw new MultipleFailureException(failures);
             }
         }
+
 
     }
 
