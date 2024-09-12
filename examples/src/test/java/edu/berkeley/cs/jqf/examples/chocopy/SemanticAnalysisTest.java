@@ -10,6 +10,7 @@ import edu.berkeley.cs.jqf.fuzz.JQF;
 import org.junit.runner.RunWith;
 
 import static edu.berkeley.cs.jqf.fuzz.util.Observability.event;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(JQF.class)
@@ -24,6 +25,6 @@ public class SemanticAnalysisTest {
         event("numDeclarations", program.declarations.size());
         Program typedProgram = RefAnalysis.process(program);
         event("numErrors", program.getErrorList().size());
-        assumeTrue(!typedProgram.hasErrors());
+        assertTrue(!typedProgram.hasErrors());
     }
 }

@@ -43,6 +43,8 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
     private static List<ValueType> classTypes; // Keeps track of all class types
     private static Map<String, Type> varTypes; // Keeps track of variables and their types
     private static Map<String, FuncType> funcTypes; // Keeps track of functions and their return types
+    private static Map<Type, Type> parentClasses; // Keeps track of parent classes
+    private static Map<Type, Set<Type>> conformsSet; // Keeps track of conforming types
     private static int maxIdentifiers;
     private static int maxItems;
     private static int maxDepth;
@@ -90,7 +92,6 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
             Type.STR_TYPE,
             Type.BOOL_TYPE,
             Type.OBJECT_TYPE,
-
     };
 
     private static final String INDENT_TOKEN = "    "; // 4 spaces
@@ -108,9 +109,35 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         this.allTypes = Arrays.asList(BASE_TYPES);
         this.varTypes = new HashMap<>();
         this.funcTypes = new HashMap<>();
+        this.parentClasses = new HashMap<>();
+        this.conformsSet = new HashMap<>();
         this.identCounter = 0;
         this.funcIdentCounter = 0;
         return generateProgram(random);
+    }
+
+    public void initializeTypes() {
+        this.parentClasses.put()
+    }
+
+    public void generateClassTypeHierarchy(SourceOfRandomness random) {
+        // Generate a random class type hierarchy. Start by generating a random number of classes,
+        // and then randomly decide which ones are subclasses.
+        int numClasses = nextIntBound(random, 1, maxBound, maxItems);
+        List<String> classes = new ArrayList<>();
+        for (int i = 0; i < numClasses; i++) {
+            classes.add(generateIdentifier(random));
+        }
+        // Assign the parent-child relationships. Loop over the classes (after the first one), and randomly
+        // choose a parent from the previous elements.
+        for (int i = 1; i < numClasses; i++) {
+            if (random.nextBoolean()) {
+                int parentIndex = random.nextInt(0, i);
+                String parent = classes.get(parentIndex);
+                String child = classes.get(i);
+                parentClasses.put(new ClassValueType(child), new ClassValueType(parent));
+            }
+        }
     }
 
     /** Utility method for generating a random list of items (e.g. statements, arguments, attributes) */
@@ -142,8 +169,8 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
     /** Generates a random ChocoPy program of classes, declarations, and statements */
     private String generateProgram(SourceOfRandomness random) {
         String declarations = String.join("", generateItemsMultipleMethods(Arrays.asList(
-//                this::generateClassDef,
-                this::generateFuncDef,
+                this::generateClassDef,
+//                this::generateFuncDef,
                 this::generateVarDef
         ), random, 0));
         String statements = generateBlock(random, 0);
@@ -245,7 +272,7 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         Type listType = new ListValueType(type);
 //        System.out.println("Generating list expr of type: " + listType);
         String result = "";
-        result = generateListExprOfType(random, listType);
+        result = generateExpressionOfType(random, listType);
         String index = generateExpressionOfType(random, Type.INT_TYPE);
         result += "[" + index + "]";
         return result;
@@ -306,7 +333,7 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
                     nonPrimitiveTypes.add(new ListValueType(Type.INT_TYPE));
                     operandType = random.choose(nonPrimitiveTypes);
                     if (operandType.isListType()) {
-                        int listDepth = random.nextInt(0, maxDepth);
+                        int listDepth = random.nextInt(1, maxDepth);
                         operandType = random.choose(allTypes);
                         for (int i = 0; i < listDepth; i++) {
                             operandType = new ListValueType(operandType);
@@ -329,7 +356,7 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         }
         String lhs = generateExpressionOfType(random, operandType);
         String rhs = generateExpressionOfType(random, operandType);
-        return lhs + " " + token + " " + rhs;
+        return "(" + lhs + " " + token + " " + rhs + ")";
     }
 
     private String generateUnaryExprOfType(SourceOfRandomness random, Type type) {
@@ -365,6 +392,8 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
 
     /** Generates a random ChocoPy expression using recursive calls */
     private String generateExpressionOfType(SourceOfRandomness random, Type type) {
+//        System.out.println("Generating expression of type: " + type);
+//        System.out.println("Current expression depth: " + expressionDepth);
         String result;
         // Choose terminal if nesting depth is too high or based on a random flip of a coin
         int randDepth = nextIntBound(random, 0, maxBound, maxDepth);
@@ -445,18 +474,18 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         return String.join("", generateItems(this::generateStatement, random, minimum));
     }
 
-//    private String generateClassDef(SourceOfRandomness random) {
-//        String result = "";
-//        String className = generateIdentifier(random);
-//        // Superclass could be one of the identifiers or object. Index should be from 0 to maxIdentifiers inclusive.
-//        int superClassIndex = nextIntBound(random, 0, classTypes.size(), maxIdentifiers);
-//        String superClassName = classTypes.get(superClassIndex);
-//        result += "class " + className + "(" + superClassName + "):\n";
-//        indentLevel++;
-//        result += generateDeclarationBlock(random, 1);
-//        indentLevel--;
-//        return result + "\n";
-//    }
+    private String generateClassDef(SourceOfRandomness random) {
+        String result = "";
+        String className = generateIdentifier(random);
+        // Superclass could be one of the identifiers or object. Index should be from 0 to maxIdentifiers inclusive.
+        int superClassIndex = nextIntBound(random, 0, classTypes.size(), maxIdentifiers);
+        String superClassName = classTypes.get(superClassIndex);
+        result += "class " + className + "(" + superClassName + "):\n";
+        indentLevel++;
+        result += generateDeclarationBlock(random, 1);
+        indentLevel--;
+        return result + "\n";
+    }
 
     /** Generates a block of VarDefs and FuncDefs*/
     private String generateDeclarationBlock(SourceOfRandomness random, int minimum) {
