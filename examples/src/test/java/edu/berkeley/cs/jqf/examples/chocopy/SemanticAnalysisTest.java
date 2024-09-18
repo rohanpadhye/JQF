@@ -3,6 +3,7 @@ package edu.berkeley.cs.jqf.examples.chocopy;
 import chocopy.ChocoPy;
 import chocopy.common.astnodes.Program;
 import chocopy.reference.RefAnalysis;
+import chocopy.reference.RefCodeGen;
 import chocopy.reference.RefParser;
 import com.pholser.junit.quickcheck.From;
 import edu.berkeley.cs.jqf.fuzz.Fuzz;
@@ -26,5 +27,14 @@ public class SemanticAnalysisTest {
         Program typedProgram = RefAnalysis.process(program);
         event("numErrors", program.getErrorList().size());
         assertTrue(!typedProgram.hasErrors());
+    }
+
+    @Fuzz
+    public void fuzzCodeGen(@From(ChocoPySemanticGenerator.class) String code) {
+        Program program = RefParser.process(code, false);
+        assumeTrue(!program.hasErrors());
+        Program typedProgram = RefAnalysis.process(program);
+        assumeTrue(!typedProgram.hasErrors());
+        RefCodeGen.process(typedProgram);
     }
 }

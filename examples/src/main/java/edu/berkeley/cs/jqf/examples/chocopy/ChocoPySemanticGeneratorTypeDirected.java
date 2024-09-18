@@ -9,7 +9,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.*;
 import java.util.function.Function;
 import org.apache.commons.lang3.tuple.Pair;
-import chocopy.common.astnodes.ClassType;
 import chocopy.common.analysis.types.*;
 
 import static org.junit.Assume.assumeFalse;
@@ -42,8 +41,10 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
     private static List<ValueType> allTypes; // Keeps track of all types
     private static List<ValueType> classTypes; // Keeps track of all class types
     private static Map<String, Type> varTypes; // Keeps track of variables and their types
+    private static Map<Type, Map<String, Type>> attrTypes; // Keeps track of attributes and their types
     private static Map<String, FuncType> funcTypes; // Keeps track of functions and their return types
     private static Map<Type, Type> parentClasses; // Keeps track of parent classes
+    private static Map<Type, List<Type>> childClasses; // Keeps track of child classes
     private static Map<Type, Set<Type>> conformsSet; // Keeps track of conforming types
     private static int maxIdentifiers;
     private static int maxItems;
@@ -108,36 +109,79 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         this.classTypes = new ArrayList<>();
         this.allTypes = Arrays.asList(BASE_TYPES);
         this.varTypes = new HashMap<>();
+        this.attrTypes = new HashMap<>();
         this.funcTypes = new HashMap<>();
         this.parentClasses = new HashMap<>();
+        this.childClasses = new HashMap<>();
+        this.childClasses.put(Type.OBJECT_TYPE, new ArrayList<>());
         this.conformsSet = new HashMap<>();
         this.identCounter = 0;
         this.funcIdentCounter = 0;
         return generateProgram(random);
     }
 
-    public void initializeTypes() {
-        this.parentClasses.put()
-    }
-
     public void generateClassTypeHierarchy(SourceOfRandomness random) {
         // Generate a random class type hierarchy. Start by generating a random number of classes,
         // and then randomly decide which ones are subclasses.
-        int numClasses = nextIntBound(random, 1, maxBound, maxItems);
+        int numClasses = nextIntBound(random, 0, maxBound, maxItems);
+        if (numClasses == 0) {
+            return;
+        }
         List<String> classes = new ArrayList<>();
         for (int i = 0; i < numClasses; i++) {
-            classes.add(generateIdentifier(random));
+            String classIdent = generateIdentifier(random);
+            classes.add(classIdent);
+            ValueType classType = new ClassValueType(classIdent);
+            classTypes.add(classType);
         }
         // Assign the parent-child relationships. Loop over the classes (after the first one), and randomly
         // choose a parent from the previous elements.
+        Type firstClassType = new ClassValueType(classes.get(0));
+        childClasses.get(Type.OBJECT_TYPE).add(firstClassType);
+        parentClasses.put(firstClassType, Type.OBJECT_TYPE);
         for (int i = 1; i < numClasses; i++) {
             if (random.nextBoolean()) {
                 int parentIndex = random.nextInt(0, i);
                 String parent = classes.get(parentIndex);
                 String child = classes.get(i);
-                parentClasses.put(new ClassValueType(child), new ClassValueType(parent));
+                Type parentType = new ClassValueType(parent);
+                Type childType = new ClassValueType(child);
+                parentClasses.put(childType, parentType);
+                if (!childClasses.containsKey(parentType)) {
+                    childClasses.put(parentType, new ArrayList<>());
+                }
+                childClasses.get(parentType).add(childType);
+            } else {
+                Type classType = new ClassValueType(classes.get(i));
+                parentClasses.put(classType, Type.OBJECT_TYPE);
+                childClasses.get(Type.OBJECT_TYPE).add(classType);
             }
         }
+    }
+
+    public Type generateConformingType(SourceOfRandomness random, Type type) {
+        if (type.isSpecialType()) {
+            return type;
+        } else if (type.isListType()) {
+            float randFloat = random.nextFloat();
+            if (randFloat > 0.75) {
+                return type;
+            } else {
+                return Type.EMPTY_TYPE;
+            }
+        } else if (type.isValueType()) {
+            if (!childClasses.containsKey(type)) {
+                return type;
+            } else {
+                List<Type> subTypes = childClasses.get(type);
+                subTypes.add(type);
+                return random.choose(subTypes);
+            }
+        } else {
+            // Should not be function type
+            assert(false);
+        }
+        return Type.EMPTY_TYPE;
     }
 
     /** Utility method for generating a random list of items (e.g. statements, arguments, attributes) */
@@ -168,27 +212,32 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
 
     /** Generates a random ChocoPy program of classes, declarations, and statements */
     private String generateProgram(SourceOfRandomness random) {
+        String classDeclarations = "";
+        generateClassTypeHierarchy(random);
+        for (Type classType : classTypes) {
+            classDeclarations += generateClassDefOfType(random, classType);
+        }
+
         String declarations = String.join("", generateItemsMultipleMethods(Arrays.asList(
-                this::generateClassDef,
 //                this::generateFuncDef,
                 this::generateVarDef
         ), random, 0));
         String statements = generateBlock(random, 0);
-        return declarations + statements;
+        return classDeclarations + declarations + statements;
     }
 
     /** Generates a random ChocoPy declaration */
-    private String generateDeclaration(SourceOfRandomness random) {
+    private String generateDeclaration(SourceOfRandomness random, Type classType) {
         String result = StringUtils.repeat(INDENT_TOKEN, indentLevel);
         int randDepth = nextIntBound(random, 0, maxBound, maxDepth);
         if (declarationDepth >= randDepth) {
             // Choose a random private method from this class, and then call it with `random`
-            result += generateVarDef(random);
+            result += generateAttrDef(random, classType);
         } else {
             // If depth is low and we won the flip, then generate compound declarations
             // (that is, declarations that contain other declarations)
             result += random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
-                    this::generateVarDef
+                    r -> generateAttrDef(r, classType)
 //                    this::generateFuncDef
             )).apply(random);
         }
@@ -425,6 +474,10 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
                         r -> generateCallExprOfType(r, type),
                         r -> generateBinaryExprOfType(r, type)
                 )).apply(random);
+            } else if (type == Type.EMPTY_TYPE) {
+                return "[]";
+            } else if (type == Type.NONE_TYPE) {
+                return "None";
             } else {
                 result = random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
                         r -> generateConstExprOfType(r, type),
@@ -449,8 +502,14 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
             return generateStringLiteral(random);
         } else if (type == Type.BOOL_TYPE) {
             return generateBoolLiteral(random);
+        } else if (type == Type.EMPTY_TYPE) {
+            return "[]";
+        } else if (type == Type.NONE_TYPE) {
+            return "None";
         } else if (type.isListType()) {
             return "[" + generateConstExprOfType(random, type.elementType()) + "]";
+        } else if (type.isValueType()) {
+            return type.className() + "()";
         } else {
             assumeTrue(false);
             return "";
@@ -466,7 +525,12 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         Type varType = varTypes.get(var);
         result += var + " = ";
 
-        return result + generateExpressionOfType(random, varType);
+        // Randomly generate a conforming type
+//        System.out.println("Generating expression of type: " + varType);
+        Type conformingType = generateConformingType(random, varType);
+//        System.out.println("Generating conforming expression of type: " + conformingType);
+
+        return result + generateExpressionOfType(random, conformingType);
     }
 
     /** Generates a block of statements, excluding the statement */
@@ -479,17 +543,28 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         String className = generateIdentifier(random);
         // Superclass could be one of the identifiers or object. Index should be from 0 to maxIdentifiers inclusive.
         int superClassIndex = nextIntBound(random, 0, classTypes.size(), maxIdentifiers);
-        String superClassName = classTypes.get(superClassIndex);
+        String superClassName = generateIdentifier(random);
         result += "class " + className + "(" + superClassName + "):\n";
         indentLevel++;
-        result += generateDeclarationBlock(random, 1);
+        result += generateDeclarationBlock(random, null, 1);
+        indentLevel--;
+        return result + "\n";
+    }
+
+    private String generateClassDefOfType(SourceOfRandomness random, Type type) {
+        String result = "";
+        // Superclass could be one of the identifiers or object. Index should be from 0 to maxIdentifiers inclusive.
+        Type superClassType = parentClasses.get(type);
+        result += "class " + type.className() + "(" + superClassType.className() + "):\n";
+        indentLevel++;
+        result += generateDeclarationBlock(random, type, 1);
         indentLevel--;
         return result + "\n";
     }
 
     /** Generates a block of VarDefs and FuncDefs*/
-    private String generateDeclarationBlock(SourceOfRandomness random, int minimum) {
-        return String.join("", generateItems(this::generateDeclaration, random, minimum));
+    private String generateDeclarationBlock(SourceOfRandomness random, Type classType, int minimum) {
+        return String.join("", generateItems(r -> generateDeclaration(r, classType), random, minimum));
     }
 
     private String generateExpressionStmt(SourceOfRandomness random) {
@@ -679,7 +754,6 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
     private Pair<String, ValueType> generateTypedVar(SourceOfRandomness random) {
         ValueType type = generateType(random);
         String ident = generateIdentifier(random);
-        varTypes.put(ident, type);
         return Pair.of(ident, type);
     }
 
@@ -687,6 +761,20 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         Pair<String, ValueType> typedVar = generateTypedVar(random);
         String ident = typedVar.getLeft();
         ValueType varType = typedVar.getRight();
+        varTypes.put(ident, varType);
+
+        return ident + ":" + varType + " = " + generateLiteralOfType(random, varType) + "\n";
+    }
+
+    private String generateAttrDef(SourceOfRandomness random, Type classType) {
+        Pair<String, ValueType> typedVar = generateTypedVar(random);
+        String ident = typedVar.getLeft();
+        ValueType varType = typedVar.getRight();
+
+        if (!attrTypes.containsKey(classType)) {
+            attrTypes.put(classType, new HashMap<>());
+        }
+        attrTypes.get(classType).put(ident, varType);
 
         return ident + ":" + varType + " = " + generateLiteralOfType(random, varType) + "\n";
     }
