@@ -1,5 +1,6 @@
 package edu.berkeley.cs.jqf.examples.chocopy;
 
+import com.pholser.junit.quickcheck.Pair;
 import com.pholser.junit.quickcheck.generator.GenerationStatus;
 import com.pholser.junit.quickcheck.generator.Generator;
 import com.pholser.junit.quickcheck.random.SourceOfRandomness;
@@ -8,7 +9,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.function.Function;
-import org.apache.commons.lang3.tuple.Pair;
 import chocopy.common.analysis.types.*;
 
 import static org.junit.Assume.assumeFalse;
@@ -40,12 +40,12 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
     private static List<String> funcIdentifiers; // Stores generated IDs, to promote re-use
     private static List<ValueType> allTypes; // Keeps track of all types
     private static List<ValueType> classTypes; // Keeps track of all class types
-    private static Map<String, Type> varTypes; // Keeps track of variables and their types
     private static Map<Type, Map<String, Type>> attrTypes; // Keeps track of attributes and their types
-    private static Map<String, FuncType> funcTypes; // Keeps track of functions and their return types
+    private static Map<Type, Map<String, Type>> methodTypes; // Keeps track of methods and their types
     private static Map<Type, Type> parentClasses; // Keeps track of parent classes
     private static Map<Type, List<Type>> childClasses; // Keeps track of child classes
-    private static Map<Type, Set<Type>> conformsSet; // Keeps track of conforming types
+    private static Scope globalScope; // Keeps track of global scope
+    private Scope currentScope; // Keeps track of current scope
     private static int maxIdentifiers;
     private static int maxItems;
     private static int maxDepth;
@@ -108,13 +108,13 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         this.indentLevel = 0;
         this.classTypes = new ArrayList<>();
         this.allTypes = Arrays.asList(BASE_TYPES);
-        this.varTypes = new HashMap<>();
         this.attrTypes = new HashMap<>();
-        this.funcTypes = new HashMap<>();
+        this.methodTypes = new HashMap<>();
         this.parentClasses = new HashMap<>();
         this.childClasses = new HashMap<>();
         this.childClasses.put(Type.OBJECT_TYPE, new ArrayList<>());
-        this.conformsSet = new HashMap<>();
+        this.globalScope = new Scope("global", null);
+        this.currentScope = globalScope;
         this.identCounter = 0;
         this.funcIdentCounter = 0;
         return generateProgram(random);
@@ -219,28 +219,20 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         }
 
         String declarations = String.join("", generateItemsMultipleMethods(Arrays.asList(
-//                this::generateFuncDef,
+                this::generateFuncDef,
                 this::generateVarDef
         ), random, 0));
-        String statements = generateBlock(random, 0);
+        String statements = generateBlock(random, 1);
         return classDeclarations + declarations + statements;
     }
 
     /** Generates a random ChocoPy declaration */
-    private String generateDeclaration(SourceOfRandomness random, Type classType) {
+    private String generateClassDeclaration(SourceOfRandomness random, Type classType) {
         String result = StringUtils.repeat(INDENT_TOKEN, indentLevel);
-        int randDepth = nextIntBound(random, 0, maxBound, maxDepth);
-        if (declarationDepth >= randDepth) {
-            // Choose a random private method from this class, and then call it with `random`
-            result += generateAttrDef(random, classType);
-        } else {
-            // If depth is low and we won the flip, then generate compound declarations
-            // (that is, declarations that contain other declarations)
-            result += random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
-                    r -> generateAttrDef(r, classType)
-//                    this::generateFuncDef
-            )).apply(random);
-        }
+        result += random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
+                r -> generateAttrDef(r, classType),
+                r -> generateMethodDef(r, classType)
+        )).apply(random);
         return result;
     }
 
@@ -251,9 +243,9 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         if (declarationDepth >= randDepth) {
             // Choose a random private method from this class, and then call it with `random`
             result += random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
-                    this::generateVarDef
-//                    this::generateNonlocalDecl,
-//                    this::generateGlobalDecl
+                    this::generateVarDef,
+                    this::generateNonlocalDecl,
+                    this::generateGlobalDecl
             )).apply(random);
         } else {
             // If depth is low and we won the flip, then generate compound declarations
@@ -283,6 +275,9 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
             // If depth is low and we won the flip, then generate compound statements
             // (that is, statements that contain other statements)
             result += random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
+                    this::generateAssignStmt,
+                    this::generatePassStmt,
+                    this::generateExpressionStmt,
                     this::generateIfStmt,
                     this::generateForStmt,
                     this::generateWhileStmt
@@ -291,13 +286,8 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         return result + "\n";
     }
 
-    private String generateVarOfType(SourceOfRandomness random, Type type) {
-        List<String> candidateVars = new ArrayList<>();
-        for (Map.Entry<String, Type> entry : varTypes.entrySet()) {
-            if (entry.getValue().equals(type)) {
-                candidateVars.add(entry.getKey());
-            }
-        }
+    private String generateVarOfType(SourceOfRandomness random, Type type, boolean onlyCurrentScope) {
+        List<String> candidateVars = currentScope.getVarsOfType(type, onlyCurrentScope);
         assumeTrue(!candidateVars.isEmpty());
         return random.choose(candidateVars);
     }
@@ -308,12 +298,36 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
 
     // TODO: implement
     private String generateMemberExprOfType(SourceOfRandomness random, Type type) {
-        return "";
+        List<Pair<Type, String>> attrCandidates = new ArrayList<>();
+        for (Type classType : attrTypes.keySet()) {
+            Map<String, Type> attrs = attrTypes.get(classType);
+            for (String attr : attrs.keySet()) {
+                if (attrs.get(attr).equals(type)) {
+                    attrCandidates.add(new Pair(classType, attr));
+                }
+            }
+        }
+        assumeTrue(!attrCandidates.isEmpty());
+        Pair<Type, String> attrPair = random.choose(attrCandidates);
+        Type classType = generateConformingType(random, attrPair.first);
+        String objectExpr = generateExpressionOfType(random, classType);
+        String attr = attrPair.second;
+        return objectExpr + "." + attr;
     }
 
     // TODO: implement
     private String generateMethodCallExprOfType(SourceOfRandomness random, Type type) {
-        return "";
+        // Need to find a method that returns the correct type
+        List<Pair<String, FuncType>> candidateFuncs = globalScope.getMethodsWithReturnType(type);
+        assumeTrue(!candidateFuncs.isEmpty());
+        Pair<String, FuncType> func = random.choose(candidateFuncs);
+        FuncType funcType = func.second;
+        List<ValueType> paramTypes = funcType.parameters;
+        List<String> args = new ArrayList<>();
+        for (Type paramType : paramTypes) {
+            args.add(generateExpressionOfType(random, generateConformingType(random, paramType)));
+        }
+        return func + "(" + String.join(", ", args) + ")";
     }
 
     private String generateIndexExprOfType(SourceOfRandomness random, Type type) {
@@ -329,21 +343,14 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
 
     private String generateCallExprOfType(SourceOfRandomness random, Type type) {
         // Need to find a function that returns the correct type
-        List<String> candidateFuncs = new ArrayList<>();
-        for (Map.Entry<String, FuncType> entry : funcTypes.entrySet()) {
-            Type returnType = entry.getValue().returnType;
-            if (returnType.equals(type)) {
-                candidateFuncs.add(entry.getKey());
-            }
-        }
+        List<Pair<String, FuncType>> candidateFuncs = currentScope.getFuncsWithReturnType(type);
         assumeTrue(!candidateFuncs.isEmpty());
-        int funcIndex = random.nextInt(0, candidateFuncs.size());
-        String func = candidateFuncs.get(funcIndex);
-        FuncType funcType = funcTypes.get(func);
-        List<ValueType> paramTypes = funcTypes.get(func).parameters;
+        Pair<String, FuncType> func = random.choose(candidateFuncs);
+        FuncType funcType = func.second;
+        List<ValueType> paramTypes = funcType.parameters;
         List<String> args = new ArrayList<>();
         for (Type paramType : paramTypes) {
-            args.add(generateExpressionOfType(random, paramType));
+            args.add(generateExpressionOfType(random, generateConformingType(random, paramType)));
         }
         return func + "(" + String.join(", ", args) + ")";
     }
@@ -420,17 +427,17 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         } else {
             assert(false);
         }
-        return token + " " + generateExpressionOfType(random, operandType);
+        return "(" + token + " " + generateExpressionOfType(random, operandType) + ")";
     }
 
     private String generateListExprOfType(SourceOfRandomness random, Type type) {
         assert(type.isListType());
         String result = random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
                 r -> generateConstExprOfType(r, type),
-                r -> generateVarOfType(r, type),
+                r -> generateVarOfType(r, type, false),
                 r -> generateParenExprOfType(r, type),
-//          r -> generateMemberExprOfType(r, type),
-//          r -> generateMethodCallExprOfType(r, type),
+                r -> generateMemberExprOfType(r, type),
+                r -> generateMethodCallExprOfType(r, type),
                 r -> generateIndexExprOfType(r, type),
                 r -> generateCallExprOfType(r, type),
                 r -> generateBinaryExprOfType(r, type)
@@ -454,10 +461,10 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
             if (type == Type.INT_TYPE || type == Type.BOOL_TYPE) {
                 result = random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
                         r -> generateConstExprOfType(r, type),
-                        r -> generateVarOfType(r, type),
+                        r -> generateVarOfType(r, type, false),
                         r -> generateParenExprOfType(r, type),
-//                        r -> generateMemberExprOfType(r, type),
-//                        r -> generateMethodCallExprOfType(r, type),
+                        r -> generateMemberExprOfType(r, type),
+                        r -> generateMethodCallExprOfType(r, type),
                         r -> generateIndexExprOfType(r, type),
                         r -> generateCallExprOfType(r, type),
                         r -> generateBinaryExprOfType(r, type),
@@ -466,10 +473,10 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
             } else if (type.isListType() || type == Type.STR_TYPE) {
                 result = random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
                         r -> generateConstExprOfType(r, type),
-                        r -> generateVarOfType(r, type),
+                        r -> generateVarOfType(r, type, false),
                         r -> generateParenExprOfType(r, type),
-//                        r -> generateMemberExprOfType(r, type),
-//                        r -> generateMethodCallExprOfType(r, type),
+                        r -> generateMemberExprOfType(r, type),
+                        r -> generateMethodCallExprOfType(r, type),
                         r -> generateIndexExprOfType(r, type),
                         r -> generateCallExprOfType(r, type),
                         r -> generateBinaryExprOfType(r, type)
@@ -481,10 +488,10 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
             } else {
                 result = random.choose(Arrays.<Function<SourceOfRandomness, String>>asList(
                         r -> generateConstExprOfType(r, type),
-                        r -> generateVarOfType(r, type),
+                        r -> generateVarOfType(r, type, false),
                         r -> generateParenExprOfType(r, type),
-//                        r -> generateMemberExprOfType(r, type),
-//                        r -> generateMethodCallExprOfType(r, type),
+                        r -> generateMemberExprOfType(r, type),
+                        r -> generateMethodCallExprOfType(r, type),
                         r -> generateIndexExprOfType(r, type),
                         r -> generateCallExprOfType(r, type)
                         )).apply(random);
@@ -519,10 +526,11 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
     // TODO: Add member expressions and method calls
     private String generateAssignStmt(SourceOfRandomness random) {
         String result = "";
-        // Choose a random entry in varTypes
-        assumeTrue(!varTypes.isEmpty());
-        String var = random.choose(varTypes.entrySet()).getKey();
-        Type varType = varTypes.get(var);
+        // Choose a random entry in varTypes. NOTE: varTypes will include variables from parent scopes
+        // if they were declared nonlocal or global
+        assumeTrue(!currentScope.varTypes.isEmpty());
+        String var = random.choose(currentScope.varTypes.entrySet()).getKey();
+        Type varType = currentScope.varTypes.get(var);
         result += var + " = ";
 
         // Randomly generate a conforming type
@@ -546,7 +554,7 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         String superClassName = generateIdentifier(random);
         result += "class " + className + "(" + superClassName + "):\n";
         indentLevel++;
-        result += generateDeclarationBlock(random, null, 1);
+        result += generateClassDeclarationBlock(random, null);
         indentLevel--;
         return result + "\n";
     }
@@ -557,14 +565,15 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         Type superClassType = parentClasses.get(type);
         result += "class " + type.className() + "(" + superClassType.className() + "):\n";
         indentLevel++;
-        result += generateDeclarationBlock(random, type, 1);
+        result += generateClassDeclarationBlock(random, type);
         indentLevel--;
         return result + "\n";
     }
 
     /** Generates a block of VarDefs and FuncDefs*/
-    private String generateDeclarationBlock(SourceOfRandomness random, Type classType, int minimum) {
-        return String.join("", generateItems(r -> generateDeclaration(r, classType), random, minimum));
+    private String generateClassDeclarationBlock(SourceOfRandomness random, Type classType) {
+        String declarations = String.join("", generateItems(r -> generateClassDeclaration(r, classType), random, 1));
+        return String.join("", declarations);
     }
 
     private String generateExpressionStmt(SourceOfRandomness random) {
@@ -575,7 +584,7 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
     private String generateForStmt(SourceOfRandomness random) {
         statementDepth++;
         ValueType listType = generateListType(random);
-        String var = generateVarOfType(random, listType.elementType());
+        String var = generateVarOfType(random, listType.elementType(), true);
         String s = "for " + var + " in " + generateExpressionOfType(random, listType) + ":\n";
         indentLevel++;
         s += generateBlock(random, 1);
@@ -588,14 +597,19 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         declarationDepth++;
 
         String funcIdent = generateFuncIdentifier(random);
+        currentScope = new Scope(funcIdent, currentScope);
         int numParams = nextIntBound(random, 0, maxItems, maxItems);
         StringBuilder result = new StringBuilder("def " + generateFuncIdentifier(random) + "(");
         List<ValueType> paramTypes = new ArrayList<>();
+        List<String> paramNames = new ArrayList<>();
         for (int i = 0; i < numParams; i++) {
             Pair<String, ValueType> param = generateTypedVar(random);
-            paramTypes.add(param.getRight());
-            result.append(param.getLeft()).append(":").append(param.getRight());
+            paramTypes.add(param.second);
+            paramNames.add(param.first + ":" + param.second);
+            currentScope.varTypes.put(param.first, param.second);
         }
+        result.append(String.join(",", paramNames));
+        result.append(")");
 
         ValueType returnType = Type.NONE_TYPE;
 
@@ -604,25 +618,75 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
             result.append("->").append(returnType);
         }
         FuncType funcType = new FuncType(paramTypes, returnType);
-        result.append(")");
-
-
-        funcTypes.put(funcIdent, funcType);
-
         result.append(":\n");
         indentLevel++;
         result.append(String.join("", generateItems(this::generateFuncDeclaration, random, 0)));
         result.append(generateBlock(random, 1));
         if (returnType != Type.NONE_TYPE) {
-            result.append(generateReturnStmtOfType(random, returnType));
+            result.append(StringUtils.repeat(INDENT_TOKEN, indentLevel)).append(generateReturnStmtOfType(random, generateConformingType(random, returnType)));
         }
+        currentScope.funcTypes.put(funcIdent, funcType);
         indentLevel--;
         declarationDepth--;
+        currentScope = currentScope.getParent();
+        return result + "\n";
+    }
+
+    private String generateMethodDef(SourceOfRandomness random, Type classType) {
+        declarationDepth++;
+
+        String funcIdent = generateFuncIdentifier(random);
+        currentScope = new Scope(funcIdent, currentScope);
+        int numParams = nextIntBound(random, 0, maxItems, maxItems);
+        String firstParam = generateIdentifier(random);
+        ValueType firstParamType = new ClassValueType("\"" + classType.className() + "\"");
+        StringBuilder result = new StringBuilder("def " + generateFuncIdentifier(random) + "(");
+        List<ValueType> paramTypes = new ArrayList<>();
+        List<String> paramNames = new ArrayList<>();
+        paramTypes.add(firstParamType);
+        paramNames.add(firstParam + ":" + firstParamType);
+        for (int i = 1; i < numParams; i++) {
+            Pair<String, ValueType> param = generateTypedVar(random);
+            paramTypes.add(param.second);
+            paramNames.add(param.first + ":" + param.second);
+            currentScope.varTypes.put(param.first, param.second);
+        }
+        result.append(String.join(",", paramNames));
+        result.append(")");
+
+        ValueType returnType = Type.NONE_TYPE;
+
+        if (random.nextBoolean()) {
+            returnType = generateType(random);
+            result.append("->").append(returnType);
+        }
+        FuncType funcType = new FuncType(paramTypes, returnType);
+        result.append(":\n");
+        indentLevel++;
+        result.append(String.join("", generateItems(this::generateFuncDeclaration, random, 0)));
+        result.append(generateBlock(random, 1));
+        if (returnType != Type.NONE_TYPE) {
+            result.append(StringUtils.repeat(INDENT_TOKEN, indentLevel)).append(generateReturnStmtOfType(random, generateConformingType(random, returnType)));
+        }
+        if (!methodTypes.containsKey(classType)) {
+            methodTypes.put(classType, new HashMap<>());
+        }
+        methodTypes.get(classType).put(funcIdent, funcType);
+        currentScope.funcTypes.put(classType + "." + funcIdent, funcType);
+        indentLevel--;
+        declarationDepth--;
+        currentScope = currentScope.getParent();
         return result + "\n";
     }
 
     private String generateGlobalDecl(SourceOfRandomness random) {
-        return "global " + generateIdentifier(random) + "\n";
+        assumeTrue(!currentScope.name.equals("global"));
+        assumeTrue(!globalScope.varTypes.isEmpty());
+        String var = random.choose(globalScope.varTypes.keySet());
+        assumeTrue(!currentScope.varTypes.containsKey(var));
+        Type varType = globalScope.varTypes.get(var);
+        currentScope.varTypes.put(var, varType);
+        return "global " + var + "\n";
     }
 
     private String generateIdentifier(SourceOfRandomness random) {
@@ -706,18 +770,14 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
         return "None";
     }
 
-//    private String generateMemberExpr(SourceOfRandomness random) {
-//        return "(" + generateCExpression(random) + ")." + generateIdentifier(random);
-//    }
-//
-//    private String generateMethodCallExpr(SourceOfRandomness random) {
-//        return generateCExpression(random) + "." + generateCallExpr(random);
-//    }
-//
-//    private String generateNonlocalDecl(SourceOfRandomness random) {
-//        return "nonlocal " + generateIdentifier(random) + "\n";
-//    }
-//
+    private String generateNonlocalDecl(SourceOfRandomness random) {
+        List<Pair<String, Type>> candidateVars = currentScope.getNonlocalVars(globalScope);
+        assumeTrue(!candidateVars.isEmpty());
+        Pair<String, Type> var = random.choose(candidateVars);
+        currentScope.varTypes.put(var.first, var.second);
+        return "nonlocal " + var.first + "\n";
+    }
+
 
     private String generatePassStmt(SourceOfRandomness random) {
         return "pass";
@@ -729,11 +789,14 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
 
     /** Randomly choose from types and random list depth using maxDepth parameter */
     private ValueType generateType(SourceOfRandomness random) {
-        ValueType baseType = random.choose(allTypes);
-        int listDepth = random.nextInt(0, maxDepth);
-        if (listDepth == 0) {
+        List<Type> candidateTypes = new ArrayList<>(allTypes);
+        candidateTypes.addAll(classTypes);
+        ValueType baseType = (ValueType) random.choose(candidateTypes);
+        float randFloat = random.nextFloat();
+        if (randFloat > 0.75) {
             return baseType;
         } else {
+            int listDepth = random.nextInt(0, maxDepth);
             for (int i = 0; i < listDepth; i++) {
                 baseType = new ListValueType(baseType);
             }
@@ -754,22 +817,22 @@ public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
     private Pair<String, ValueType> generateTypedVar(SourceOfRandomness random) {
         ValueType type = generateType(random);
         String ident = generateIdentifier(random);
-        return Pair.of(ident, type);
+        return new Pair(ident, type);
     }
 
     private String generateVarDef(SourceOfRandomness random) {
         Pair<String, ValueType> typedVar = generateTypedVar(random);
-        String ident = typedVar.getLeft();
-        ValueType varType = typedVar.getRight();
-        varTypes.put(ident, varType);
+        String ident = typedVar.first;
+        ValueType varType = typedVar.second;
+        currentScope.varTypes.put(ident, varType);
 
         return ident + ":" + varType + " = " + generateLiteralOfType(random, varType) + "\n";
     }
 
     private String generateAttrDef(SourceOfRandomness random, Type classType) {
         Pair<String, ValueType> typedVar = generateTypedVar(random);
-        String ident = typedVar.getLeft();
-        ValueType varType = typedVar.getRight();
+        String ident = typedVar.first;
+        ValueType varType = typedVar.second;
 
         if (!attrTypes.containsKey(classType)) {
             attrTypes.put(classType, new HashMap<>());
