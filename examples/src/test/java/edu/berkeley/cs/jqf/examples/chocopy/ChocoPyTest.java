@@ -1,6 +1,5 @@
 package edu.berkeley.cs.jqf.examples.chocopy;
 
-import chocopy.ChocoPy;
 import chocopy.common.astnodes.Program;
 import chocopy.reference.RefAnalysis;
 import chocopy.reference.RefCodeGen;
@@ -13,7 +12,7 @@ import org.junit.runner.RunWith;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(JQF.class)
-public class SemanticAnalysisTest {
+public class ChocoPyTest {
 
     /** Entry point for fuzzing reference ChocoPy semantic analysis with ChocoPy code generator */
     @Fuzz
