@@ -14,7 +14,79 @@ import chocopy.common.analysis.types.*;
 import static org.junit.Assume.assumeFalse;
 import static org.junit.Assume.assumeTrue;
 
-/* Generates random strings that are syntactically valid ChocoPy */
+/**
+ * ChocoPy Program Generator: Detailed Summary
+ *
+ * The ChocoPy program generator is designed to produce random, syntactically, and semantically valid
+ * ChocoPy programs using a recursive, type-driven generation strategy. Here's a breakdown of the core
+ * principles and methodology used in the generator:
+ *
+ * General Strategy:
+ *
+ * 1. Class Type Hierarchy Generation:
+ *    - A random number of class types are generated.
+ *    - Establishes parent-child relationships between classes, ensuring that every class ultimately descends
+ *      from the base Object type.
+ *
+ * 2. Type Conformance:
+ *    - Ensures that generated expressions and statements are type-conformant by using predefined and dynamically
+ *      generated types.
+ *    - Selects types that respect the established class hierarchy and type relationships.
+ *
+ * Program Generation:
+ *
+ * 1. Program Structure:
+ *    - The top-level `generateProgram` function initializes class hierarchies and assembles classes, declarations,
+ *      and statements into a complete program.
+ *
+ * 2. Class Definitions:
+ *    - `generateClassDefOfType` creates class definitions by randomly generating attributes and method declarations.
+ *
+ * 3. Declarations:
+ *    - Variable and function declarations are produced, with variable types and function signatures adhering to
+ *      the current scope and type constraints.
+ *    - Generates variable definitions, type annotations, and initial assignments.
+ *
+ * 4. Statements and Blocks:
+ *    - Statements include simple and compound types like assignments, expressions, control flows (`if`, `while`,
+ *      `for`), and function calls.
+ *    - Blocks of statements and declarations are recursively generated, maintaining indentation and scope context.
+ *
+ * Expression Generation:
+ *
+ * 1. Expressions:
+ *    - Consist of literals, variable references, calls, binary/unary operations, and more.
+ *    - Generated expressions match the expected type and respect the nesting depth to prevent excessive recursion.
+ *
+ * 2. Expression Types:
+ *    - Handles special types (int, bool, str), objects, lists, and other types (None and Empty).
+ *    - Ensures that generated expressions conform to the expected type through type-driven choices.
+ *
+ * Auxiliary Functions:
+ *
+ * 1. Utility Functions:
+ *    - Functions like `generateIdentifier`, `generateLiteralOfType`, and others support generating syntactically
+ *      correct identifiers and literals.
+ *    - `generateConformingType` generates types selected conform to the required constraints and hierarchies.
+ *
+ * 2. Random Bounds and Lists:
+ *    - Uses custom bounded random functions to select sizes and contents within specified maximums.
+ *    - Generates lists of items for program components like statements, attributes, etc., using defined constraints.
+ *
+ * Recursive Depth Management:
+ *
+ * 1. Depth Management:
+ *    - Manages recursion and nesting depth to prevent infinite loops and overly complex constructs.
+ *    - Controls branching choices to balance between simple and compound constructs based on current depth and randomness.
+ *
+ * Scoping and Context:
+ *
+ * 1. Scope Maintenance:
+ *    - Tracks variable declarations, types, and function scopes to ensure valid references.
+ *    - Manages global and local scopes, ensuring access to variables and functions in the correct context.
+ *
+ */
+
 public class ChocoPySemanticGeneratorTypeDirected extends Generator<String> {
     public ChocoPySemanticGeneratorTypeDirected() {
         super(String.class); // Register type of generated object
