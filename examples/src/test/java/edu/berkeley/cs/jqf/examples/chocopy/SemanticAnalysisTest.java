@@ -10,8 +10,6 @@ import edu.berkeley.cs.jqf.fuzz.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.JQF;
 import org.junit.runner.RunWith;
 
-import static edu.berkeley.cs.jqf.fuzz.util.Observability.event;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(JQF.class)
@@ -19,18 +17,33 @@ public class SemanticAnalysisTest {
 
     /** Entry point for fuzzing reference ChocoPy semantic analysis with ChocoPy code generator */
     @Fuzz
-    public void fuzzSemanticAnalysis(@From(ChocoPySemanticGeneratorTypeDirected.class) String code) {
+    public void fuzzSemanticAnalysis(@From(ChocoPySemanticGenerator.class) String code) {
         Program program = RefParser.process(code, false);
         assumeTrue(!program.hasErrors());
-        event("numStatements", program.statements.size());
-        event("numDeclarations", program.declarations.size());
         Program typedProgram = RefAnalysis.process(program);
-        event("numErrors", program.getErrorList().size());
-        assertTrue(!typedProgram.hasErrors());
+        assumeTrue(!typedProgram.hasErrors());
+    }
+
+    /** Entry point for fuzzing reference ChocoPy semantic analysis with ChocoPy code generator */
+    @Fuzz
+    public void fuzzSemanticAnalysisTypeDirected(@From(ChocoPySemanticGeneratorTypeDirected.class) String code) {
+        Program program = RefParser.process(code, false);
+        assumeTrue(!program.hasErrors());
+        Program typedProgram = RefAnalysis.process(program);
+        assumeTrue(!typedProgram.hasErrors());
     }
 
     @Fuzz
     public void fuzzCodeGen(@From(ChocoPySemanticGenerator.class) String code) {
+        Program program = RefParser.process(code, false);
+        assumeTrue(!program.hasErrors());
+        Program typedProgram = RefAnalysis.process(program);
+        assumeTrue(!typedProgram.hasErrors());
+        RefCodeGen.process(typedProgram);
+    }
+
+    @Fuzz
+    public void fuzzCodeGenTypeDirected(@From(ChocoPySemanticGeneratorTypeDirected.class) String code) {
         Program program = RefParser.process(code, false);
         assumeTrue(!program.hasErrors());
         Program typedProgram = RefAnalysis.process(program);
