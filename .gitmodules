@@ -1,0 +1,3 @@
+[submodule "examples/eye-fuzz"]
+	path = examples/eye-fuzz
+	url = git@github.com:noloerino/eye-fuzz.git
