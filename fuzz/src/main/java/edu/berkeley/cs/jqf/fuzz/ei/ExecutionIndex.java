@@ -47,12 +47,14 @@ import java.util.Arrays;
 public class ExecutionIndex implements Comparable<ExecutionIndex> {
 
     final int[] ei;
+    private final int hash;
 
     public ExecutionIndex(int[] ei) {
         if (ei.length == 0 || ei.length % 2 == 1) {
             throw new IllegalArgumentException("Execution index must have non-zero even elements");
         }
         this.ei = ei;
+        hash = Arrays.hashCode(this.ei);
     }
 
     public ExecutionIndex(Prefix prefix, Suffix suffix) {
@@ -72,11 +74,12 @@ public class ExecutionIndex implements Comparable<ExecutionIndex> {
         for (int i = suffix.offset; i < size; i++) {
             this.ei[i] = suffixEi[i];
         }
+        hash = Arrays.hashCode(this.ei);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(ei);
+        return hash;
     }
 
     @Override

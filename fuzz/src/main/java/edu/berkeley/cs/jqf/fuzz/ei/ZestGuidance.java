@@ -85,6 +85,9 @@ import static java.lang.Math.log;
  */
 public class ZestGuidance implements Guidance {
 
+    /** Probability that a standard mutation sets the byte to just zero instead of a random value. */
+    protected final double MUTATION_ZERO_PROBABILITY = 0.1;
+
     /** A pseudo-random number generator for generating fresh values. */
     protected Random random;
 
@@ -1305,7 +1308,7 @@ public class ZestGuidance implements Guidance {
             int numMutations = sampleGeometric(random, MEAN_MUTATION_COUNT);
             newInput.desc += ",havoc:"+numMutations;
 
-            boolean setToZero = random.nextDouble() < 0.1; // one out of 10 times
+            boolean setToZero = random.nextDouble() < MUTATION_ZERO_PROBABILITY; // one out of 10 times
 
             for (int mutation = 1; mutation <= numMutations; mutation++) {
 
