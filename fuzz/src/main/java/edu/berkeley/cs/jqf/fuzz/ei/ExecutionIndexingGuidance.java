@@ -44,6 +44,7 @@ import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Prefix;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Suffix;
 import edu.berkeley.cs.jqf.fuzz.ei.state.AbstractExecutionIndexingState;
@@ -53,6 +54,7 @@ import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.guidance.Result;
 import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.FuzzStatement;
 import edu.berkeley.cs.jqf.fuzz.util.CoverageFactory;
+import edu.berkeley.cs.jqf.fuzz.util.IOUtils;
 import edu.berkeley.cs.jqf.fuzz.util.ProducerHashMap;
 import edu.berkeley.cs.jqf.instrument.tracing.FastCoverageSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
@@ -101,9 +103,6 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
     /** Mean number of contiguous bytes to mutate in each mutation. */
     protected final double MEAN_MUTATION_SIZE = 4.0; // Bytes
 
-    /** Probability that a standard mutation sets the byte to just zero instead of a random value. */
-    protected final double MUTATION_ZERO_PROBABILITY = 0.05;
-
     /** Max number of contiguous bytes to splice in from another input during the splicing stage. */
     protected final int MAX_SPLICE_SIZE = 64; // Bytes
 
@@ -148,7 +147,8 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
      * @throws IOException if the output directory could not be prepared
      */
     public ExecutionIndexingGuidance(String testName, Duration duration, Long trials, File outputDirectory, File seedInputDir, Random sourceOfRandomness) throws IOException {
-        super(testName, duration, trials, outputDirectory, seedInputDir, sourceOfRandomness);
+        this(testName, duration, trials, outputDirectory, IOUtils.resolveInputFileOrDirectory(seedInputDir),
+                sourceOfRandomness);
     }
 
     /**
@@ -158,11 +158,21 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
      * @param testName the name of test to display on the status screen
      * @param duration the amount of time to run fuzzing for, where
      *                 {@code null} indicates unlimited time.
+     * @param trials   the number of trials for which to run fuzzing, where
+     *                 {@code null} indicates unlimited trials.
      * @param outputDirectory the directory where fuzzing results will be written
+     * @param seedFiles the seed input files to be used as initial inputs
+     * @param sourceOfRandomness      a pseudo-random number generator
      * @throws IOException if the output directory could not be prepared
      */
-    public ExecutionIndexingGuidance(String testName, Duration duration, File outputDirectory, File[] seedFiles) throws IOException {
-        super(testName, duration, outputDirectory, seedFiles);
+    public ExecutionIndexingGuidance(String testName, Duration duration, Long trials, File outputDirectory,
+                                     File[] seedFiles, Random sourceOfRandomness) throws IOException {
+        super(testName, duration, trials, outputDirectory, new File[0], sourceOfRandomness);
+        if (seedFiles != null) {
+            for (File seedFile : seedFiles) {
+                seedInputs.add(new MappedSeedInput(seedFile));
+            }
+        }
     }
 
     /** Returns the banner to be displayed on the status screen */
