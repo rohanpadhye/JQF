@@ -304,7 +304,7 @@ public class FuzzGoal extends AbstractMojo {
 
         // Configure Zest Guidance
         if (saveAll) {
-            System.setProperty("jqf.ei.SAVE_ALL_INPUTS", "true");
+            System.setProperty("jqf.ei.LOG_ALL_INPUTS", "true");
         }
         if (libFuzzerCompatOutput != null) {
             System.setProperty("jqf.ei.LIBFUZZER_COMPAT_OUTPUT", libFuzzerCompatOutput);
