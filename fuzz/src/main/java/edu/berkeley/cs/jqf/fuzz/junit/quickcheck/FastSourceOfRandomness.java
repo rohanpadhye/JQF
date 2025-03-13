@@ -110,7 +110,7 @@ public class FastSourceOfRandomness extends SourceOfRandomness {
     }
 
     private int fastChooseIntInRange(int min, int max) {
-        int range = max - min;
+        int range = max - min + 1;
 
         // If range is too wide, overflow will make it negative
         if (range > 0) {
