@@ -14,3 +14,4 @@ apidocs/
 experiments/*-results-*
 *-results/
 .java-version
+.vscode
