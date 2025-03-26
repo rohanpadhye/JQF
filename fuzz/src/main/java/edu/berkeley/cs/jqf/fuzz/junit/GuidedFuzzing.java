@@ -28,18 +28,25 @@
  */
 package edu.berkeley.cs.jqf.fuzz.junit;
 
+import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
+import edu.berkeley.cs.jqf.fuzz.Fuzz;
 import edu.berkeley.cs.jqf.fuzz.JQF;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.instrument.tracing.SingleSnoop;
 import edu.berkeley.cs.jqf.instrument.tracing.TraceLogger;
 import org.junit.internal.TextListener;
+import org.junit.runner.Description;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Request;
 import org.junit.runner.Result;
 import org.junit.runner.RunWith;
 import org.junit.runner.Runner;
+import org.junit.runner.notification.Failure;
 
 public class GuidedFuzzing {
 
@@ -220,5 +227,142 @@ public class GuidedFuzzing {
 
 
     }
+
+    /**
+     * Runs the guided fuzzing loop for all @Fuzz methods in a test class.
+     *
+     * <p>The test class must be annotated with <code>@RunWith(JQF.class)</code>.</p>
+     *
+     * <p>This method executes each @Fuzz method in the test class sequentially.</p>
+     *
+     * @param testClass     the test class containing the test methods
+     * @param guidance      the fuzzing guidance
+     * @param out           an output stream to log JUnit messages
+     * @throws IllegalStateException if a guided fuzzing run is currently executing
+     * @return the JUnit-style test result
+     */
+    public synchronized static Result runAll(Class<?> testClass, 
+                                          Guidance guidance, PrintStream out) throws IllegalStateException {
+        // Ensure that the class uses the right test runner
+        RunWith annotation = testClass.getAnnotation(RunWith.class);
+        if (annotation == null || !(JQF.class.isAssignableFrom(annotation.value()))) {
+            throw new IllegalArgumentException(testClass.getName() + " is not annotated with @RunWith(JQF.class)");
+        }
+
+        // Find all methods annotated with @Fuzz
+        List<String> fuzzMethods = new ArrayList<>();
+        for (Method method : testClass.getMethods()) {
+            if (method.isAnnotationPresent(Fuzz.class)) {
+                fuzzMethods.add(method.getName());
+            }
+        }
+        
+        if (fuzzMethods.isEmpty()) {
+            throw new IllegalArgumentException(testClass.getName() + " does not contain any @Fuzz methods");
+        }
+
+        Result finalResult = new Result();
+        
+        // Run each @Fuzz method
+        for (String methodName : fuzzMethods) {
+            try {
+                // Run the test method
+                Result methodResult = run(testClass, methodName, guidance, out);
+                
+                // Merge results (if any method fails, the overall result fails)
+                if (!methodResult.wasSuccessful()) {
+                    // Add failures to the final result
+                    for (Failure failure : methodResult.getFailures()) {
+                        finalResult.getFailures().add(failure);
+                    }
+                }
+            } catch (Exception e) {
+                // If any method throws an exception, we'll consider that a failure
+                Description description = Description.createTestDescription(testClass, methodName);
+                Failure failure = new Failure(description, e);
+                finalResult.getFailures().add(failure);
+            }
+        }
+        
+        return finalResult;
+    }
+
+    /**
+     * Runs the guided fuzzing loop for all @Fuzz methods in a test class.
+     *
+     * <p>The test class must be annotated with <code>@RunWith(JQF.class)</code>.</p>
+     *
+     * <p>This method executes each @Fuzz method in the test class sequentially,
+     * creating a new guidance instance for each method.</p>
+     *
+     * @param testClass        the test class containing the test methods
+     * @param guidanceSupplier a function that creates a new guidance instance for each method
+     * @param out              an output stream to log JUnit messages
+     * @throws IllegalStateException if a guided fuzzing run is currently executing
+     * @throws IOException if an I/O error occurs when setting up the guidance
+     * @return the JUnit-style test result
+     */
+    public synchronized static Result runAll(Class<?> testClass, 
+                                      GuidanceSupplier guidanceSupplier, 
+                                      PrintStream out) throws IllegalStateException, IOException {
+    // Ensure that the class uses the right test runner
+    RunWith annotation = testClass.getAnnotation(RunWith.class);
+    if (annotation == null || !(JQF.class.isAssignableFrom(annotation.value()))) {
+        throw new IllegalArgumentException(testClass.getName() + " is not annotated with @RunWith(JQF.class)");
+    }
+
+    // Find all methods annotated with @Fuzz
+    List<String> fuzzMethods = new ArrayList<>();
+    for (Method method : testClass.getMethods()) {
+        if (method.isAnnotationPresent(Fuzz.class)) {
+            fuzzMethods.add(method.getName());
+        }
+    }
+    
+    if (fuzzMethods.isEmpty()) {
+        throw new IllegalArgumentException(testClass.getName() + " does not contain any @Fuzz methods");
+    }
+
+    Result finalResult = new Result();
+    
+    // Run each @Fuzz method
+    for (String methodName : fuzzMethods) {
+        // Create a fresh guidance instance for this method
+        Guidance methodGuidance = guidanceSupplier.get(methodName);
+        try {
+            // Run the test method
+            Result methodResult = run(testClass, methodName, methodGuidance, out);
+            
+            // Merge results (if any method fails, the overall result fails)
+            if (!methodResult.wasSuccessful()) {
+                // Add failures to the final result
+                for (Failure failure : methodResult.getFailures()) {
+                    finalResult.getFailures().add(failure);
+                }
+            }
+        } catch (Exception e) {
+            // If any method throws an exception, we'll consider that a failure
+            Description description = Description.createTestDescription(testClass, methodName);
+            Failure failure = new Failure(description, e);
+            finalResult.getFailures().add(failure);
+        }
+    }
+    
+    return finalResult;
+}
+
+/**
+ * Functional interface for creating guidance instances
+ */
+@FunctionalInterface
+public interface GuidanceSupplier {
+    /**
+     * Creates a new guidance instance
+     * 
+     * @param methodName the name of the method being tested
+     * @return a guidance instance
+     */
+    Guidance get(String methodName) throws IOException;
+}
 
 }

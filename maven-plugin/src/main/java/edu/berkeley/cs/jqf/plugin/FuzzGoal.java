@@ -42,6 +42,7 @@ import java.util.Random;
 
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndexingGuidance;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
+import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
 import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
@@ -289,7 +290,6 @@ public class FuzzGoal extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
         ClassLoader loader;
-        ZestGuidance guidance;
         Log log = getLog();
         PrintStream out = log.isDebugEnabled() ? System.out : null;
         Result result;
@@ -322,17 +322,23 @@ public class FuzzGoal extends AbstractMojo {
             System.setProperty("jqf.ei.GENERATE_EOF_WHEN_OUT", String.valueOf(true));
         }
 
-        Duration duration = null;
+        final Duration duration;
         if (time != null && !time.isEmpty()) {
             try {
                 duration = Duration.parse("PT"+time);
             } catch (DateTimeParseException e) {
                 throw new MojoExecutionException("Invalid time duration: " + time);
             }
+        } else {
+            duration = null;
         }
 
         if (outputDirectory == null || outputDirectory.isEmpty()) {
-            outputDirectory = "fuzz-results" + File.separator + testClassName + File.separator + testMethod;
+            if ("*".equals(testMethod)) {
+                outputDirectory = "fuzz-results" + File.separator + testClassName;
+            } else {
+                outputDirectory = "fuzz-results" + File.separator + testClassName + File.separator + testMethod;
+            }
         }
 
         try {
@@ -357,33 +363,43 @@ public class FuzzGoal extends AbstractMojo {
         File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
         Random rnd = randomSeed != null ? new Random(randomSeed) : new Random();
         try {
-            switch (engine) {
-                case "zest":
-                    guidance = new ZestGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
-                    break;
-                case "zeal":
-                    System.setProperty("jqf.tracing.TRACE_GENERATORS", "true");
-                    System.setProperty("jqf.tracing.MATCH_CALLEE_NAMES", "true");
-                    guidance = new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
-                    break;
-                default:
-                    throw new MojoExecutionException("Unknown fuzzing engine: " + engine);
+            if ("*".equals(testMethod)) {
+                // Load the test class
+                Class<?> testClass = loader.loadClass(testClassName);
+                
+                // Create a guidance supplier that creates a new guidance for each method
+                GuidedFuzzing.GuidanceSupplier guidanceSupplier = (methodName) -> {
+                    // Create a method-specific output directory
+                    File methodResultsDir = new File(resultsDir, methodName);
+                    String methodTargetName = testClassName + "#" + methodName;
+                    
+                    // Create a unique random generator for each method
+                    Random methodRnd = randomSeed != null ? 
+                        new Random(randomSeed ^ methodName.hashCode()) : new Random();
+                    
+                    // Create a fresh guidance instance for this method
+                    return createGuidance(methodTargetName, duration, trials, 
+                                        methodResultsDir, seedsDir, methodRnd);
+                };
+                
+                // Run all @Fuzz methods with individual guidance instances
+                result = GuidedFuzzing.runAll(testClass, guidanceSupplier, out);
+            } else {
+                // Create a single guidance instance for the specified method
+                Guidance guidance = createGuidance(testClassName + "#" + testMethod, 
+                                                duration, trials, resultsDir, seedsDir, rnd);
+                
+                // Run a specific test method
+                result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
             }
-            guidance.setBlind(blind);
-        } catch (FileNotFoundException e) {
-            throw new MojoExecutionException("File not found", e);
-        } catch (IOException e) {
-            throw new MojoExecutionException("I/O error", e);
-        }
-
-        try {
-            result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
         } catch (ClassNotFoundException e) {
             throw new MojoExecutionException("Could not load test class", e);
         } catch (IllegalArgumentException e) {
             throw new MojoExecutionException("Bad request", e);
         } catch (RuntimeException e) {
             throw new MojoExecutionException("Internal error", e);
+        } catch (IOException e) {
+            throw new MojoExecutionException("I/O error", e);
         }
 
         if (!result.wasSuccessful()) {
@@ -398,6 +414,29 @@ public class FuzzGoal extends AbstractMojo {
                     "Use mvn jqf:repro to reproduce failing test cases from %s/failures. ",
                     result.getFailureCount(), resultsDir) +
                     "Sample exception included with this message.", e);
+        }
+    }
+
+    /**
+     * Helper method to create a guidance instance based on the configured engine
+     */
+    private Guidance createGuidance(String targetName, Duration duration, Long trials,
+                                 File resultsDir, File seedsDir, Random rnd) 
+                                 throws IOException {
+        switch (engine) {
+            case "zest":
+                ZestGuidance zest = new ZestGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
+                zest.setBlind(blind);
+                return zest;
+            case "zeal":
+                System.setProperty("jqf.tracing.TRACE_GENERATORS", "true");
+                System.setProperty("jqf.tracing.MATCH_CALLEE_NAMES", "true");
+                ExecutionIndexingGuidance zeal = 
+                    new ExecutionIndexingGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
+                zeal.setBlind(blind);
+                return zeal;
+            default:
+                throw new IllegalArgumentException("Unknown fuzzing engine: " + engine);
         }
     }
 }
