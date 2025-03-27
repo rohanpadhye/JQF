@@ -30,7 +30,6 @@
 package edu.berkeley.cs.jqf.plugin;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.MalformedURLException;
@@ -333,14 +332,6 @@ public class FuzzGoal extends AbstractMojo {
             duration = null;
         }
 
-        if (outputDirectory == null || outputDirectory.isEmpty()) {
-            if ("*".equals(testMethod)) {
-                outputDirectory = "fuzz-results" + File.separator + testClassName;
-            } else {
-                outputDirectory = "fuzz-results" + File.separator + testClassName + File.separator + testMethod;
-            }
-        }
-
         try {
             List<String> classpathElements = project.getTestClasspathElements();
 
@@ -358,36 +349,32 @@ public class FuzzGoal extends AbstractMojo {
             throw new MojoExecutionException("Could not get project classpath", e);
         }
 
-        File resultsDir = new File(target, outputDirectory);
-        String targetName = testClassName + "#" + testMethod;
+        File outputDir = new File(target, "fuzz-results" + File.separator + testClassName);
         File seedsDir = inputDirectory == null ? null : new File(inputDirectory);
-        Random rnd = randomSeed != null ? new Random(randomSeed) : new Random();
         try {
             if ("*".equals(testMethod)) {
                 // Load the test class
                 Class<?> testClass = loader.loadClass(testClassName);
                 
                 // Create a guidance supplier that creates a new guidance for each method
-                GuidedFuzzing.GuidanceSupplier guidanceSupplier = (methodName) -> {
-                    // Create a method-specific output directory
-                    File methodResultsDir = new File(resultsDir, methodName);
-                    String methodTargetName = testClassName + "#" + methodName;
+                GuidedFuzzing.GuidanceSupplier guidanceSupplier = (testMethod) -> {
                     
                     // Create a unique random generator for each method
                     Random methodRnd = randomSeed != null ? 
-                        new Random(randomSeed ^ methodName.hashCode()) : new Random();
+                        new Random(randomSeed ^ testMethod.hashCode()) : new Random();
                     
                     // Create a fresh guidance instance for this method
-                    return createGuidance(methodTargetName, duration, trials, 
-                                        methodResultsDir, seedsDir, methodRnd);
+                    return createGuidance(testClassName, testMethod, duration, trials, seedsDir, methodRnd);
                 };
                 
                 // Run all @Fuzz methods with individual guidance instances
                 result = GuidedFuzzing.runAll(testClass, guidanceSupplier, out);
             } else {
+                Random rnd = randomSeed != null ? new Random(randomSeed) : new Random();
+
                 // Create a single guidance instance for the specified method
-                Guidance guidance = createGuidance(testClassName + "#" + testMethod, 
-                                                duration, trials, resultsDir, seedsDir, rnd);
+                Guidance guidance = createGuidance(testClassName, testMethod,
+                        duration, trials, seedsDir, rnd);
                 
                 // Run a specific test method
                 result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
@@ -411,8 +398,8 @@ public class FuzzGoal extends AbstractMojo {
             }
             throw new MojoFailureException(String.format("Fuzzing resulted in the test failing on " +
                     "%d input(s). Possible bugs found. " +
-                    "Use mvn jqf:repro to reproduce failing test cases from %s/failures. ",
-                    result.getFailureCount(), resultsDir) +
+                    "Use mvn jqf:repro to reproduce failing test cases from %s/fuzz-results/%s/%s/failures. ",
+                    result.getFailureCount(), target, testClassName, testMethod) +
                     "Sample exception included with this message.", e);
         }
     }
@@ -420,9 +407,13 @@ public class FuzzGoal extends AbstractMojo {
     /**
      * Helper method to create a guidance instance based on the configured engine
      */
-    private Guidance createGuidance(String targetName, Duration duration, Long trials,
-                                 File resultsDir, File seedsDir, Random rnd) 
+    private Guidance createGuidance(String testClassName, String testMethod, Duration duration, Long trials,
+                                 File seedsDir, Random rnd)
                                  throws IOException {
+        // Store results in a folder with the target method name
+        File resultsDir = new File(target, "fuzz-results" + File.separator + testClassName + File.separator + testMethod);
+        String targetName = testClassName + "#" + testMethod;
+
         switch (engine) {
             case "zest":
                 ZestGuidance zest = new ZestGuidance(targetName, duration, trials, resultsDir, seedsDir, rnd);
