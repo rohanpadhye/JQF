@@ -223,68 +223,6 @@ public class GuidedFuzzing {
             // Make sure to de-register the guidance before returning
             unsetGuidance();
         }
-
-
-
-    }
-
-    /**
-     * Runs the guided fuzzing loop for all @Fuzz methods in a test class.
-     *
-     * <p>The test class must be annotated with <code>@RunWith(JQF.class)</code>.</p>
-     *
-     * <p>This method executes each @Fuzz method in the test class sequentially.</p>
-     *
-     * @param testClass     the test class containing the test methods
-     * @param guidance      the fuzzing guidance
-     * @param out           an output stream to log JUnit messages
-     * @throws IllegalStateException if a guided fuzzing run is currently executing
-     * @return the JUnit-style test result
-     */
-    public synchronized static Result runAll(Class<?> testClass, 
-                                          Guidance guidance, PrintStream out) throws IllegalStateException {
-        // Ensure that the class uses the right test runner
-        RunWith annotation = testClass.getAnnotation(RunWith.class);
-        if (annotation == null || !(JQF.class.isAssignableFrom(annotation.value()))) {
-            throw new IllegalArgumentException(testClass.getName() + " is not annotated with @RunWith(JQF.class)");
-        }
-
-        // Find all methods annotated with @Fuzz
-        List<String> fuzzMethods = new ArrayList<>();
-        for (Method method : testClass.getMethods()) {
-            if (method.isAnnotationPresent(Fuzz.class)) {
-                fuzzMethods.add(method.getName());
-            }
-        }
-        
-        if (fuzzMethods.isEmpty()) {
-            throw new IllegalArgumentException(testClass.getName() + " does not contain any @Fuzz methods");
-        }
-
-        Result finalResult = new Result();
-        
-        // Run each @Fuzz method
-        for (String methodName : fuzzMethods) {
-            try {
-                // Run the test method
-                Result methodResult = run(testClass, methodName, guidance, out);
-                
-                // Merge results (if any method fails, the overall result fails)
-                if (!methodResult.wasSuccessful()) {
-                    // Add failures to the final result
-                    for (Failure failure : methodResult.getFailures()) {
-                        finalResult.getFailures().add(failure);
-                    }
-                }
-            } catch (Exception e) {
-                // If any method throws an exception, we'll consider that a failure
-                Description description = Description.createTestDescription(testClass, methodName);
-                Failure failure = new Failure(description, e);
-                finalResult.getFailures().add(failure);
-            }
-        }
-        
-        return finalResult;
     }
 
     /**
