@@ -113,13 +113,16 @@ In the above example, the generators for `Map` and `String` were synthesized aut
 * **[Confetti](https://github.com/neu-se/CONFETTI)** [[ICSE'22 paper](https://doi.org/10.1145/3510003.3510628)] - Concolic / taint tracking with global hinting
 * **[BeDivFuzz](https://github.com/hub-se/BeDivFuzz)**  [[ICSE'22 paper](https://doi.org/10.1145/3510003.3510182)]- Behaviorial diversity
 * **[ODDFuzz](https://github.com/ODDFuzz/ODDFuzz)** [[IEEE S&P'23 paper](https://arxiv.org/pdf/2304.04233.pdf)]  - Deserialization vulnerabilities
-* **[GCMiner](https://github.com/GCMiner/GCMiner)** [[ICSE'23 paper](https://arxiv.org/pdf/2303.07593.pdf)] - Gadget chain mining
+* **[GCMiner](https://github.com/GCMiner/GCMiner)** [[ICSE'23 paper](https://arxiv.org/pdf/2303.07593.pdf)] - Deserialization vulnerabilities
 * **[Intender](https://github.com/purseclab/intender)** [[USENIX Security'23 paper](https://www.usenix.org/system/files/sec23fall-prepub-285_kim-jiwon.pdf)] - Intent-based networking
 * **[Mu2](https://github.com/cmu-pasta/mu2)** 🍝 [[ISSTA'23 paper]] - Mutation testing as guidance
 * **[TOAST](http://dx.doi.org/10.1007/s11390-021-1693-1)** [[JCST'22 paper](https://link.springer.com/article/10.1007/s11390-021-1693-1)] - Testing dynamic software updates
-* **[Poracle](https://github.com/PLaSE-UNIST/poracle-tool)** [[TOSEM'23 paper](http://www.jooyongyi.com/papers/TOSEM23.pdf)] - Patch testing using differential fuzzing
+* **[Poracle](https://github.com/PLaSE-UNIST/poracle-tool)** [[ACM TOSEM'23 paper](http://www.jooyongyi.com/papers/TOSEM23.pdf)] - Patch testing using differential fuzzing
 * **[SPIDER](https://arxiv.org/abs/2209.04026)** 🍝 [[arxiv preprint](https://arxiv.org/abs/2209.04026)] - Stateful performance issues in SDN
 * **[FuzzDiff](https://github.com/akashpatil7/FuzzDiff)** [[Dissertation](https://www.scss.tcd.ie/publications/theses/diss/2022/TCD-SCSS-DISSERTATION-2022-134.pdf)] - Dynamic program equivalence checking
+* **[JDD](https://github.com/fdu-sec/JDD)** [[IEEE S&P'24 paper](https://ieeexplore.ieee.org/document/10646692)] - Deserialization vulnerabilities
+* **[DiPri](https://github.com/QRXqrx/dipri-artifacts)** [[ACM TOSEM'24 paper](https://dl.acm.org/doi/pdf/10.1145/3654440)] - Distance-based seed prioritization
+* **[DCAFixer](https://github.com/aprdbapp/DCAFixer)** [[IEEE TDSC'25 paper](https://ieeexplore.ieee.org/abstract/document/10525227)] - Testing for database client applications
 
 🍝 = Involves at least one of the original JQF authors.
 
