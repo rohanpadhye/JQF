@@ -100,12 +100,67 @@ public class FuzzStatement extends Statement {
      */
     @Override
     public void evaluate() throws Throwable {
-        // Construct generators for each parameter
-        List<Generator<?>> generators = Arrays.stream(method.getMethod().getParameters())
-                .map(this::createParameterTypeContext)
-                .map(generatorRepository::produceGenerator)
-                .collect(Collectors.toList());
+        // Check if generator classes were specified via system property
+        String generatorClassesString = System.getProperty("jqf.generators");
 
+        List<Generator<?>> generators;
+
+        if (generatorClassesString != null && !generatorClassesString.isEmpty()) {
+            // Parse the comma-separated list of generator classes
+            String[] generatorClassNames = generatorClassesString.split(",");
+            int parameterCount = method.getMethod().getParameterCount();
+
+            // Assert that the number of generators matches the number of parameters
+            if (generatorClassNames.length != parameterCount) {
+                throw new IllegalArgumentException(
+                        String.format("Number of generators (%d) does not match number of parameters (%d)",
+                                generatorClassNames.length, parameterCount));
+            }
+
+            // Get parameter contexts first (similar to the else branch)
+            List<ParameterTypeContext> paramContexts = Arrays.stream(method.getMethod().getParameters())
+                    .map(this::createParameterTypeContext)
+                    .collect(Collectors.toList());
+
+            // Create instances of each generator and map to parameters
+            generators = new ArrayList<>(parameterCount);
+            for (int i = 0; i < generatorClassNames.length; i++) {
+                String generatorClassName = generatorClassNames[i].trim();
+                try {
+                    // Try to find the class using different classloaders
+                    Class<?> generatorClass = Thread.currentThread().getContextClassLoader().loadClass(generatorClassName);
+
+                    if (!Generator.class.isAssignableFrom(generatorClass)) {
+                        throw new IllegalArgumentException("Class " + generatorClassName +
+                                " does not implement Generator<?>");
+                    }
+
+                    // Create an instance of the generator
+                    Generator<?> generator = (Generator<?>) generatorClass.getDeclaredConstructor().newInstance();
+
+                    // Initialize the generator with the repository
+                    generatorRepository.register(generator);
+
+                    // Associate the generator with the parameter context
+                    ParameterTypeContext paramContext = paramContexts.get(i);
+                    generator.configure(paramContext.annotatedType());
+
+                    // Add to the list of generators
+                    generators.add(generator);
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalArgumentException("Generator class not found: " + generatorClassName +
+                            ". Make sure it's in the test classpath or use @From annotation instead.", e);
+                } catch (ReflectiveOperationException e) {
+                    throw new IllegalArgumentException("Could not instantiate generator: " + generatorClassName, e);
+                }
+            }
+        } else {
+            // Use the default approach - create generators for each parameter
+            generators = Arrays.stream(method.getMethod().getParameters())
+                    .map(this::createParameterTypeContext)
+                    .map(generatorRepository::produceGenerator)
+                    .collect(Collectors.toList());
+        }
         // Keep fuzzing until no more input or I/O error with guidance
         // Get current time in unix timestamp
         long endGenerationTime = 0;
