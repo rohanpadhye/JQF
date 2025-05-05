@@ -124,11 +124,12 @@ public class FuzzStatement extends Statement {
 
             // Create instances of each generator and map to parameters
             generators = new ArrayList<>(parameterCount);
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
             for (int i = 0; i < generatorClassNames.length; i++) {
                 String generatorClassName = generatorClassNames[i].trim();
                 try {
                     // Try to find the class using different classloaders
-                    Class<?> generatorClass = Thread.currentThread().getContextClassLoader().loadClass(generatorClassName);
+                    Class<?> generatorClass = loader.loadClass(generatorClassName);
 
                     if (!Generator.class.isAssignableFrom(generatorClass)) {
                         throw new IllegalArgumentException("Class " + generatorClassName +
