@@ -29,11 +29,31 @@ public class Serializer {
         try(ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes)) {
             @Override
             public Class<?> resolveClass(ObjectStreamClass osc) throws IOException, ClassNotFoundException {
+                String className = osc.getName();
+                
+                // Only allow specific classes to be deserialized
+                if (!found) {
+                    // First class must be the expected main class
+                    if (!className.equals(mainClass.getName())) {
+                        throw new InvalidClassException("Unexpected class: ", className);
+                    } else {
+                        found = true;
+                    }
+                } else {
+                    // All subsequent classes must be in the allowed components list
+                    if (!components.contains(className)) {
+                        throw new InvalidClassException("Unexpected class: ", className);
+                    }
+                }
+                
+                // Only load the class after validation
                 try {
-                    return Class.forName(osc.getName(), true, cl);
+                    // Using "false" as the second parameter to avoid executing static initializers
+                    return Class.forName(className, false, cl);
                 } catch (Exception e) {
-                    e.printStackTrace();
-                    return super.resolveClass(osc);
+                    // Log without exposing stack trace
+                    logger.warn("Failed to load class: " + className);
+                    throw new ClassNotFoundException("Failed to resolve class: " + className);
                 }
             }
         }) {
