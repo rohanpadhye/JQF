@@ -9,7 +9,7 @@ ROOT_DIR=`dirname $SCRIPT_DIR`
 
 # Find JQF classes and JARs
 project="jqf"
-version="2.1-SNAPSHOT"
+version="2.2-SNAPSHOT"
 
 FUZZ_DIR="${ROOT_DIR}/fuzz/target/"
 INST_DIR="${ROOT_DIR}/instrument/target/"
@@ -19,7 +19,7 @@ INST_JAR="${INST_DIR}/$project-instrument-$version.jar"
 
 # Compute classpaths (the /classes are only for development; 
 #   if empty the JARs will have whatever is needed)
-INST_CLASSPATH="${INST_DIR}/classes:${INST_JAR}:${INST_DIR}/dependency/asm-9.5.jar"
+INST_CLASSPATH="${INST_DIR}/classes:${INST_JAR}:${INST_DIR}/dependency/asm-9.8.jar"
 FUZZ_CLASSPATH="${FUZZ_DIR}/classes:${FUZZ_JAR}"
 
 # If user-defined classpath is not set, default to '.'
