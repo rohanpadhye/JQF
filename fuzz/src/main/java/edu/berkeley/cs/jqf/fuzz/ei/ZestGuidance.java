@@ -216,8 +216,8 @@ public class ZestGuidance implements Guidance {
     /** Whether to store all generated inputs to disk (can get slowww!) */
     protected final boolean LOG_ALL_INPUTS = Boolean.getBoolean("jqf.ei.LOG_ALL_INPUTS");
 
-    /** Whether to update .cur_input file with most recently generated input (enabling it will negatively impact performance) */
-    protected final boolean LOG_CURRENT_INPUT = Boolean.getBoolean("jqf.ei.LOG_CURRENT_INPUT");
+    /** Controls whether to update the .cur_input file with the most recently generated input (disabling improves performance). Defaults to true. */
+    protected final boolean LOG_CURRENT_INPUT = Boolean.parseBoolean(System.getProperty("jqf.ei.LOG_CURRENT_INPUT", "true"));
 
     // ------------- TIMEOUT HANDLING ------------
 
