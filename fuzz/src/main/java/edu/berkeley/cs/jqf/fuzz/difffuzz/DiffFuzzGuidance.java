@@ -1,28 +1,25 @@
 package edu.berkeley.cs.jqf.fuzz.difffuzz;
 
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
-import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
-import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
-import edu.berkeley.cs.jqf.instrument.InstrumentationException;
-import org.junit.runners.model.FrameworkMethod;
 
 import java.lang.reflect.Method;
 
 public interface DiffFuzzGuidance extends Guidance {
     void setCompare(Method m);
 
-    /** common utility method for use in run */
-    default Outcome getOutcome(Class<?> clazz, FrameworkMethod method, Object[] args) {
-        try {
-            TrialRunner dtr = new TrialRunner(clazz, method, args);
-            dtr.run();
-            return new Outcome(dtr.getOutput(), null);
-        } catch(InstrumentationException e) {
-            throw new GuidanceException(e);
-        } catch (GuidanceException e) {
-            throw e;
-        } catch(Throwable e) {
-            return new Outcome(null, e);
+    /**
+     * Accepts the outcome of one trial captured by {@link DiffTrialExecutor}.
+     *
+     * <p>The default rethrows whatever the trial threw, so an exception counts as
+     * a failure. {@link DiffFuzzReproGuidance} overrides this to compare the
+     * outcome against a reference run instead.
+     *
+     * @param outcome the captured return value or thrown error
+     * @throws Throwable to fail the trial: a rethrown error or a {@link DiffException}
+     */
+    default void acceptOutcome(Outcome outcome) throws Throwable {
+        if (outcome.thrown != null) {
+            throw outcome.thrown;
         }
     }
 }

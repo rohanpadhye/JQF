@@ -44,7 +44,6 @@ import java.util.Random;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Prefix;
 import edu.berkeley.cs.jqf.fuzz.ei.ExecutionIndex.Suffix;
 import edu.berkeley.cs.jqf.fuzz.ei.state.AbstractExecutionIndexingState;
@@ -63,8 +62,6 @@ import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
 import janala.instrument.FastCoverageListener;
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.TestClass;
 
 /**
  * A guidance that represents inputs as maps from
@@ -241,11 +238,10 @@ public class ExecutionIndexingGuidance extends ZestGuidance {
     }
 
     @Override
-    public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
+    public void beforeRun() {
         if (this.runCoverage instanceof FastCoverageListener) {
             FastCoverageSnoop.setFastCoverageListener((FastCoverageListener) this.runCoverage);
         }
-        super.run(testClass, method, args);
     }
 
     /**

@@ -29,217 +29,72 @@
  */
 package edu.berkeley.cs.jqf.fuzz.junit.quickcheck;
 
-import java.io.EOFException;
-import java.lang.reflect.Parameter;
-import java.util.ArrayList;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import com.pholser.junit.quickcheck.generator.GenerationStatus;
-import com.pholser.junit.quickcheck.generator.Generator;
-import com.pholser.junit.quickcheck.internal.ParameterTypeContext;
 import com.pholser.junit.quickcheck.internal.generator.GeneratorRepository;
-import com.pholser.junit.quickcheck.random.SourceOfRandomness;
-import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
+import edu.berkeley.cs.jqf.fuzz.FuzzRunner;
+import edu.berkeley.cs.jqf.fuzz.difffuzz.DiffFuzzGuidance;
+import edu.berkeley.cs.jqf.fuzz.difffuzz.DiffTrialExecutor;
 import edu.berkeley.cs.jqf.fuzz.guidance.Guidance;
-import edu.berkeley.cs.jqf.fuzz.guidance.GuidanceException;
-import edu.berkeley.cs.jqf.fuzz.guidance.TimeoutException;
-import edu.berkeley.cs.jqf.fuzz.guidance.Result;
-import edu.berkeley.cs.jqf.fuzz.guidance.StreamBackedRandom;
-import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
-import edu.berkeley.cs.jqf.fuzz.random.NoGuidance;
-import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
-import edu.berkeley.cs.jqf.instrument.InstrumentationException;
+import edu.berkeley.cs.jqf.fuzz.junit.Junit4ResultClassifier;
+import edu.berkeley.cs.jqf.fuzz.junit.Junit4TrialExecutor;
+import edu.berkeley.cs.jqf.fuzz.spi.ArgumentsGenerator;
+import edu.berkeley.cs.jqf.fuzz.spi.TrialExecutor;
 import edu.berkeley.cs.jqf.fuzz.util.Observability;
-import org.junit.AssumptionViolatedException;
 import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestClass;
-import ru.vyarus.java.generics.resolver.GenericsResolver;
-import ru.vyarus.java.generics.resolver.context.MethodGenericsContext;
-
-import static edu.berkeley.cs.jqf.fuzz.guidance.Result.*;
 
 /**
+ * A JUnit {@link Statement} that runs a method under guided fuzz testing.
  *
- * A JUnit {@link Statement} that will be run using guided fuzz
- * testing.
+ * <p>This is the JUnit 4 bridge: it wires junit-quickcheck argument generation and
+ * a JUnit 4 trial executor into the framework-independent {@link FuzzRunner}.
  *
  * @author Rohan Padhye
  */
 public class FuzzStatement extends Statement {
     private final FrameworkMethod method;
     private final TestClass testClass;
-    private final MethodGenericsContext generics;
     private final GeneratorRepository generatorRepository;
-    private final List<Class<?>> expectedExceptions;
-    private final List<Throwable> failures = new ArrayList<>();
     private final Guidance guidance;
-    private final Observability observability;
-    private boolean skipExceptionSwallow;
 
     public FuzzStatement(FrameworkMethod method, TestClass testClass,
                          GeneratorRepository generatorRepository, Guidance fuzzGuidance) {
         this.method = method;
         this.testClass = testClass;
-        this.generics = GenericsResolver.resolve(testClass.getJavaClass())
-                .method(method.getMethod());
         this.generatorRepository = generatorRepository;
-        this.expectedExceptions = Arrays.asList(method.getMethod().getExceptionTypes());
         this.guidance = fuzzGuidance;
-        this.skipExceptionSwallow = Boolean.getBoolean("jqf.failOnDeclaredExceptions");
-        this.observability = new Observability(testClass.getName(), method.getName(), System.currentTimeMillis());
     }
 
     /**
-     * Run the test.
+     * Runs the fuzzing loop for this method.
      *
      * @throws Throwable if the test fails
      */
     @Override
     public void evaluate() throws Throwable {
-        // Construct generators for each parameter
-        List<Generator<?>> generators = Arrays.stream(method.getMethod().getParameters())
-                .map(this::createParameterTypeContext)
-                .map(generatorRepository::produceGenerator)
-                .collect(Collectors.toList());
+        Class<?> javaClass = testClass.getJavaClass();
+        Method javaMethod = method.getMethod();
 
-        // Keep fuzzing until no more input or I/O error with guidance
-        // Get current time in unix timestamp
-        long endGenerationTime = 0;
-        try {
+        // Resolve junit-quickcheck generators for this method's parameters
+        ArgumentsGenerator argumentsGenerator =
+                new QuickcheckArgumentsGeneratorFactory(generatorRepository).create(javaClass, javaMethod);
 
-            // Keep fuzzing as long as guidance wants to
-            while (guidance.hasInput()) {
-                Result result = INVALID;
-                Throwable error = null;
-                long startTrialTime = System.currentTimeMillis();
-
-                // Initialize guided fuzzing using a file-backed random number source
-                Object [] args = {};
-                try {
-                    try {
-
-                        // Generate input values
-                        StreamBackedRandom randomFile = new StreamBackedRandom(guidance.getInput(), Long.BYTES);
-                        SourceOfRandomness random = new FastSourceOfRandomness(randomFile);
-                        GenerationStatus genStatus = new NonTrackingGenerationStatus(random);
-                        args = generators.stream()
-                                .map(g -> g.generate(random, genStatus))
-                                .toArray();
-
-                        // Let guidance observe the generated input args
-                        guidance.observeGeneratedArgs(args);
-                    } catch (IllegalStateException e) {
-                        if (e.getCause() instanceof EOFException) {
-                            // This happens when we reach EOF before reading all the random values.
-                            // The only thing we can do is try again
-                            continue;
-                        } else {
-                            throw e;
-                        }
-                    } catch (AssumptionViolatedException | TimeoutException e) {
-                        // Propagate early termination of tests from generator
-                        continue;
-                    } catch (GuidanceException e) {
-                        // Throw the guidance exception outside to stop fuzzing
-                        throw e;
-                    } catch (Throwable e) {
-                        // Throw the guidance exception outside to stop fuzzing
-                        throw new GuidanceException(e);
-                    }
-
-                    endGenerationTime = System.currentTimeMillis();
-                    // Attempt to run the trial
-                    guidance.run(testClass, method, args);
-
-                    // If we reached here, then the trial must be a success
-                    result = SUCCESS;
-                } catch(InstrumentationException e) {
-                    // Throw a guidance exception outside to stop fuzzing
-                    throw new GuidanceException(e);
-                } catch (GuidanceException e) {
-                    // Throw the guidance exception outside to stop fuzzing
-                    throw e;
-                } catch (AssumptionViolatedException e) {
-                    result = INVALID;
-                    error = e;
-                } catch (TimeoutException e) {
-                    result = TIMEOUT;
-                    error = e;
-                } catch (Throwable e) {
-
-                    // Check if this exception was expected
-                    if (isExceptionExpected(e.getClass())) {
-                        result = SUCCESS; // Swallow the error
-                    } else {
-                        result = FAILURE;
-                        error = e;
-                        failures.add(e);
-                    }
-                }
-                long endTrialTime = System.currentTimeMillis();
-                if (System.getProperty("jqfObservability") != null) {
-                    observability.addStatus(result);
-                    if (result == SUCCESS) {
-                        observability.addTiming(startTrialTime, endGenerationTime, endTrialTime);
-                    }
-                    observability.addArgs(args);
-                    observability.add("how_generated", guidance.observeGuidance());
-
-                    observability.writeToFile();
-                }
-
-                // Inform guidance about the outcome of this trial
-                try {
-                    guidance.handleResult(result, error);
-                } catch (GuidanceException e) {
-                    throw e; // Propagate
-                } catch (Throwable e) {
-                    // Anything else thrown from handleResult is an internal error, so wrap
-                    throw new GuidanceException(e);
-                }
-            }
-        } catch (GuidanceException e) {
-            System.err.println("Fuzzing stopped due to guidance exception: " + e.getMessage());
-            throw e;
+        // Run each trial under JUnit 4, capturing the return value for differential fuzzing
+        TrialExecutor trialExecutor = new Junit4TrialExecutor(javaClass, javaMethod);
+        if (guidance instanceof DiffFuzzGuidance) {
+            trialExecutor = new DiffTrialExecutor(trialExecutor, (DiffFuzzGuidance) guidance);
         }
 
-        if (failures.size() > 0) {
-            if (failures.size() == 1) {
-                throw failures.get(0);
-            } else {
-                // Not sure if we should report each failing run,
-                // as there may be duplicates
-                throw new MultipleFailureException(failures);
-            }
-        }
+        List<Class<?>> expectedExceptions = Arrays.asList(javaMethod.getExceptionTypes());
+        boolean skipExceptionSwallow = Boolean.getBoolean("jqf.failOnDeclaredExceptions");
+        Observability observability =
+                new Observability(testClass.getName(), method.getName(), System.currentTimeMillis());
 
-
-    }
-
-    /**
-     * Returns whether an exception is expected to be thrown by a trial method
-     *
-     * @param e the class of an exception that is thrown
-     * @return <code>true</code> if e is a subclass of any exception specified
-     * in the <code>throws</code> clause of the trial method.
-     */
-    private boolean isExceptionExpected(Class<? extends Throwable> e) {
-        if (skipExceptionSwallow) {
-            return false;
-        }
-        for (Class<?> expectedException : expectedExceptions) {
-            if (expectedException.isAssignableFrom(e)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private ParameterTypeContext createParameterTypeContext(Parameter parameter) {
-        return ParameterTypeContext.forParameter(parameter, generics).annotate(parameter);
+        new FuzzRunner(argumentsGenerator, trialExecutor, guidance, new Junit4ResultClassifier(),
+                expectedExceptions, observability, skipExceptionSwallow).run();
     }
 }

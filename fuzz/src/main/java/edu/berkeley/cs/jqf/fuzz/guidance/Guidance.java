@@ -33,11 +33,7 @@ import java.io.InputStream;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import edu.berkeley.cs.jqf.fuzz.junit.TrialRunner;
-import edu.berkeley.cs.jqf.fuzz.junit.quickcheck.FuzzStatement;
 import edu.berkeley.cs.jqf.instrument.tracing.events.TraceEvent;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.TestClass;
 
 /**
  * A front-end for guided fuzzing.
@@ -74,7 +70,7 @@ import org.junit.runners.model.TestClass;
  *     }
  * </pre>
  *
- * See the implementation of {@link FuzzStatement} for the real loop.
+ * See the implementation of {@link edu.berkeley.cs.jqf.fuzz.FuzzRunner} for the real loop.
  */
 public interface Guidance {
 
@@ -212,22 +208,14 @@ public interface Guidance {
     }
 
     /**
-     * Runs a test method with generated arguments as input.
+     * Runs once before each trial, after its arguments are generated.
      *
-     * <p>By default, this method simply runs the test method using a JUnit
-     * {@link TrialRunner}. Guidances can override this method to customize
-     * how test execution should be performed once inputs are generated. For example,
-     * a guidance that supports non-deterministic test code may wish to execute
-     * multiple trials per generated input.</p>
-     *
-     * @param testClass  the test class
-     * @param method     the test method within the test class
-     * @param args       the arguments to the test method (i.e., the test input)
-     *
-     * @throws Throwable any exception that may be thrown during test execution
+     * <p>This is a hook for per-trial setup that a guidance needs but that is not
+     * itself test execution. For example, a coverage-guided guidance installs its
+     * coverage listener here. The default does nothing.
      */
-    default void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
-        new TrialRunner(testClass.getJavaClass(), method, args).run();
+    default void beforeRun() {
+        // Do nothing
     }
 
 }

@@ -2,8 +2,6 @@ package edu.berkeley.cs.jqf.fuzz.difffuzz;
 
 import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
 import edu.berkeley.cs.jqf.fuzz.util.IOUtils;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.TestClass;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,8 +45,7 @@ public class DiffFuzzReproGuidance extends ReproGuidance implements DiffFuzzGuid
     }
 
     @Override
-    public void run(TestClass testClass, FrameworkMethod method, Object[] args) throws Throwable {
-        Outcome out = getOutcome(testClass.getJavaClass(), method, args);
+    public void acceptOutcome(Outcome out) throws Throwable {
         recentOutcomes.add(out);
 
         if (cmpTo == null) { // not comparing
