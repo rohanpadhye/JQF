@@ -20,6 +20,15 @@
             <artifactId>jqf-fuzz</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- The JUnit 5 trial executor under test. The junit-quickcheck argument
+             provider it uses comes transitively through jqf-fuzz. This adds
+             junit-jupiter-api but no Jupiter engine, so failsafe keeps running the
+             JUnit 4 integration tests. -->
+        <dependency>
+            <groupId>edu.berkeley.cs.jqf</groupId>
+            <artifactId>jqf-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
