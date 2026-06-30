@@ -30,9 +30,9 @@
 
 package edu.berkeley.cs.jqf.fuzz.ei;
 
-import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
+import edu.berkeley.cs.jqf.fuzz.FuzzResult;
+import edu.berkeley.cs.jqf.fuzz.FuzzRunner;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
-import org.junit.runner.Result;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -154,8 +154,8 @@ public class ZestCLI implements Runnable{
                 new ZestGuidance(title, duration, trials, this.outputDirectory, seedFiles, rnd) :
                 new ZestGuidance(title, duration, trials, this.outputDirectory, inputDirectory, rnd);
             guidance.setBlind(blindFuzzing);
-            // Run the Junit test
-            Result res = GuidedFuzzing.run(testClassName, testMethodName, loader, guidance, System.out);
+            // Run the fuzzing campaign
+            FuzzResult res = FuzzRunner.run(testClassName, testMethodName, loader, guidance);
             if (Boolean.getBoolean("jqf.logCoverage")) {
                 System.out.println(String.format("Covered %d edges.",
                         guidance.getTotalCoverage().getNonZeroCount()));

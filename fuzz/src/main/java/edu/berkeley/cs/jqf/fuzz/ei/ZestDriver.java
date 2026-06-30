@@ -31,8 +31,8 @@ package edu.berkeley.cs.jqf.fuzz.ei;
 
 import java.io.File;
 
-import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
-import org.junit.runner.Result;
+import edu.berkeley.cs.jqf.fuzz.FuzzResult;
+import edu.berkeley.cs.jqf.fuzz.FuzzRunner;
 
 /**
  * Entry point for fuzzing with Zest.
@@ -73,8 +73,8 @@ public class ZestDriver {
             }
 
 
-            // Run the Junit test
-            Result res = GuidedFuzzing.run(testClassName, testMethodName, guidance, System.out);
+            // Run the fuzzing campaign
+            FuzzResult res = FuzzRunner.run(testClassName, testMethodName, guidance);
             if (Boolean.getBoolean("jqf.logCoverage")) {
                 System.out.println(String.format("Covered %d edges.",
                         guidance.getTotalCoverage().getNonZeroCount()));

@@ -1,5 +1,6 @@
 package edu.berkeley.cs.jqf.fuzz.guidance;
 
+import edu.berkeley.cs.jqf.fuzz.FuzzRunner;
 import edu.berkeley.cs.jqf.fuzz.ei.ZestGuidance;
 import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import org.junit.Assert;
@@ -78,5 +79,36 @@ public class ZestGuidanceIT extends AbstractGuidanceIT {
         // Validate result
         Assert.assertEquals(7, zest.getTotalCoverage().getNonZeroCount());
 
+    }
+
+    // The framework-independent FuzzRunner.run entry must produce the same
+    // campaign as the JUnit 4 GuidedFuzzing orchestrator.
+    @Test
+    public void testPatriciaTrieFuzzerViaEngine() throws Exception {
+        String clazz = "edu.berkeley.cs.jqf.examples.commons.PatriciaTrieTest";
+        String method = "testCopyAscii";
+        long trials = 5000;
+        Random rnd = new Random(42);
+        ProbedZestGuidance zest = new ProbedZestGuidance("PatriciaTrieTest", trials, rnd);
+
+        FuzzRunner.run(clazz, method, classLoader, zest);
+
+        Assert.assertEquals(29, zest.corpusCount());
+        Assert.assertEquals(-941815396, zest.hashInputHashes());
+        Assert.assertEquals(-684278400, zest.hashTotalCoverage());
+        Assert.assertEquals(-1096184368, zest.hashValidCoverage());
+    }
+
+    @Test
+    public void testSimpleTestCoverageViaEngine() throws Exception {
+        String clazz = "edu.berkeley.cs.jqf.examples.simple.SimpleClassTest";
+        String method = "testWithGenerator";
+        long trials = 5000;
+        Random rnd = new Random(42);
+        ProbedZestGuidance zest = new ProbedZestGuidance("SimpleClassTest", trials, rnd);
+
+        FuzzRunner.run(clazz, method, classLoader, zest);
+
+        Assert.assertEquals(7, zest.getTotalCoverage().getNonZeroCount());
     }
 }
