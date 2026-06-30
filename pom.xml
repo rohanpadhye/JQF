@@ -93,6 +93,7 @@
         <module>jqf-core</module>
         <module>jqf-generator-quickcheck</module>
         <module>jqf-generator-instancio</module>
+        <module>jqf-generator-jetcheck</module>
         <module>jqf-junit4</module>
         <module>jqf-junit5</module>
         <module>fuzz</module>
@@ -139,6 +140,14 @@
                 <artifactId>instancio-core</artifactId>
                 <version>5.5.1</version>
             </dependency>
+            <!-- jetCheck 0.3.0 (Java 8+) backs the jqf-generator-jetcheck provider. 0.3.0
+                 made GenerationEnvironment.generative(IntSource, int) public, which the
+                 provider uses to drive a Generator from JQF's byte stream. -->
+            <dependency>
+                <groupId>org.jetbrains</groupId>
+                <artifactId>jetCheck</artifactId>
+                <version>0.3.0</version>
+            </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
@@ -172,6 +181,11 @@
             <dependency>
                 <groupId>edu.berkeley.cs.jqf</groupId>
                 <artifactId>jqf-generator-instancio</artifactId>
+                <version>2.2-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>edu.berkeley.cs.jqf</groupId>
+                <artifactId>jqf-generator-jetcheck</artifactId>
                 <version>2.2-SNAPSHOT</version>
             </dependency>
             <dependency>
