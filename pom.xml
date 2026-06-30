@@ -92,6 +92,7 @@
         <module>instrument</module>
         <module>jqf-core</module>
         <module>jqf-generator-quickcheck</module>
+        <module>jqf-generator-instancio</module>
         <module>jqf-junit4</module>
         <module>jqf-junit5</module>
         <module>fuzz</module>
@@ -131,6 +132,13 @@
                 <artifactId>junit-quickcheck-generators</artifactId>
                 <version>1.0</version>
             </dependency>
+            <!-- Instancio 5.x is the last line that supports Java 8+; 6.x requires
+                 Java 17. It backs the jqf-generator-instancio provider. -->
+            <dependency>
+                <groupId>org.instancio</groupId>
+                <artifactId>instancio-core</artifactId>
+                <version>5.5.1</version>
+            </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
@@ -159,6 +167,11 @@
             <dependency>
                 <groupId>edu.berkeley.cs.jqf</groupId>
                 <artifactId>jqf-generator-quickcheck</artifactId>
+                <version>2.2-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>edu.berkeley.cs.jqf</groupId>
+                <artifactId>jqf-generator-instancio</artifactId>
                 <version>2.2-SNAPSHOT</version>
             </dependency>
             <dependency>
