@@ -89,8 +89,11 @@
     </properties>
 
     <modules>
-        <module>fuzz</module>
         <module>instrument</module>
+        <module>jqf-core</module>
+        <module>jqf-generator-quickcheck</module>
+        <module>jqf-junit4</module>
+        <module>fuzz</module>
         <module>examples</module>
         <module>maven-plugin</module>
     </modules>
@@ -131,6 +134,21 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>org.jacoco.report</artifactId>
                 <version>0.8.10</version>
+            </dependency>
+            <dependency>
+                <groupId>edu.berkeley.cs.jqf</groupId>
+                <artifactId>jqf-core</artifactId>
+                <version>2.2-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>edu.berkeley.cs.jqf</groupId>
+                <artifactId>jqf-generator-quickcheck</artifactId>
+                <version>2.2-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>edu.berkeley.cs.jqf</groupId>
+                <artifactId>jqf-junit4</artifactId>
+                <version>2.2-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>edu.berkeley.cs.jqf</groupId>

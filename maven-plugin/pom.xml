@@ -37,7 +37,11 @@
         </dependency>
         <dependency>
             <groupId>edu.berkeley.cs.jqf</groupId>
-            <artifactId>jqf-fuzz</artifactId>
+            <artifactId>jqf-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.berkeley.cs.jqf</groupId>
+            <artifactId>jqf-junit4</artifactId>
         </dependency>
     </dependencies>
 

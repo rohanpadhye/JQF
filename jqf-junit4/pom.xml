@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>edu.berkeley.cs.jqf</groupId>
+        <artifactId>jqf</artifactId>
+        <version>2.2-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>jqf-junit4</artifactId>
+
+    <name>jqf-junit4</name>
+    <description>JQF: Feedback-directed Quickcheck for Java - JUnit 4 runner adapter</description>
+    <packaging>jar</packaging>
+
+    <dependencies>
+        <dependency>
+            <groupId>edu.berkeley.cs.jqf</groupId>
+            <artifactId>jqf-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>edu.berkeley.cs.jqf</groupId>
+            <artifactId>jqf-generator-quickcheck</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <!-- JQF extends com.pholser.junit.quickcheck.runner.JUnitQuickcheck, which requires JUnit 4 -->
+        <dependency>
+            <groupId>com.pholser</groupId>
+            <artifactId>junit-quickcheck-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

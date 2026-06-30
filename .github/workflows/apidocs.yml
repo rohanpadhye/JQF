@@ -19,8 +19,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       
+      # Aggregate every library module. Excluding examples and the Maven plugin keeps the
+      # generators (quickcheck, instancio, jetcheck) and the JUnit 4/5 adapters in, and picks
+      # up any future module automatically.
       - name: Build JavaDoc
-        run: "mvn -B javadoc:aggregate -pl :jqf-instrument,:jqf-fuzz,:jqf"
+        run: "mvn -B -ntp javadoc:aggregate -pl '!:jqf-examples,!:jqf-maven-plugin'"
 
       - name: Deploy to gh-pages
         uses: JamesIves/github-pages-deploy-action@4.1.4

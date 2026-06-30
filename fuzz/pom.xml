@@ -3,73 +3,41 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-	    <groupId>edu.berkeley.cs.jqf</groupId>
-	    <artifactId>jqf</artifactId>
-	    <version>2.2-SNAPSHOT</version>
-	</parent>
+        <groupId>edu.berkeley.cs.jqf</groupId>
+        <artifactId>jqf</artifactId>
+        <version>2.2-SNAPSHOT</version>
+    </parent>
 
     <artifactId>jqf-fuzz</artifactId>
 
     <name>jqf-fuzz</name>
-    <description>JQF: Feedback-directed Quickcheck for Java - Guided fuzzing interface</description>
+    <description>JQF: Feedback-directed Quickcheck for Java - Aggregator of the engine, JUnit 4 runner, and junit-quickcheck generators</description>
     <packaging>jar</packaging>
 
+    <!--
+      This module keeps the edu.berkeley.cs.jqf:jqf-fuzz coordinates for backwards compatibility.
+      It carries no sources of its own; it re-exports the engine and the JUnit 4 / junit-quickcheck
+      adapters so existing users still get JQF, @Fuzz, ZestGuidance, GuidedFuzzing, and the rest
+      through a single dependency. The zest-cli assembly is built here because it needs every module
+      and SPI provider on one classpath.
+    -->
     <dependencies>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.pholser</groupId>
-            <artifactId>junit-quickcheck-generators</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.pholser</groupId>
-            <artifactId>junit-quickcheck-core</artifactId>
+            <groupId>edu.berkeley.cs.jqf</groupId>
+            <artifactId>jqf-core</artifactId>
         </dependency>
         <dependency>
             <groupId>edu.berkeley.cs.jqf</groupId>
-    		<artifactId>jqf-instrument</artifactId>
+            <artifactId>jqf-generator-quickcheck</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jacoco</groupId>
-            <artifactId>org.jacoco.report</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-library</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.0.4</version>
-        </dependency>
-        <dependency>
-            <groupId>org.eclipse.collections</groupId>
-            <artifactId>eclipse-collections</artifactId>
-            <version>10.4.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.18.3</version>
-            <scope>compile</scope>
+            <groupId>edu.berkeley.cs.jqf</groupId>
+            <artifactId>jqf-junit4</artifactId>
         </dependency>
     </dependencies>
 
-
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -82,22 +50,22 @@
                     </archive>
                 </configuration>
             </plugin>
-            <plugin> 
-		        <groupId>org.apache.maven.plugins</groupId> 
+            <plugin>
+		        <groupId>org.apache.maven.plugins</groupId>
 		        <artifactId>maven-dependency-plugin</artifactId>
-		        <executions> 
-		                <execution> 
-		                        <id>copy-dependencies</id> 
+		        <executions>
+		                <execution>
+		                        <id>copy-dependencies</id>
 		                        <phase>package</phase>
-		                        <goals> 
-		                                <goal>copy-dependencies</goal> 
-		                        </goals> 
-		                        <configuration> 
-		                                <includeScope>runtime</includeScope> 
+		                        <goals>
+		                                <goal>copy-dependencies</goal>
+		                        </goals>
+		                        <configuration>
+		                                <includeScope>runtime</includeScope>
 		                                <excludeArtifactIds>jqf-instrument,asm</excludeArtifactIds>
-		                        </configuration> 
-		                </execution> 
-		        </executions> 
+		                        </configuration>
+		                </execution>
+		        </executions>
 			</plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
