@@ -43,6 +43,12 @@
             <groupId>edu.berkeley.cs.jqf</groupId>
             <artifactId>jqf-junit4</artifactId>
         </dependency>
+        <!-- The JUnit 5 run path. Lets the plugin fuzz and replay @FuzzTest methods
+             in addition to @RunWith(JQF.class) + @Fuzz ones. -->
+        <dependency>
+            <groupId>edu.berkeley.cs.jqf</groupId>
+            <artifactId>jqf-junit5</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
@@ -50,6 +56,21 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
+            </plugin>
+            <!-- The dispatcher IT loads instrumented example classes from
+                 ../examples/target, so it runs at the integration-test phase (after
+                 examples has been packaged), not in surefire. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

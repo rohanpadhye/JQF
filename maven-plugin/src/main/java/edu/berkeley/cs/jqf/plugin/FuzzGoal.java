@@ -55,7 +55,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.junit.runner.Result;
 
 import static edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader.stringsToUrls;
 
@@ -83,7 +82,9 @@ public class FuzzGoal extends AbstractMojo {
      * to fuzz.
      *
      * <p>This class will be loaded using the Maven project's test
-     * classpath. It must be annotated with {@code @RunWith(JQF.class)}</p>
+     * classpath. It is either a JUnit 4 class annotated with
+     * {@code @RunWith(JQF.class)} or a JUnit 5 class with a
+     * {@code @FuzzTest} method.</p>
      */
     @Parameter(property="class", required=true)
     private String testClassName;
@@ -91,9 +92,10 @@ public class FuzzGoal extends AbstractMojo {
     /**
      * The name of the method to fuzz.
      *
-     * <p>This method must be annotated with {@code @Fuzz}, and take
-     * one or more arguments (with optional junit-quickcheck
-     * annotations) whose values will be fuzzed by JQF.</p>
+     * <p>This method is annotated with either {@code @Fuzz} (JUnit 4) or
+     * {@code @FuzzTest} (JUnit 5), and takes one or more arguments whose
+     * values will be fuzzed by JQF. The plugin picks the run path from the
+     * annotation it finds.</p>
      *
      * <p>If more than one method of this name exists in the
      * test class or if the method is not declared
@@ -291,7 +293,7 @@ public class FuzzGoal extends AbstractMojo {
         ClassLoader loader;
         Log log = getLog();
         PrintStream out = log.isDebugEnabled() ? System.out : null;
-        Result result;
+        FuzzTestDispatcher.Outcome outcome;
 
         // Configure classes to instrument
         if (excludes != null) {
@@ -367,17 +369,19 @@ public class FuzzGoal extends AbstractMojo {
                     return createGuidance(testClassName, testMethod, duration, trials, seedsDir, methodRnd);
                 };
                 
-                // Run all @Fuzz methods with individual guidance instances
-                result = GuidedFuzzing.runAll(testClass, guidanceSupplier, out);
+                // Run all @Fuzz methods with individual guidance instances.
+                // The "*" form is JUnit 4 only; GuidedFuzzing.runAll rejects other styles.
+                outcome = FuzzTestDispatcher.Outcome.fromJUnit4Result(
+                        GuidedFuzzing.runAll(testClass, guidanceSupplier, out));
             } else {
                 Random rnd = randomSeed != null ? new Random(randomSeed) : new Random();
 
                 // Create a single guidance instance for the specified method
                 Guidance guidance = createGuidance(testClassName, testMethod,
                         duration, trials, seedsDir, rnd);
-                
-                // Run a specific test method
-                result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
+
+                // Run a specific test method, dispatching on the JUnit 4 / JUnit 5 style
+                outcome = FuzzTestDispatcher.run(loader, testClassName, testMethod, guidance, out);
             }
         } catch (ClassNotFoundException e) {
             throw new MojoExecutionException("Could not load test class", e);
@@ -389,9 +393,9 @@ public class FuzzGoal extends AbstractMojo {
             throw new MojoExecutionException("I/O error", e);
         }
 
-        if (!result.wasSuccessful()) {
-            Throwable e = result.getFailures().get(0).getException();
-            if (result.getFailureCount() == 1) {
+        if (!outcome.wasSuccessful()) {
+            Throwable e = outcome.getFailures().get(0);
+            if (outcome.getFailures().size() == 1) {
                 if (e instanceof GuidanceException) {
                     throw new MojoExecutionException("Internal error", e);
                 }
@@ -399,7 +403,7 @@ public class FuzzGoal extends AbstractMojo {
             throw new MojoFailureException(String.format("Fuzzing resulted in the test failing on " +
                     "%d input(s). Possible bugs found. " +
                     "Use mvn jqf:repro to reproduce failing test cases from %s/fuzz-results/%s/%s/failures. ",
-                    result.getFailureCount(), target, testClassName, testMethod) +
+                    outcome.getFailures().size(), target, testClassName, testMethod) +
                     "Sample exception included with this message.", e);
         }
     }
