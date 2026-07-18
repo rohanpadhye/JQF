@@ -71,6 +71,10 @@
             <email>hough.k@northeastern.edu</email>
             <organization>Northeastern University</organization>
         </contributor>
+        <contributor>
+            <name>Vladimir Sitnikov</name>
+            <email>sitnikov.vladimir@gmail.com</email>
+        </contributor>
     </contributors>
 
     <scm>
