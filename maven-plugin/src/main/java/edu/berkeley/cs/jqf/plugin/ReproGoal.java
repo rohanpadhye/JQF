@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import edu.berkeley.cs.jqf.fuzz.junit.GuidedFuzzing;
 import edu.berkeley.cs.jqf.fuzz.repro.ReproGuidance;
 import edu.berkeley.cs.jqf.instrument.InstrumentingClassLoader;
 import org.apache.maven.artifact.DependencyResolutionRequiredException;
@@ -51,7 +50,6 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
-import org.junit.runner.Result;
 
 /**
  * Maven plugin for replaying a test case produced by JQF.
@@ -73,7 +71,9 @@ public class ReproGoal extends AbstractMojo {
      * to fuzz.
      *
      * <p>This class will be loaded using the Maven project's test
-     * classpath. It must be annotated with {@code @RunWith(JQF.class)}</p>
+     * classpath. It is either a JUnit 4 class annotated with
+     * {@code @RunWith(JQF.class)} or a JUnit 5 class with a
+     * {@code @FuzzTest} method.</p>
      */
     @Parameter(property="class", required=true)
     private String testClassName;
@@ -81,9 +81,10 @@ public class ReproGoal extends AbstractMojo {
     /**
      * The name of the method to fuzz.
      *
-     * <p>This method must be annotated with {@code @Fuzz}, and take
-     * one or more arguments (with optional junit-quickcheck
-     * annotations) whose values will be fuzzed by JQF.</p>
+     * <p>This method is annotated with either {@code @Fuzz} (JUnit 4) or
+     * {@code @FuzzTest} (JUnit 5), and takes one or more arguments whose
+     * values will be fuzzed by JQF. The plugin replays the saved input
+     * through the matching run path.</p>
      *
      * <p>If more than one method of this name exists in the
      * test class or if the method is not declared
@@ -177,7 +178,7 @@ public class ReproGoal extends AbstractMojo {
         ReproGuidance guidance;
         Log log = getLog();
         PrintStream out = System.out; // TODO: Re-route to logger from super.getLog()
-        Result result;
+        FuzzTestDispatcher.Outcome outcome;
 
         // Configure classes to instrument
         if (excludes != null) {
@@ -219,7 +220,7 @@ public class ReproGoal extends AbstractMojo {
 
         try {
             guidance = new ReproGuidance(inputFile, null);
-            result = GuidedFuzzing.run(testClassName, testMethod, loader, guidance, out);
+            outcome = FuzzTestDispatcher.run(loader, testClassName, testMethod, guidance, out);
         } catch (ClassNotFoundException e) {
             throw new MojoExecutionException("Could not load test class", e);
         } catch (IllegalArgumentException e) {
@@ -246,7 +247,7 @@ public class ReproGoal extends AbstractMojo {
             }
         }
 
-        if (!result.wasSuccessful()) {
+        if (!outcome.wasSuccessful()) {
             throw new MojoFailureException("Test case produces a failure.");
         }
     }

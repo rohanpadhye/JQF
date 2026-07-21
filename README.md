@@ -9,7 +9,7 @@
 [ICSE'21 paper]: https://rohan.padhye.org/files/bonsai-icse21.pdf
 [ISSTA'23 paper]: https://dx.doi.org/10.1145/3597926.3598107
 
-JQF is a feedback-directed fuzz testing platform for Java (think: AFL/LibFuzzer but for JVM bytecode). JQF uses the abstraction of *property-based testing*, which makes it nice to write fuzz drivers as parameteric JUnit test methods. JQF is built on top of [junit-quickcheck](https://github.com/pholser/junit-quickcheck). JQF enables running junit-quickcheck style parameterized unit tests with the power of **coverage-guided** fuzzing algorithms such as **Zest**.
+JQF is a feedback-directed fuzz testing platform for Java (think: AFL/LibFuzzer but for JVM bytecode). JQF uses the abstraction of *property-based testing*, which makes it nice to write fuzz drivers as parameteric JUnit test methods. Fuzz tests run under **JUnit 4** or **JUnit 5**, and test arguments are produced by a pluggable generator provider ([junit-quickcheck](https://github.com/pholser/junit-quickcheck) by default); the engine itself depends on neither. JQF enables running these parameterized unit tests with the power of **coverage-guided** fuzzing algorithms such as **Zest**.
 
 [Zest][ISSTA'19 paper] is an algorithm that biases coverage-guided fuzzing towards producing *semantically valid* inputs; that is, inputs that satisfy structural and semantic properties while maximizing code coverage. Zest's goal is to find deep semantic bugs that cannot be found by conventional fuzzing tools, which mostly stress error-handling logic only. By default, JQF runs Zest via the simple command: `mvn jqf:fuzz`.
 
@@ -53,10 +53,12 @@ A `Generator<T>` provides a method for producing random instances of type `T`. F
 [JavaScript programs](examples/src/main/java/edu/berkeley/cs/jqf/examples/js/JavaScriptCodeGenerator.java), 
 [JVM class files](examples/src/main/java/edu/berkeley/cs/jqf/examples/bcel/JavaClassGenerator.java), SQL queries, HTTP requests, and [many more](https://github.com/pholser/junit-quickcheck/tree/master/examples/src/test/java/com/pholser/junit/quickcheck/examples) -- this is **generator-based fuzzing**. However, simply sampling random inputs of type `T` is not usually very effective, since the generator does not know if the inputs that it produces are any good.
 
+The generator layer is pluggable: [junit-quickcheck](https://github.com/pholser/junit-quickcheck) is the default provider, and other providers such as [Instancio](https://www.instancio.org/) and [jetCheck](https://github.com/JetBrains/jetCheck) plug in through the `ArgumentsGeneratorFactory` SPI without changes to the engine.
+
 
 ### What is *semantic fuzzing* (Zest)?
 
-JQF supports the **[*Zest algorithm*][ISSTA'19 paper], which uses code-coverage and input-validity feedback to bias a QuickCheck-style generator** towards generating structured inputs that can reveal deep semantic bugs. JQF extracts code coverage using bytecode instrumentation, and input validity using JUnit's [`Assume`](https://junit.org/junit4/javadoc/4.12/org/junit/Assume.html) API. An input is valid if no assumptions are violated.
+JQF supports the **[*Zest algorithm*][ISSTA'19 paper], which uses code-coverage and input-validity feedback to bias a QuickCheck-style generator** towards generating structured inputs that can reveal deep semantic bugs. JQF extracts code coverage using bytecode instrumentation, and input validity using JUnit's assumption API (`org.junit.Assume` on JUnit 4, `org.junit.jupiter.api.Assumptions` on JUnit 5). An input is valid if no assumptions are violated.
 
 ## Example
 
@@ -83,6 +85,26 @@ public class PatriciaTrieTest {
 Running `mvn jqf:fuzz` causes JQF to invoke the `testMap2Trie()` method repeatedly with automatically generated values for `map` and `key`. After about 5 seconds on average (~5,000 inputs), JQF will report an assertion violation. It finds [a bug in the implementation of `PatriciaTrie`](https://issues.apache.org/jira/browse/COLLECTIONS-714) that is unresolved as of v4.4. Random sampling of `map` and `key` values is unlikely to find the failing test case, which is a very special corner case (see the comments next to the assertion in the code above). JQF finds this violation easily using a coverage-guided called [**Zest**][ISSTA'19 paper]. To run this example as a standalone Maven project, check out the [jqf-zest-example repository](https://github.com/rohanpadhye/jqf-zest-example).
 
 In the above example, the generators for `Map` and `String` were synthesized automatically by JUnitQuickCheck. It is also possible to specify generators for structured inputs manually. See the [tutorials](#tutorials) below.
+
+### Running under JUnit 5
+
+The same driver runs as a JUnit 5 test: replace `@RunWith(JQF.class)` and `@Fuzz` with a single `@FuzzTest`.
+
+```java
+class PatriciaTrieTest {
+
+    @FuzzTest
+    void testMap2Trie(Map<String, Integer> map, String key) {
+        assumeTrue(map.containsKey(key));
+
+        Trie trie = new PatriciaTrie(map);
+
+        assertTrue(trie.containsKey(key));
+    }
+}
+```
+
+With `-Djqf.fuzz=true` (or `mvn jqf:fuzz`) the method runs a full Zest campaign; a plain `mvn test` replays the saved corpus and seed inputs as a bounded regression. Add a generator provider such as `jqf-generator-quickcheck` to the test classpath for the junit-quickcheck generators used above.
 
 
 ## Documentation

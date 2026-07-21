@@ -76,6 +76,14 @@
             <groupId>edu.berkeley.cs.jqf</groupId>
             <artifactId>jqf-fuzz</artifactId>
         </dependency>
+        <!-- The JUnit 5 run path for the @FuzzTest examples. jqf-junit5 brings only
+             jqf-core and Jupiter; the argument generators still come from
+             jqf-generator-quickcheck (transitively via jqf-fuzz). -->
+        <dependency>
+            <groupId>edu.berkeley.cs.jqf</groupId>
+            <artifactId>jqf-junit5</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.struts</groupId>
             <artifactId>struts2-core</artifactId>

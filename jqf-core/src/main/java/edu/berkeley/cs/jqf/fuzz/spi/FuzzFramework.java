@@ -1,0 +1,55 @@
+/*
+ * Copyright (c) 2026 Vladimir Sitnikov and JQF Contributors
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are
+ * met:
+ *
+ * 1. Redistributions of source code must retain the above copyright
+ * notice, this list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright
+ * notice, this list of conditions and the following disclaimer in the
+ * documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package edu.berkeley.cs.jqf.fuzz.spi;
+
+/**
+ * A test-framework integration that supplies the execution half of a fuzzing run.
+ *
+ * <p>This is the "how to run a trial" axis, kept separate from the "how to
+ * generate arguments" axis ({@link ArgumentsGeneratorFactory}). A command-line
+ * or build-tool launch discovers the available framework through
+ * {@link java.util.ServiceLoader}; the JUnit 4 runner and the JUnit 5 extension
+ * supply their own instances directly.
+ */
+public interface FuzzFramework {
+
+    /**
+     * Returns the factory that builds per-method trial executors.
+     *
+     * @return the trial executor factory
+     */
+    TrialExecutorFactory executor();
+
+    /**
+     * Returns the classifier that maps trial throwables onto engine outcomes.
+     *
+     * @return the result classifier
+     */
+    ResultClassifier classifier();
+}
