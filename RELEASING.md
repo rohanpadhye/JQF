@@ -1,22 +1,39 @@
 These notes are for the project maintainers to help with releasing artifacts to Maven Central.
 
+> **Note (2025):** Sonatype's legacy OSSRH service (`oss.sonatype.org`) reached
+> end-of-life on June 30, 2025 and has been shut down. Publishing now goes
+> through the [Central Portal](https://central.sonatype.com/). The
+> `edu.berkeley.cs.jqf` namespace was automatically migrated there. Releases are
+> deployed with the `central-publishing-maven-plugin` (configured in `pom.xml`).
+
 # One-time setup
 
-1. Set up `~/.m2/settings.xml` with `$username` and `$password` from `https://oss.sonatype.org/`:
+1. Log in to the [Central Portal](https://central.sonatype.com/) with your
+   Sonatype credentials and confirm the `edu.berkeley.cs.jqf` namespace is
+   listed and verified.
 
-```
+2. Generate a **User Token** on the Portal (Account → Generate User Token), then
+   add it to `~/.m2/settings.xml`. Note the server `id` must be `central` (the
+   `publishingServerId` referenced by the plugin), and the username/password are
+   the token's values — **not** your Portal login password, and **not** an old
+   OSSRH token (those now return `401`):
+
+```xml
 <settings>
   <servers>
     <server>
-      <id>ossrh</id>
-      <username>$username</username>
-      <password>$password</password>
+      <id>central</id>
+      <username>$token_username</username>
+      <password>$token_password</password>
     </server>
   </servers>
 </settings>
 ```
 
-2. Configure PGP keys locally using GnuPG (aka GPG) so that artifacts can be signed.
+3. Configure PGP keys locally using GnuPG (aka GPG) so that artifacts can be
+   signed. Central still requires signed `.asc` files alongside the main,
+   sources, and javadoc jars. Make sure your public key is published to a key
+   server.
 
 
 # Every Release
@@ -40,8 +57,15 @@ mvn release:perform -P release-profile -DlocalCheckout
 
 The `-DlocalCheckout` is needed if changes were not pushed above. This tells Maven to use the new release from the local repo instead of pulling from GitHub.
 
-4. Update `scripts/jqf-driver.sh` and `scripts/instrument.sh` with new version numbers.
+This uploads a **deployment** (all signed artifacts, bundled) to the Central
+Portal. It does *not* publish automatically — the deployment waits for manual
+review (the plugin is configured without `autoPublish`).
 
-5. Log on to the [Nexus Repository Manager](https://oss.sonatype.org) to close + release. Wait.
+4. Update `scripts/jqf-driver.sh` with the new version number (the `version=` line).
 
-6. If the release went file and changes were not pushed in step 2, then run `git push`.
+5. Log on to the [Central Portal Publishing page](https://central.sonatype.com/publishing)
+   to review the deployment. Once validation passes, click **Publish** to
+   release it to Maven Central. (It may take some time to sync and become
+   searchable.)
+
+6. If the release went fine and changes were not pushed in step 2, then run `git push` (and push the tag).
