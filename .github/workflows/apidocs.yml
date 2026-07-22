@@ -3,13 +3,25 @@
 name: API Docs
 
 # Run this on releases and on demand (manually)
-on: [release, workflow_dispatch] 
+on:
+  release:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref (tag, branch, or SHA) to build the docs from. Defaults to the branch the workflow is run from.'
+        required: false
+        default: ''
 jobs:
   build-javadoc-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout latest # release or manually selected ref
+      - name: Checkout # release, manually selected ref, or the workflow_dispatch input
         uses: actions/checkout@v4
+        with:
+          # For manual runs, use the provided ref if any; otherwise fall back to
+          # the ref the workflow was launched from (which is what actions/checkout
+          # uses by default when 'ref' is empty).
+          ref: ${{ github.event.inputs.ref }}
 
       - name: Cache Maven dependencies
         uses: actions/cache@v4
