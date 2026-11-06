@@ -157,7 +157,7 @@ public class MethodGenerator {
             case Const.ASTORE_3:
                 return new ASTORE(opcode - Const.ASTORE_0);
             case Const.IINC:
-                return new IINC(random.nextInt(maxLocals), random.nextInt(-128, 128));
+                return new IINC(random.nextInt(maxLocals), random.nextInt(-128, 127));
             case Const.GETSTATIC:
             case Const.PUTSTATIC:
             case Const.GETFIELD:

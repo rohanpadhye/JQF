@@ -68,7 +68,7 @@ public class CacheRequestsGenerator extends Generator<int[]> {
             int request;
             // Maybe re-use
             if (i > 0 && r.nextBoolean()) {
-                int idx = r.nextInt(0, i);
+                int idx = r.nextInt(i);
                 request = requests[idx];
             } else {
                 request = r.nextInt(minRange, maxRange);

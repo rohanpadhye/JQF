@@ -56,10 +56,10 @@ public class ZestGuidanceIT extends AbstractGuidanceIT {
         GuidedFuzzing.run(clazz, method, classLoader, zest, null);
 
         // Validate result
-        Assert.assertEquals(29, zest.corpusCount());
-        Assert.assertEquals(-941815396, zest.hashInputHashes());
-        Assert.assertEquals(-684278400, zest.hashTotalCoverage());
-        Assert.assertEquals(-1096184368, zest.hashValidCoverage());
+        Assert.assertEquals(46, zest.corpusCount());
+        Assert.assertEquals(-1972383513, zest.hashInputHashes());
+        Assert.assertEquals(-1654977633, zest.hashTotalCoverage());
+        Assert.assertEquals(65546817, zest.hashValidCoverage());
     }
 
 
@@ -93,10 +93,10 @@ public class ZestGuidanceIT extends AbstractGuidanceIT {
 
         FuzzRunner.run(clazz, method, classLoader, zest);
 
-        Assert.assertEquals(29, zest.corpusCount());
-        Assert.assertEquals(-941815396, zest.hashInputHashes());
-        Assert.assertEquals(-684278400, zest.hashTotalCoverage());
-        Assert.assertEquals(-1096184368, zest.hashValidCoverage());
+        Assert.assertEquals(46, zest.corpusCount());
+        Assert.assertEquals(-1972383513, zest.hashInputHashes());
+        Assert.assertEquals(-1654977633, zest.hashTotalCoverage());
+        Assert.assertEquals(65546817, zest.hashValidCoverage());
     }
 
     @Test

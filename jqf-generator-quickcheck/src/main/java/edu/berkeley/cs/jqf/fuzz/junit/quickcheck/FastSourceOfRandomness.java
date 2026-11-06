@@ -68,8 +68,6 @@ public class FastSourceOfRandomness extends SourceOfRandomness {
     public byte nextByte(byte min, byte max) {
         if (min == Byte.MIN_VALUE && max == Byte.MAX_VALUE) {
             return delegate.nextByte();
-        } else if (min >= Byte.MIN_VALUE && max <= Byte.MAX_VALUE) {
-
         }
         return this.fastChooseByteInRange(min, max);
     }
@@ -110,9 +108,12 @@ public class FastSourceOfRandomness extends SourceOfRandomness {
     }
 
     private int fastChooseIntInRange(int min, int max) {
-        int range = max - min;
+        if (Ranges.checkRange(Type.INTEGRAL, min, max) == 0) {
+            return min;
+        }
+        int range = max - min + 1;
 
-        // If range is too wide, overflow will make it negative
+        // An inclusive width beyond Integer.MAX_VALUE overflows to a non-positive value.
         if (range > 0) {
             int random = delegate.nextInt() % range;
             if (random < 0) {
@@ -125,9 +126,11 @@ public class FastSourceOfRandomness extends SourceOfRandomness {
     }
 
     private byte fastChooseByteInRange(byte min, byte max) {
-        int range = max - min;
+        if (Ranges.checkRange(Type.INTEGRAL, min, max) == 0) {
+            return min;
+        }
+        int range = max - min + 1;
 
-        // If range is too wide, overflow will make it negative
         if (range > 0 && range <= (Byte.MAX_VALUE)) {
             int random = delegate.nextByte() % range;
             if (random < 0) {

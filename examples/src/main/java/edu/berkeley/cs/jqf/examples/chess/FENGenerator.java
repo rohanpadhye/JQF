@@ -56,7 +56,7 @@ public class FENGenerator extends Generator<String> {
             for (int j = 0; j < 8; j++) {
                 if (r.nextBoolean()) {
                     // empty square
-                    int skip = r.nextInt(0, 8-j);
+                    int skip = r.nextInt(8-j);
                     j += skip;
                     row += String.valueOf(skip+1); // Upper bound is exclusive
                 } else {
@@ -100,8 +100,8 @@ public class FENGenerator extends Generator<String> {
         if (r.nextBoolean()) {
             return "-";
         }
-        char x = r.nextChar('a', 'i'); // Upper-bound is exclusive
-        int y =  r.nextInt(1, 9);      // Upper-bound is exclusive
+        char x = r.nextChar('a', 'h');
+        int y =  r.nextInt(1, 8);
         return String.valueOf(x) + String.valueOf(y);
     }
 
