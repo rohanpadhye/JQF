@@ -85,7 +85,7 @@ public class KaitaiStream {
     }
 
     public byte writeU1OneOf(long... choices) {
-        int idx = random.nextInt(0, choices.length);
+        int idx = random.nextInt(choices.length);
         byte choice = (byte) choices[idx]; // TODO: Verify range of each choice
         return writeU1value(choice);
     }
@@ -122,14 +122,14 @@ public class KaitaiStream {
     }
 
     public int writeU4beOneOf(long... choices) {
-        int idx = random.nextInt(0, choices.length);
+        int idx = random.nextInt(choices.length);
         int choice = (int) choices[idx]; // TODO: Verify range of each choice
         buf.order(ByteOrder.BIG_ENDIAN);
         return writeIntvalue(choice);
     }
 
     public int writeU4leOneOf(long... choices) {
-        int idx = random.nextInt(0, choices.length);
+        int idx = random.nextInt(choices.length);
         int choice = (int) choices[idx]; // TODO: Verify range of each choice
         buf.order(ByteOrder.LITTLE_ENDIAN);
         return writeIntvalue(choice);
@@ -210,7 +210,7 @@ public class KaitaiStream {
                 throw new IllegalArgumentException("Choices must be of fixed size");
             }
         }
-        int idx = random.nextInt(0, choices.length);
+        int idx = random.nextInt(choices.length);
         String choice = choices[idx];
         buf.put(choice.getBytes());
         return choice.getBytes();
@@ -223,7 +223,7 @@ public class KaitaiStream {
                 throw new IllegalArgumentException("Choices must be of fixed size");
             }
         }
-        int idx = random.nextInt(0, choices.length);
+        int idx = random.nextInt(choices.length);
         byte[] choice = choices[idx];
         buf.put(choice);
         return choice;
